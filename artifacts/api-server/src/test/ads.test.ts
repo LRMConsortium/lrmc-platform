@@ -398,6 +398,58 @@ describe("ads authorization", () => {
       expect(res.body).toHaveProperty("advertiserId");
       expect(typeof res.body.advertiserId).toBe("number");
     });
+
+    async function buildApprovedResubmission(
+      seller: Awaited<ReturnType<typeof createMemberUser>>,
+      admin: Awaited<ReturnType<typeof createAdminUser>>,
+      suffix: string,
+    ) {
+      // original → rejected → resubmitted → approved (active with non-null parentAdId)
+      const original = await createAd(seller.agent);
+      await admin.agent.patch(`/api/ads/${original.id}`).send({ status: "rejected" });
+      const resubRes = await seller.agent.post("/api/ads").send({
+        title: `Approved Resubmit ${suffix}`,
+        content: "Second attempt — will be approved.",
+        placement: "marketplace",
+        replacesAdId: original.id,
+      });
+      expect(resubRes.status).toBe(201);
+      const resubmitted = resubRes.body as { id: number; parentAdId: number };
+      await admin.agent.patch(`/api/ads/${resubmitted.id}`).send({ status: "active" });
+      return { original, resubmitted };
+    }
+
+    it("unauthenticated GET /ads/:id on an approved resubmission does not expose parentAdId", async () => {
+      const seller = await createMemberUser("get-ad-anon-resubmit-parentid-seller");
+      const admin = await createAdminUser("get-ad-anon-resubmit-parentid-admin");
+      const { resubmitted } = await buildApprovedResubmission(seller, admin, "anon");
+
+      const { anonymousAgent } = await import("./helpers");
+      const res = await anonymousAgent().get(`/api/ads/${resubmitted.id}`);
+      expect(res.status).toBe(200);
+      expect(res.body).not.toHaveProperty("parentAdId");
+    });
+
+    it("authenticated member GET /ads/:id on an approved resubmission does not expose parentAdId", async () => {
+      const seller = await createMemberUser("get-ad-member-resubmit-parentid-seller");
+      const viewer = await createMemberUser("get-ad-member-resubmit-parentid-viewer");
+      const admin = await createAdminUser("get-ad-member-resubmit-parentid-admin");
+      const { resubmitted } = await buildApprovedResubmission(seller, admin, "member");
+
+      const res = await viewer.agent.get(`/api/ads/${resubmitted.id}`);
+      expect(res.status).toBe(200);
+      expect(res.body).not.toHaveProperty("parentAdId");
+    });
+
+    it("admin GET /ads/:id on an approved resubmission does include parentAdId", async () => {
+      const seller = await createMemberUser("get-ad-admin-resubmit-parentid-seller");
+      const admin = await createAdminUser("get-ad-admin-resubmit-parentid-admin");
+      const { original, resubmitted } = await buildApprovedResubmission(seller, admin, "admin");
+
+      const res = await admin.agent.get(`/api/ads/${resubmitted.id}`);
+      expect(res.status).toBe(200);
+      expect(res.body).toHaveProperty("parentAdId", original.id);
+    });
   });
 
   describe("GET /ads/:id status gate", () => {
