@@ -161,6 +161,40 @@ describe("digital-products status validation", () => {
   });
 });
 
+describe("digital-products archive → reactivate data preservation", () => {
+  it("preserves all original fields (title, description, priceCents, category) after a full archive → reactivate cycle", async () => {
+    const seller = await createMemberUser("dp-preserve-seller");
+
+    // Create a product with known field values
+    const createRes = await seller.agent.post("/api/digital-products").send({
+      title: "Preservation Test Product",
+      description: "Field preservation under archive cycle.",
+      priceCents: 4999,
+      category: "course",
+    });
+    expect(createRes.status).toBe(201);
+    const product = createRes.body as { id: number };
+
+    // Archive the product
+    const archiveRes = await seller.agent.delete(`/api/digital-products/${product.id}`);
+    expect(archiveRes.status).toBe(204);
+
+    // Reactivate the product
+    const reactivateRes = await seller.agent
+      .patch(`/api/digital-products/${product.id}`)
+      .send({ status: "active" });
+    expect(reactivateRes.status).toBe(200);
+
+    // Verify all original fields survived the round-trip intact
+    const body = reactivateRes.body;
+    expect(body.title).toBe("Preservation Test Product");
+    expect(body.description).toBe("Field preservation under archive cycle.");
+    expect(body.priceCents).toBe(4999);
+    expect(body.category).toBe("course");
+    expect(body.status).toBe("active");
+  });
+});
+
 describe("digital-products reactivation", () => {
   it("admin can reactivate a seller's archived product, which then reappears in the listing and can be purchased", async () => {
     const seller = await createMemberUser("dp-admin-reactivate-seller");
