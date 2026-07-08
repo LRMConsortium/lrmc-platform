@@ -119,6 +119,31 @@ describe("digital-products purchase authorization", () => {
   });
 });
 
+describe("digital-products priceCents validation on PATCH", () => {
+  it("rejects PATCH with priceCents: -1 with 400", async () => {
+    const seller = await createMemberUser("dp-price-negative-seller");
+    const product = await createDigitalProduct(seller.agent);
+
+    const res = await seller.agent
+      .patch(`/api/digital-products/${product.id}`)
+      .send({ priceCents: -1 });
+
+    expect(res.status).toBe(400);
+  });
+
+  it("accepts PATCH with priceCents: 0 (free product is valid per schema)", async () => {
+    const seller = await createMemberUser("dp-price-zero-seller");
+    const product = await createDigitalProduct(seller.agent);
+
+    const res = await seller.agent
+      .patch(`/api/digital-products/${product.id}`)
+      .send({ priceCents: 0 });
+
+    expect(res.status).toBe(200);
+    expect(res.body.priceCents).toBe(0);
+  });
+});
+
 describe("digital-products status validation", () => {
   it("rejects PATCH with an invalid status value with 400", async () => {
     const seller = await createMemberUser("dp-invalid-status-seller");
