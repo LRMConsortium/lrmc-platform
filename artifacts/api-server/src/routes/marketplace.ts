@@ -38,10 +38,11 @@ import {
 
 // Public ad schemas: strip admin-only moderation fields from non-admin responses.
 // Add new admin-only fields here so they are never accidentally leaked.
-const ListAdsPublicResponseItem = ListAdsResponseItem.omit({ parentAdId: true });
+const ListAdsPublicResponseItem = ListAdsResponseItem.omit({ parentAdId: true, advertiserId: true });
 const ListAdsPublicResponse = ListAdsPublicResponseItem.array();
-// Single-ad public schema: omit parentAdId so non-admins cannot traverse the chain.
-const GetAdPublicResponse = GetAdResponse.omit({ parentAdId: true, rejectionChain: true });
+// Single-ad public schema: omit parentAdId, advertiserId, and rejectionChain so
+// non-admins cannot traverse the moderation chain or enumerate user IDs.
+const GetAdPublicResponse = GetAdResponse.omit({ parentAdId: true, rejectionChain: true, advertiserId: true });
 import { requireAuth } from "../middlewares/auth";
 import { isOwnerOrAdmin } from "../middlewares/authz";
 

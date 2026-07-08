@@ -500,6 +500,50 @@ describe("ads authorization", () => {
       expect(found).toBeDefined();
       expect(found).toHaveProperty("parentAdId", resubmitted.parentAdId);
     });
+
+    it("does not expose advertiserId to unauthenticated users", async () => {
+      const seller = await createMemberUser("ad-list-anon-advertiserid-seller");
+      const admin = await createAdminUser("ad-list-anon-advertiserid-admin");
+      // Approve the ad so it appears in the public listing
+      const ad = await createAd(seller.agent);
+      await admin.agent.patch(`/api/ads/${ad.id}`).send({ status: "active" });
+
+      const { anonymousAgent } = await import("./helpers");
+      const res = await anonymousAgent().get("/api/ads");
+      expect(res.status).toBe(200);
+      expect(Array.isArray(res.body)).toBe(true);
+      for (const item of res.body as Record<string, unknown>[]) {
+        expect(item).not.toHaveProperty("advertiserId");
+      }
+    });
+
+    it("does not expose advertiserId to member users", async () => {
+      const seller = await createMemberUser("ad-list-member-advertiserid-seller");
+      const viewer = await createMemberUser("ad-list-member-advertiserid-viewer");
+      const admin = await createAdminUser("ad-list-member-advertiserid-admin");
+      const ad = await createAd(seller.agent);
+      await admin.agent.patch(`/api/ads/${ad.id}`).send({ status: "active" });
+
+      const res = await viewer.agent.get("/api/ads");
+      expect(res.status).toBe(200);
+      expect(Array.isArray(res.body)).toBe(true);
+      for (const item of res.body as Record<string, unknown>[]) {
+        expect(item).not.toHaveProperty("advertiserId");
+      }
+    });
+
+    it("exposes advertiserId to admin users", async () => {
+      const seller = await createMemberUser("ad-list-admin-advertiserid-seller");
+      const admin = await createAdminUser("ad-list-admin-advertiserid-admin");
+      const ad = await createAd(seller.agent);
+
+      const res = await admin.agent.get("/api/ads");
+      expect(res.status).toBe(200);
+      expect(Array.isArray(res.body)).toBe(true);
+      const found = (res.body as Record<string, unknown>[]).find((a) => a.id === ad.id);
+      expect(found).toBeDefined();
+      expect(found).toHaveProperty("advertiserId", seller.id);
+    });
   });
 
   describe("resubmission limit", () => {
