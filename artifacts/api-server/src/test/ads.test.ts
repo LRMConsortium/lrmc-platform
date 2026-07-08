@@ -568,6 +568,31 @@ describe("ads authorization", () => {
       expect(ids).toContain(ad.id);
     });
 
+    it("the advertiser does not see their own pending ad in GET /ads", async () => {
+      const seller = await createMemberUser("ad-vis-owner-pending-seller");
+      const ad = await createAd(seller.agent);
+
+      // Seller calls the listing as themselves — their pending ad must be absent
+      const res = await seller.agent.get("/api/ads");
+      expect(res.status).toBe(200);
+      const ids = (res.body as { id: number }[]).map((a) => a.id);
+      expect(ids).not.toContain(ad.id);
+    });
+
+    it("the advertiser does not see their own rejected ad in GET /ads", async () => {
+      const seller = await createMemberUser("ad-vis-owner-rejected-seller");
+      const admin = await createAdminUser("ad-vis-owner-rejected-admin");
+      const ad = await createAd(seller.agent);
+
+      await admin.agent.patch(`/api/ads/${ad.id}`).send({ status: "rejected" });
+
+      // Seller calls the listing as themselves — their rejected ad must be absent
+      const res = await seller.agent.get("/api/ads");
+      expect(res.status).toBe(200);
+      const ids = (res.body as { id: number }[]).map((a) => a.id);
+      expect(ids).not.toContain(ad.id);
+    });
+
     it("non-admin can see an active ad after admin approval", async () => {
       const seller = await createMemberUser("ad-vis-member-active-seller");
       const viewer = await createMemberUser("ad-vis-member-active-viewer");
