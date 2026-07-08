@@ -275,6 +275,68 @@ describe("ads authorization", () => {
     expect(patchRes.body.parentAdId).toBe(original.id);
   });
 
+  describe("GET /ads admin-only field visibility", () => {
+    async function createAdWithParent(
+      seller: Awaited<ReturnType<typeof createMemberUser>>,
+      admin: Awaited<ReturnType<typeof createAdminUser>>,
+      suffix: string,
+    ) {
+      const original = await createAd(seller.agent);
+      await admin.agent.patch(`/api/ads/${original.id}`).send({ status: "rejected" });
+      const resubmitRes = await seller.agent.post("/api/ads").send({
+        title: `Resubmit ${suffix}`,
+        content: "Resubmission content.",
+        placement: "marketplace",
+        replacesAdId: original.id,
+      });
+      expect(resubmitRes.status).toBe(201);
+      return { original, resubmitted: resubmitRes.body as { id: number; parentAdId: number } };
+    }
+
+    it("does not expose parentAdId to unauthenticated users", async () => {
+      const seller = await createMemberUser("ad-list-anon-seller");
+      const admin = await createAdminUser("ad-list-anon-admin");
+      await createAdWithParent(seller, admin, "anon");
+
+      const { anonymousAgent } = await import("./helpers");
+      const res = await anonymousAgent().get("/api/ads");
+      expect(res.status).toBe(200);
+      expect(Array.isArray(res.body)).toBe(true);
+      for (const ad of res.body as Record<string, unknown>[]) {
+        expect(ad).not.toHaveProperty("parentAdId");
+      }
+    });
+
+    it("does not expose parentAdId to member users", async () => {
+      const seller = await createMemberUser("ad-list-member-seller");
+      const viewer = await createMemberUser("ad-list-member-viewer");
+      const admin = await createAdminUser("ad-list-member-admin");
+      await createAdWithParent(seller, admin, "member");
+
+      const res = await viewer.agent.get("/api/ads");
+      expect(res.status).toBe(200);
+      expect(Array.isArray(res.body)).toBe(true);
+      for (const ad of res.body as Record<string, unknown>[]) {
+        expect(ad).not.toHaveProperty("parentAdId");
+      }
+    });
+
+    it("exposes parentAdId to admin users", async () => {
+      const seller = await createMemberUser("ad-list-admin-seller");
+      const admin = await createAdminUser("ad-list-admin-admin");
+      const { resubmitted } = await createAdWithParent(seller, admin, "admin-view");
+
+      const res = await admin.agent.get("/api/ads");
+      expect(res.status).toBe(200);
+      expect(Array.isArray(res.body)).toBe(true);
+      const found = (res.body as Record<string, unknown>[]).find(
+        (ad) => ad.id === resubmitted.id,
+      );
+      expect(found).toBeDefined();
+      expect(found).toHaveProperty("parentAdId", resubmitted.parentAdId);
+    });
+  });
+
   it("ignores advertiserId in the request body and always uses the session user", async () => {
     const realSeller = await createMemberUser("ad-inject-real");
     const victim = await createMemberUser("ad-inject-victim");

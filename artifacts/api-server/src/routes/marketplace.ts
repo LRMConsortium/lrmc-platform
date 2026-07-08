@@ -25,6 +25,7 @@ import {
   PurchaseDigitalProductParams,
   PurchaseDigitalProductResponse,
   ListAdsResponse,
+  ListAdsResponseItem,
   CreateAdBody,
   CreateAdResponse,
   UpdateAdParams,
@@ -32,6 +33,11 @@ import {
   UpdateAdResponse,
   DeleteAdParams,
 } from "@workspace/api-zod";
+
+// Public ad schema: strips admin-only fields (moderation chain) from non-admin responses.
+// Add new admin-only fields here so they are never accidentally leaked.
+const ListAdsPublicResponseItem = ListAdsResponseItem.omit({ parentAdId: true });
+const ListAdsPublicResponse = ListAdsPublicResponseItem.array();
 import { requireAuth } from "../middlewares/auth";
 import { isOwnerOrAdmin } from "../middlewares/authz";
 
@@ -274,9 +280,14 @@ router.post(
   },
 );
 
-router.get("/ads", async (_req, res): Promise<void> => {
+router.get("/ads", async (req, res): Promise<void> => {
   const rows = await db.select().from(adsTable);
-  res.json(ListAdsResponse.parse(rows));
+  const isAdmin = req.session?.role === "admin";
+  if (isAdmin) {
+    res.json(ListAdsResponse.parse(rows));
+  } else {
+    res.json(ListAdsPublicResponse.parse(rows));
+  }
 });
 
 router.post("/ads", requireAuth, async (req, res): Promise<void> => {
