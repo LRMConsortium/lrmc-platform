@@ -441,6 +441,36 @@ describe("ads authorization", () => {
       expect(res.status).toBe(404);
     });
 
+    it("returns 200 for a pending ad to its own advertiser", async () => {
+      const seller = await createMemberUser("get-ad-gate-owner-pending-seller");
+      const ad = await createAd(seller.agent);
+
+      const res = await seller.agent.get(`/api/ads/${ad.id}`);
+      expect(res.status).toBe(200);
+      expect(res.body.id).toBe(ad.id);
+      expect(res.body.status).toBe("pending");
+      // Public schema — admin-only fields must be absent
+      expect(res.body).not.toHaveProperty("advertiserId");
+      expect(res.body).not.toHaveProperty("parentAdId");
+      expect(res.body).not.toHaveProperty("rejectionChain");
+    });
+
+    it("returns 200 for a rejected ad to its own advertiser", async () => {
+      const seller = await createMemberUser("get-ad-gate-owner-rejected-seller");
+      const admin = await createAdminUser("get-ad-gate-owner-rejected-admin");
+      const ad = await createAd(seller.agent);
+      await admin.agent.patch(`/api/ads/${ad.id}`).send({ status: "rejected" });
+
+      const res = await seller.agent.get(`/api/ads/${ad.id}`);
+      expect(res.status).toBe(200);
+      expect(res.body.id).toBe(ad.id);
+      expect(res.body.status).toBe("rejected");
+      // Public schema — admin-only fields must be absent
+      expect(res.body).not.toHaveProperty("advertiserId");
+      expect(res.body).not.toHaveProperty("parentAdId");
+      expect(res.body).not.toHaveProperty("rejectionChain");
+    });
+
     it("returns 200 for a pending ad to an admin caller", async () => {
       const seller = await createMemberUser("get-ad-gate-admin-pending-seller");
       const admin = await createAdminUser("get-ad-gate-admin-pending-admin");

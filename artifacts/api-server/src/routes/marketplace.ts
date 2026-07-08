@@ -348,15 +348,20 @@ router.get("/ads/:id", async (req, res): Promise<void> => {
   const isAdmin = req.session?.role === "admin";
 
   if (!isAdmin) {
-    // Non-admins (including unauthenticated visitors) may only see active ads.
-    // Pending and rejected ads are moderation-only — return 404 so callers
-    // cannot enumerate which IDs exist in non-active states.
-    if (ad.status !== "active") {
+    // The ad's own advertiser may always view their own submission so they can
+    // track moderation status (pending / rejected). Everyone else — including
+    // unauthenticated callers and unrelated members — gets a 404 for any
+    // non-active ad so IDs in non-active states are not enumerable.
+    const isOwner =
+      req.session?.userId !== undefined &&
+      ad.advertiserId === req.session.userId;
+
+    if (ad.status !== "active" && !isOwner) {
       res.status(404).json({ error: "Ad not found" });
       return;
     }
-    // Strip parentAdId and rejectionChain so the moderation chain cannot be
-    // traversed by making repeated GET /ads/:id calls.
+    // Strip parentAdId, rejectionChain, and advertiserId from the public
+    // schema — even for the owner — so moderation internals stay server-side.
     res.json(GetAdPublicResponse.parse(ad));
     return;
   }
