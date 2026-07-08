@@ -326,28 +326,28 @@ describe("ads authorization", () => {
       expect(res.body.parentAdId).toBe(original.id);
     });
 
-    it("unauthenticated user does not see parentAdId or rejectionChain", async () => {
+    it("unauthenticated user cannot fetch a pending ad by ID (status gate)", async () => {
       const seller = await createMemberUser("get-ad-anon-seller");
       const admin = await createAdminUser("get-ad-anon-admin");
       const { resubmitted } = await buildTwoLevelChain(seller, admin, "anon-get");
 
       const { anonymousAgent } = await import("./helpers");
+      // Resubmitted ad is pending — non-admins get 404, so parentAdId and
+      // rejectionChain are never exposed at all.
       const res = await anonymousAgent().get(`/api/ads/${resubmitted.id}`);
-      expect(res.status).toBe(200);
-      expect(res.body).not.toHaveProperty("parentAdId");
-      expect(res.body).not.toHaveProperty("rejectionChain");
+      expect(res.status).toBe(404);
     });
 
-    it("member user does not see parentAdId or rejectionChain", async () => {
+    it("member user cannot fetch a pending ad by ID (status gate)", async () => {
       const seller = await createMemberUser("get-ad-member-seller");
       const viewer = await createMemberUser("get-ad-member-viewer");
       const admin = await createAdminUser("get-ad-member-admin");
       const { resubmitted } = await buildTwoLevelChain(seller, admin, "member-get");
 
+      // Resubmitted ad is pending — member gets 404, so parentAdId and
+      // rejectionChain are never exposed at all.
       const res = await viewer.agent.get(`/api/ads/${resubmitted.id}`);
-      expect(res.status).toBe(200);
-      expect(res.body).not.toHaveProperty("parentAdId");
-      expect(res.body).not.toHaveProperty("rejectionChain");
+      expect(res.status).toBe(404);
     });
 
     it("ad with no parent shows empty rejectionChain for admin", async () => {
@@ -361,6 +361,83 @@ describe("ads authorization", () => {
       if (res.body.rejectionChain !== undefined) {
         expect(res.body.rejectionChain).toHaveLength(0);
       }
+    });
+  });
+
+  describe("GET /ads/:id status gate", () => {
+    it("returns 404 for a pending ad to an unauthenticated caller", async () => {
+      const seller = await createMemberUser("get-ad-gate-anon-pending-seller");
+      const ad = await createAd(seller.agent);
+
+      const { anonymousAgent } = await import("./helpers");
+      const res = await anonymousAgent().get(`/api/ads/${ad.id}`);
+      expect(res.status).toBe(404);
+    });
+
+    it("returns 404 for a rejected ad to an unauthenticated caller", async () => {
+      const seller = await createMemberUser("get-ad-gate-anon-rejected-seller");
+      const admin = await createAdminUser("get-ad-gate-anon-rejected-admin");
+      const ad = await createAd(seller.agent);
+      await admin.agent.patch(`/api/ads/${ad.id}`).send({ status: "rejected" });
+
+      const { anonymousAgent } = await import("./helpers");
+      const res = await anonymousAgent().get(`/api/ads/${ad.id}`);
+      expect(res.status).toBe(404);
+    });
+
+    it("returns 404 for a pending ad to a member caller", async () => {
+      const seller = await createMemberUser("get-ad-gate-member-pending-seller");
+      const viewer = await createMemberUser("get-ad-gate-member-pending-viewer");
+      const ad = await createAd(seller.agent);
+
+      const res = await viewer.agent.get(`/api/ads/${ad.id}`);
+      expect(res.status).toBe(404);
+    });
+
+    it("returns 404 for a rejected ad to a member caller", async () => {
+      const seller = await createMemberUser("get-ad-gate-member-rejected-seller");
+      const viewer = await createMemberUser("get-ad-gate-member-rejected-viewer");
+      const admin = await createAdminUser("get-ad-gate-member-rejected-admin");
+      const ad = await createAd(seller.agent);
+      await admin.agent.patch(`/api/ads/${ad.id}`).send({ status: "rejected" });
+
+      const res = await viewer.agent.get(`/api/ads/${ad.id}`);
+      expect(res.status).toBe(404);
+    });
+
+    it("returns 200 for a pending ad to an admin caller", async () => {
+      const seller = await createMemberUser("get-ad-gate-admin-pending-seller");
+      const admin = await createAdminUser("get-ad-gate-admin-pending-admin");
+      const ad = await createAd(seller.agent);
+
+      const res = await admin.agent.get(`/api/ads/${ad.id}`);
+      expect(res.status).toBe(200);
+      expect(res.body.id).toBe(ad.id);
+      expect(res.body.status).toBe("pending");
+    });
+
+    it("returns 200 for a rejected ad to an admin caller", async () => {
+      const seller = await createMemberUser("get-ad-gate-admin-rejected-seller");
+      const admin = await createAdminUser("get-ad-gate-admin-rejected-admin");
+      const ad = await createAd(seller.agent);
+      await admin.agent.patch(`/api/ads/${ad.id}`).send({ status: "rejected" });
+
+      const res = await admin.agent.get(`/api/ads/${ad.id}`);
+      expect(res.status).toBe(200);
+      expect(res.body.id).toBe(ad.id);
+      expect(res.body.status).toBe("rejected");
+    });
+
+    it("returns 200 for an active ad to an unauthenticated caller", async () => {
+      const seller = await createMemberUser("get-ad-gate-anon-active-seller");
+      const admin = await createAdminUser("get-ad-gate-anon-active-admin");
+      const ad = await createAd(seller.agent);
+      await admin.agent.patch(`/api/ads/${ad.id}`).send({ status: "active" });
+
+      const { anonymousAgent } = await import("./helpers");
+      const res = await anonymousAgent().get(`/api/ads/${ad.id}`);
+      expect(res.status).toBe(200);
+      expect(res.body.id).toBe(ad.id);
     });
   });
 
