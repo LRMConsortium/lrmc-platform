@@ -82,7 +82,7 @@ export const ListMembershipsResponseItem = zod.object({
   "id": zod.number(),
   "userId": zod.number(),
   "type": zod.string(),
-  "feePaidCents": zod.number(),
+  "feePaidCents": zod.number().int(),
   "status": zod.string(),
   "createdAt": zod.coerce.date()
 })
@@ -97,7 +97,7 @@ export const CreateMembershipResponse = zod.object({
   "id": zod.number(),
   "userId": zod.number(),
   "type": zod.string(),
-  "feePaidCents": zod.number(),
+  "feePaidCents": zod.number().int(),
   "status": zod.string(),
   "createdAt": zod.coerce.date()
 })
@@ -107,7 +107,7 @@ export const GetMyMembershipResponse = zod.object({
   "id": zod.number(),
   "userId": zod.number(),
   "type": zod.string(),
-  "feePaidCents": zod.number(),
+  "feePaidCents": zod.number().int(),
   "status": zod.string(),
   "createdAt": zod.coerce.date()
 })
@@ -125,7 +125,7 @@ export const UpdateMembershipResponse = zod.object({
   "id": zod.number(),
   "userId": zod.number(),
   "type": zod.string(),
-  "feePaidCents": zod.number(),
+  "feePaidCents": zod.number().int(),
   "status": zod.string(),
   "createdAt": zod.coerce.date()
 })
@@ -141,7 +141,7 @@ export const ListPropertyListingsResponseItem = zod.object({
   "category": zod.string(),
   "title": zod.string(),
   "location": zod.string(),
-  "priceCents": zod.number(),
+  "priceCents": zod.number().int(),
   "status": zod.string(),
   "createdAt": zod.coerce.date()
 })
@@ -158,7 +158,7 @@ export const CreatePropertyListingBody = zod.object({
   "category": zod.string(),
   "title": zod.string().min(1),
   "location": zod.string().min(1),
-  "priceCents": zod.number().min(createPropertyListingBodyPriceCentsMin)
+  "priceCents": zod.number().int().min(createPropertyListingBodyPriceCentsMin)
 })
 
 export const CreatePropertyListingResponse = zod.object({
@@ -167,7 +167,7 @@ export const CreatePropertyListingResponse = zod.object({
   "category": zod.string(),
   "title": zod.string(),
   "location": zod.string(),
-  "priceCents": zod.number(),
+  "priceCents": zod.number().int(),
   "status": zod.string(),
   "createdAt": zod.coerce.date()
 })
@@ -186,7 +186,7 @@ export const updatePropertyListingBodyPriceCentsMin = 0;
 export const UpdatePropertyListingBody = zod.object({
   "title": zod.string().min(1).optional(),
   "location": zod.string().min(1).optional(),
-  "priceCents": zod.number().min(updatePropertyListingBodyPriceCentsMin).optional(),
+  "priceCents": zod.number().int().min(updatePropertyListingBodyPriceCentsMin).optional(),
   "status": zod.enum(['active', 'rented', 'inactive']).optional()
 })
 
@@ -196,7 +196,7 @@ export const UpdatePropertyListingResponse = zod.object({
   "category": zod.string(),
   "title": zod.string(),
   "location": zod.string(),
-  "priceCents": zod.number(),
+  "priceCents": zod.number().int(),
   "status": zod.string(),
   "createdAt": zod.coerce.date()
 })
@@ -214,7 +214,7 @@ export const ListLandListingsResponseItem = zod.object({
   "sellerId": zod.number(),
   "title": zod.string(),
   "location": zod.string(),
-  "priceCents": zod.number(),
+  "priceCents": zod.number().int(),
   "sizeAcres": zod.number(),
   "status": zod.string(),
   "createdAt": zod.coerce.date()
@@ -233,7 +233,7 @@ export const createLandListingBodySizeAcresMin = 0;
 export const CreateLandListingBody = zod.object({
   "title": zod.string().min(1),
   "location": zod.string().min(1),
-  "priceCents": zod.number().min(createLandListingBodyPriceCentsMin),
+  "priceCents": zod.number().int().min(createLandListingBodyPriceCentsMin),
   "sizeAcres": zod.number().min(createLandListingBodySizeAcresMin)
 })
 
@@ -242,7 +242,7 @@ export const CreateLandListingResponse = zod.object({
   "sellerId": zod.number(),
   "title": zod.string(),
   "location": zod.string(),
-  "priceCents": zod.number(),
+  "priceCents": zod.number().int(),
   "sizeAcres": zod.number(),
   "status": zod.string(),
   "createdAt": zod.coerce.date()
@@ -264,7 +264,7 @@ export const updateLandListingBodySizeAcresMin = 0;
 export const UpdateLandListingBody = zod.object({
   "title": zod.string().min(1).optional(),
   "location": zod.string().min(1).optional(),
-  "priceCents": zod.number().min(updateLandListingBodyPriceCentsMin).optional(),
+  "priceCents": zod.number().int().min(updateLandListingBodyPriceCentsMin).optional(),
   "sizeAcres": zod.number().min(updateLandListingBodySizeAcresMin).optional(),
   "status": zod.enum(['available', 'under_contract', 'sold']).optional()
 })
@@ -274,7 +274,7 @@ export const UpdateLandListingResponse = zod.object({
   "sellerId": zod.number(),
   "title": zod.string(),
   "location": zod.string(),
-  "priceCents": zod.number(),
+  "priceCents": zod.number().int(),
   "sizeAcres": zod.number(),
   "status": zod.string(),
   "createdAt": zod.coerce.date()
@@ -285,7 +285,7 @@ export const ListLandTransactionsResponseItem = zod.object({
   "id": zod.number(),
   "listingId": zod.number(),
   "buyerId": zod.number(),
-  "amountCents": zod.number(),
+  "amountCents": zod.number().int(),
   "status": zod.string(),
   "createdAt": zod.coerce.date()
 })
@@ -300,7 +300,7 @@ export const CreateLandTransactionResponse = zod.object({
   "id": zod.number(),
   "listingId": zod.number(),
   "buyerId": zod.number(),
-  "amountCents": zod.number(),
+  "amountCents": zod.number().int(),
   "status": zod.string(),
   "createdAt": zod.coerce.date()
 })
@@ -341,7 +341,7 @@ export const ListConstructionProjectsResponseItem = zod.object({
   "contractorId": zod.number(),
   "title": zod.string(),
   "location": zod.string(),
-  "budgetCents": zod.number(),
+  "budgetCents": zod.number().int(),
   "status": zod.string(),
   "createdAt": zod.coerce.date()
 })
@@ -358,7 +358,7 @@ export const CreateConstructionProjectBody = zod.object({
   "contractorId": zod.number(),
   "title": zod.string().min(1),
   "location": zod.string().min(1),
-  "budgetCents": zod.number().min(createConstructionProjectBodyBudgetCentsMin)
+  "budgetCents": zod.number().int().min(createConstructionProjectBodyBudgetCentsMin)
 })
 
 export const CreateConstructionProjectResponse = zod.object({
@@ -366,7 +366,7 @@ export const CreateConstructionProjectResponse = zod.object({
   "contractorId": zod.number(),
   "title": zod.string(),
   "location": zod.string(),
-  "budgetCents": zod.number(),
+  "budgetCents": zod.number().int(),
   "status": zod.string(),
   "createdAt": zod.coerce.date()
 })
@@ -382,7 +382,7 @@ export const updateConstructionProjectBodyBudgetCentsMin = 0;
 
 export const UpdateConstructionProjectBody = zod.object({
   "status": zod.enum(['planning', 'in_progress', 'completed', 'on_hold']).optional(),
-  "budgetCents": zod.number().min(updateConstructionProjectBodyBudgetCentsMin).optional()
+  "budgetCents": zod.number().int().min(updateConstructionProjectBodyBudgetCentsMin).optional()
 })
 
 export const UpdateConstructionProjectResponse = zod.object({
@@ -390,7 +390,7 @@ export const UpdateConstructionProjectResponse = zod.object({
   "contractorId": zod.number(),
   "title": zod.string(),
   "location": zod.string(),
-  "budgetCents": zod.number(),
+  "budgetCents": zod.number().int(),
   "status": zod.string(),
   "createdAt": zod.coerce.date()
 })
@@ -448,7 +448,7 @@ export const ListRidesResponseItem = zod.object({
   "driverId": zod.number().nullable(),
   "pickup": zod.string(),
   "dropoff": zod.string(),
-  "fareCents": zod.number(),
+  "fareCents": zod.number().int(),
   "status": zod.string(),
   "createdAt": zod.coerce.date()
 })
@@ -464,7 +464,7 @@ export const createRideBodyFareCentsMin = 0;
 export const CreateRideBody = zod.object({
   "pickup": zod.string().min(1),
   "dropoff": zod.string().min(1),
-  "fareCents": zod.number().min(createRideBodyFareCentsMin)
+  "fareCents": zod.number().int().min(createRideBodyFareCentsMin)
 })
 
 export const CreateRideResponse = zod.object({
@@ -473,7 +473,7 @@ export const CreateRideResponse = zod.object({
   "driverId": zod.number().nullable(),
   "pickup": zod.string(),
   "dropoff": zod.string(),
-  "fareCents": zod.number(),
+  "fareCents": zod.number().int(),
   "status": zod.string(),
   "createdAt": zod.coerce.date()
 })
@@ -494,7 +494,7 @@ export const UpdateRideResponse = zod.object({
   "driverId": zod.number().nullable(),
   "pickup": zod.string(),
   "dropoff": zod.string(),
-  "fareCents": zod.number(),
+  "fareCents": zod.number().int(),
   "status": zod.string(),
   "createdAt": zod.coerce.date()
 })
@@ -505,7 +505,7 @@ export const ListMarketplaceListingsResponseItem = zod.object({
   "sellerId": zod.number(),
   "title": zod.string(),
   "description": zod.string(),
-  "priceCents": zod.number(),
+  "priceCents": zod.number().int(),
   "category": zod.string(),
   "status": zod.string(),
   "createdAt": zod.coerce.date()
@@ -522,7 +522,7 @@ export const createMarketplaceListingBodyPriceCentsMin = 0;
 export const CreateMarketplaceListingBody = zod.object({
   "title": zod.string().min(1),
   "description": zod.string(),
-  "priceCents": zod.number().min(createMarketplaceListingBodyPriceCentsMin),
+  "priceCents": zod.number().int().min(createMarketplaceListingBodyPriceCentsMin),
   "category": zod.string().min(1)
 })
 
@@ -531,7 +531,7 @@ export const CreateMarketplaceListingResponse = zod.object({
   "sellerId": zod.number(),
   "title": zod.string(),
   "description": zod.string(),
-  "priceCents": zod.number(),
+  "priceCents": zod.number().int(),
   "category": zod.string(),
   "status": zod.string(),
   "createdAt": zod.coerce.date()
@@ -550,7 +550,7 @@ export const updateMarketplaceListingBodyPriceCentsMin = 0;
 export const UpdateMarketplaceListingBody = zod.object({
   "title": zod.string().min(1).optional(),
   "description": zod.string().optional(),
-  "priceCents": zod.number().min(updateMarketplaceListingBodyPriceCentsMin).optional(),
+  "priceCents": zod.number().int().min(updateMarketplaceListingBodyPriceCentsMin).optional(),
   "status": zod.enum(['active', 'sold', 'inactive']).optional()
 })
 
@@ -559,7 +559,7 @@ export const UpdateMarketplaceListingResponse = zod.object({
   "sellerId": zod.number(),
   "title": zod.string(),
   "description": zod.string(),
-  "priceCents": zod.number(),
+  "priceCents": zod.number().int(),
   "category": zod.string(),
   "status": zod.string(),
   "createdAt": zod.coerce.date()
@@ -582,7 +582,7 @@ export const ListDigitalProductsResponseItem = zod.object({
   "sellerId": zod.number().nullish(),
   "title": zod.string(),
   "description": zod.string(),
-  "priceCents": zod.number(),
+  "priceCents": zod.number().int(),
   "category": zod.string(),
   "status": zod.string(),
   "createdAt": zod.coerce.date()
@@ -607,7 +607,7 @@ export const CreateDigitalProductResponse = zod.object({
   "sellerId": zod.number().nullish(),
   "title": zod.string(),
   "description": zod.string(),
-  "priceCents": zod.number(),
+  "priceCents": zod.number().int(),
   "category": zod.string(),
   "status": zod.string(),
   "createdAt": zod.coerce.date()
@@ -637,7 +637,7 @@ export const UpdateDigitalProductResponse = zod.object({
   "sellerId": zod.number().nullish(),
   "title": zod.string(),
   "description": zod.string(),
-  "priceCents": zod.number(),
+  "priceCents": zod.number().int(),
   "category": zod.string(),
   "status": zod.string(),
   "createdAt": zod.coerce.date()
@@ -657,7 +657,7 @@ export const PurchaseDigitalProductParams = zod.object({
 
 export const PurchaseDigitalProductResponse = zod.object({
   "productId": zod.number(),
-  "amountCents": zod.number(),
+  "amountCents": zod.number().int(),
   "message": zod.string()
 })
 
@@ -868,7 +868,7 @@ export const ListTreasuryAccountsResponseItem = zod.object({
   "id": zod.number(),
   "name": zod.string(),
   "currency": zod.string(),
-  "balanceCents": zod.number(),
+  "balanceCents": zod.number().int(),
   "type": zod.string(),
   "updatedAt": zod.coerce.date()
 })
@@ -879,7 +879,7 @@ export const ListTreasuryTransactionsResponseItem = zod.object({
   "id": zod.number(),
   "accountId": zod.number(),
   "type": zod.string(),
-  "amountCents": zod.number(),
+  "amountCents": zod.number().int(),
   "description": zod.string(),
   "createdAt": zod.coerce.date()
 })
@@ -888,8 +888,8 @@ export const ListTreasuryTransactionsResponse = zod.array(ListTreasuryTransactio
 
 export const ListLiquiditySnapshotsResponseItem = zod.object({
   "id": zod.number(),
-  "totalUsdCents": zod.number(),
-  "totalGmdCents": zod.number(),
+  "totalUsdCents": zod.number().int(),
+  "totalGmdCents": zod.number().int(),
   "reserveRatio": zod.number(),
   "createdAt": zod.coerce.date()
 })
@@ -907,8 +907,8 @@ export const ListCurrencyRatesResponse = zod.array(ListCurrencyRatesResponseItem
 
 
 export const GetTreasurySummaryResponse = zod.object({
-  "totalUsdReservesCents": zod.number(),
-  "totalGmdOperationalCents": zod.number(),
+  "totalUsdReservesCents": zod.number().int(),
+  "totalGmdOperationalCents": zod.number().int(),
   "reserveRatio": zod.number(),
   "latestRate": zod.object({
   "id": zod.number(),
@@ -918,12 +918,12 @@ export const GetTreasurySummaryResponse = zod.object({
   "updatedAt": zod.coerce.date()
 }),
   "openRiskEvents": zod.number(),
-  "pendingSettlementsCents": zod.number(),
+  "pendingSettlementsCents": zod.number().int(),
   "recentTransactions": zod.array(zod.object({
   "id": zod.number(),
   "accountId": zod.number(),
   "type": zod.string(),
-  "amountCents": zod.number(),
+  "amountCents": zod.number().int(),
   "description": zod.string(),
   "createdAt": zod.coerce.date()
 }))
@@ -962,7 +962,7 @@ export const UpdateRiskEventResponse = zod.object({
 export const ListSettlementObligationsResponseItem = zod.object({
   "id": zod.number(),
   "description": zod.string(),
-  "amountCents": zod.number(),
+  "amountCents": zod.number().int(),
   "dueDate": zod.string(),
   "status": zod.string(),
   "createdAt": zod.coerce.date()
@@ -981,7 +981,7 @@ export const UpdateSettlementObligationBody = zod.object({
 export const UpdateSettlementObligationResponse = zod.object({
   "id": zod.number(),
   "description": zod.string(),
-  "amountCents": zod.number(),
+  "amountCents": zod.number().int(),
   "dueDate": zod.string(),
   "status": zod.string(),
   "createdAt": zod.coerce.date()
@@ -1107,8 +1107,8 @@ export const GetAdminDashboardResponse = zod.object({
   "openTickets": zod.number(),
   "openRiskEvents": zod.number(),
   "treasurySummary": zod.object({
-  "totalUsdReservesCents": zod.number(),
-  "totalGmdOperationalCents": zod.number(),
+  "totalUsdReservesCents": zod.number().int(),
+  "totalGmdOperationalCents": zod.number().int(),
   "reserveRatio": zod.number(),
   "latestRate": zod.object({
   "id": zod.number(),
@@ -1118,12 +1118,12 @@ export const GetAdminDashboardResponse = zod.object({
   "updatedAt": zod.coerce.date()
 }),
   "openRiskEvents": zod.number(),
-  "pendingSettlementsCents": zod.number(),
+  "pendingSettlementsCents": zod.number().int(),
   "recentTransactions": zod.array(zod.object({
   "id": zod.number(),
   "accountId": zod.number(),
   "type": zod.string(),
-  "amountCents": zod.number(),
+  "amountCents": zod.number().int(),
   "description": zod.string(),
   "createdAt": zod.coerce.date()
 }))
@@ -1136,7 +1136,7 @@ export const GetMemberDashboardResponse = zod.object({
   "id": zod.number(),
   "userId": zod.number(),
   "type": zod.string(),
-  "feePaidCents": zod.number(),
+  "feePaidCents": zod.number().int(),
   "status": zod.string(),
   "createdAt": zod.coerce.date()
 }),
