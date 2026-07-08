@@ -403,6 +403,24 @@ describe("digital-products sellerId immutability on PATCH", () => {
     expect(res.body.sellerId).toBe(seller.id);
     expect(res.body.sellerId).not.toBe(other.id);
   });
+
+  it("admin PATCH with a different sellerId does not reassign ownership", async () => {
+    const seller = await createMemberUser("dp-sellerid-admin-seller");
+    const other = await createMemberUser("dp-sellerid-admin-other");
+    const admin = await createAdminUser("dp-sellerid-admin");
+    const product = await createDigitalProduct(seller.agent);
+
+    // Admin attempts to reassign ownership to a different user via PATCH
+    const res = await admin.agent
+      .patch(`/api/digital-products/${product.id}`)
+      .send({ title: "Admin ownership attempt", sellerId: other.id });
+
+    // The request must succeed (sellerId is simply stripped, not rejected)
+    expect(res.status).toBe(200);
+    // The sellerId in the response must still be the original seller, not other.id
+    expect(res.body.sellerId).toBe(seller.id);
+    expect(res.body.sellerId).not.toBe(other.id);
+  });
 });
 
 describe("digital-products authorization", () => {
