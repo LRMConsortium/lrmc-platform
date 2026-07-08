@@ -126,6 +126,66 @@ describe("digital-products purchase visibility boundary", () => {
   });
 });
 
+describe("digital-products listing — archive status filtering", () => {
+  it("default listing excludes archived products", async () => {
+    const seller = await createMemberUser("dp-list-arch-excl-seller");
+    const product = await createProduct(seller.agent);
+
+    // Archive the product
+    const delRes = await seller.agent.delete(`/api/digital-products/${product.id}`);
+    expect(delRes.status).toBe(204);
+
+    const res = await seller.agent.get("/api/digital-products");
+    expect(res.status).toBe(200);
+    const ids = (res.body as Array<{ id: number }>).map((p) => p.id);
+    expect(ids).not.toContain(product.id);
+  });
+
+  it("?status=archived returns only archived products", async () => {
+    const seller = await createMemberUser("dp-list-arch-filter-seller");
+    const active = await createProduct(seller.agent);
+    const toArchive = await createProduct(seller.agent);
+
+    // Archive one product
+    const delRes = await seller.agent.delete(`/api/digital-products/${toArchive.id}`);
+    expect(delRes.status).toBe(204);
+
+    const res = await seller.agent.get("/api/digital-products?status=archived");
+    expect(res.status).toBe(200);
+    const ids = (res.body as Array<{ id: number; status: string }>).map((p) => p.id);
+
+    // Archived product appears
+    expect(ids).toContain(toArchive.id);
+    // Active product does not appear
+    expect(ids).not.toContain(active.id);
+    // Every returned item must be archived
+    for (const item of res.body as Array<{ status: string }>) {
+      expect(item.status).toBe("archived");
+    }
+  });
+
+  it("product is excluded from the active listing immediately after being archived", async () => {
+    const seller = await createMemberUser("dp-list-immediate-arch-seller");
+    const product = await createProduct(seller.agent);
+
+    // Confirm it appears in the active listing before archiving
+    const beforeRes = await seller.agent.get("/api/digital-products");
+    expect(beforeRes.status).toBe(200);
+    const idsBefore = (beforeRes.body as Array<{ id: number }>).map((p) => p.id);
+    expect(idsBefore).toContain(product.id);
+
+    // Archive it
+    const delRes = await seller.agent.delete(`/api/digital-products/${product.id}`);
+    expect(delRes.status).toBe(204);
+
+    // Confirm it no longer appears in the active listing
+    const afterRes = await seller.agent.get("/api/digital-products");
+    expect(afterRes.status).toBe(200);
+    const idsAfter = (afterRes.body as Array<{ id: number }>).map((p) => p.id);
+    expect(idsAfter).not.toContain(product.id);
+  });
+});
+
 describe("digital-products archive flow", () => {
   it("DELETE by owner sets status to 'archived' — product still exists in DB", async () => {
     const seller = await createMemberUser("dp-lc-soft-delete");
