@@ -1,0 +1,302 @@
+You are Replit Agent 4.  
+Build a full-stack, production-ready, multi-sector digital institution called:
+Legacy Rental Management Consortium (LRMC)
+LRMC is the parent institution.  
+Ususu is a mobility product under LRMC.  
+Ususu is branded as “Ususu by LRMC.”  
+All Ususu revenue flows into LRMC treasury.
+----------------------------------------
+PRIMARY DOMAINS
+----------------------------------------
+Public African Identity: lrmconsortium.africa  
+Corporate Domain (Email + Intranet): africalrmc.com  
+Mobility Domain (Ususu): africaususu.com  
+----------------------------------------
+BACKEND LANGUAGE
+----------------------------------------
+Node.js + Express
+----------------------------------------
+PLATFORM
+----------------------------------------
+Replit (frontend + backend + database + auth + dashboards)
+----------------------------------------
+FINANCIAL BACKBONE
+----------------------------------------
+Legacy Surplus Partners LLC (USD treasury)  
+Remitly Business (USD ↔ GMD bridge)  
+Wave Mobile Money (GMD operations)  
+Gambian phone number (mobile money identity)
+----------------------------------------
+LRMC MODULES TO BUILD (FULL BUILD)
+----------------------------------------
+Membership System  
+Ususu Rideshare (Ususu by LRMC)  
+Land Selling & Brokering  
+Construction Management  
+Marketplace  
+E-commerce (Digital Documents)  
+Youth Employment Initiative  
+Prospecting System  
+Admin Dashboard  
+Member Dashboards  
+Internal Intranet  
+Internal Messaging  
+Internal Ticketing  
+Treasury System  
+Risk Management System  
+Settlement Engine  
+Multi-domain Routing  
+Website (Next.js)  
+PWA Mobile App  
+========================================
+1. CORE MEMBERSHIP SYSTEM
+========================================
+Membership Fee: 1,000 Dalasi  
+Membership Types:
+- Property Owner  
+- Vehicle Owner  
+- Airbnb Host  
+- Resort Owner  
+- Land Seller  
+- Construction Contractor  
+- Advertiser  
+- Ususu Driver (free membership)  
+- Renter  
+========================================
+2. FINANCIAL INFRASTRUCTURE
+========================================
+USD Treasury (Legacy Surplus Partners)  
+African Currency Operations (Wave, Cash Agents)  
+Remitly Business Bridge  
+LRMC Gambia Bank (Phase 2)  
+LRMC US Bank (Phase 2)
+Treasury Logic:
+- USD reserves  
+- African currency operational pools  
+- Reserve ratios  
+- Liquidity snapshots  
+- Currency volatility  
+- Settlement obligations  
+- Payroll obligations  
+- Treasury alerts  
+Ususu Revenue Flow:
+- All Ususu ride payments flow into LRMC treasury  
+- LRMC settles driver payouts  
+- LRMC retains revenue margin  
+- LRMC handles risk, compliance, and settlement  
+========================================
+3. DOMAIN ARCHITECTURE
+========================================
+lrmconsortium.africa → Public LRMC website + PWA  
+africalrmc.com → Corporate intranet + admin + internal systems  
+africaususu.com → Ususu mobility app + landing pages  
+========================================
+4. EXTERNAL EMAIL ARCHITECTURE
+========================================
+Corporate Email (africalrmc.com)
+----------------------------------------
+Executive & Administrative
+- admin@africalrmc.com
+- office@africalrmc.com
+- executive@africalrmc.com
+- director@africalrmc.com
+Finance & Treasury
+- finance@africalrmc.com
+- treasury@africalrmc.com
+- payments@africalrmc.com
+- accounts@africalrmc.com
+- billing@africalrmc.com
+Membership & Verification
+- membership@africalrmc.com
+- verification@africalrmc.com
+- compliance@africalrmc.com
+Land & Construction
+- land@africalrmc.com
+- construction@africalrmc.com
+- projects@africalrmc.com
+- contractors@africalrmc.com
+Marketplace & E‑commerce
+- marketplace@africalrmc.com
+- store@africalrmc.com
+- sales@africalrmc.com
+Youth Employment
+- youth@africalrmc.com
+- jobs@africalrmc.com
+- training@africalrmc.com
+Internal Operations
+- support@africalrmc.com
+- helpdesk@africalrmc.com
+- intranet@africalrmc.com
+- notifications@africalrmc.com
+
+Prospecting & Outreach
+- prospecting@africalrmc.com
+- outreach@africalrmc.com
+- partners@africalrmc.com
+========================================
+USUSU EMAIL ARCHITECTURE (africaususu.com)
+========================================
+General Ususu Operations
+- ususu@africaususu.com
+- info@africaususu.com
+Drivers
+- drivers@africaususu.com
+- driver.support@africaususu.com
+- driver.onboarding@africaususu.com
+Dispatch & Operations
+- dispatch@africaususu.com
+- operations@africaususu.com
+Settlements & Payments
+- settlements@africaususu.com
+- payouts@africaususu.com
+Compliance
+- verification@africaususu.com
+- safety@africaususu.com
+========================================
+5. INTERNAL EMAIL & INTRANET SYSTEM
+========================================
+Internal mailboxes (Replit-generated):
+admin.internal  
+finance.internal  
+treasury.internal  
+payments.internal  
+membership.internal  
+verification.internal  
+land.internal  
+construction.internal  
+marketplace.internal  
+store.internal  
+youth.internal  
+prospecting.internal  
+dispatch.internal  
+drivers.internal  
+support.internal  
+Features:
+- Internal messaging  
+- Internal ticketing  
+- Internal notifications  
+- Workflow messaging  
+- Dispatch communication  
+- Treasury alerts  
+- Risk alerts  
+
+========================================
+6. WEBSITE + APP ARCHITECTURE (Unified)
+========================================
+Frontend: Next.js  
+App: PWA (installable on Android & iPhone)  
+Backend: Node.js + Express  
+Database: PostgreSQL  
+Deployment: Replit Deployments  
+Website:
+- Public pages  
+- Membership  
+- Land  
+- Construction  
+- Marketplace  
+- E-commerce  
+- Youth employment  
+- Ususu public pages  
+- Member dashboards  
+- Admin dashboards  
+App (PWA):
+- Ususu driver app  
+- Ususu rider app  
+- Field agent app  
+- Internal staff app  
+- Dispatch app  
+- Verification app  
+========================================
+7. DATABASE SCHEMA (PostgreSQL)
+========================================
+Tables:
+users  
+memberships  
+properties  
+vehicles  
+airbnbs  
+resorts  
+land_listings  
+land_transactions  
+construction_contractors  
+construction_projects  
+rides  
+drivers  
+payments  
+ads  
+marketplace_listings  
+digital_products  
+prospect_leads  
+youth_employment_records  
+internal_messages  
+internal_tickets  
+treasury_accounts  
+treasury_transactions  
+treasury_reserves  
+liquidity_snapshots  
+currency_rates  
+risk_events  
+settlement_obligations  
+treasury_audit_logs  
+========================================
+8. API SPECIFICATION (Node.js + Express)
+========================================
+Auth API  
+User API  
+Membership API  
+Treasury API  
+Risk API  
+Settlement API  
+Land API  
+Construction API  
+Marketplace API  
+E-commerce API  
+Youth API  
+Internal Messaging API  
+========================================
+9. TREASURY AUTOMATION
+========================================
+Cron Jobs:
+- Liquidity monitoring  
+- Reserve ratio updates  
+- Settlement processing  
+- Currency rate updates  
+- Risk detection  
+========================================
+10. ADMIN DASHBOARD
+========================================
+Modules:
+- Membership  
+- Land  
+- Construction  
+- Marketplace  
+- E-commerce  
+- Youth  
+- Ususu  
+- Treasury  
+- Risk  
+- Settlement  
+- Intranet  
+- Internal messaging  
+- Internal ticketing  
+========================================
+11. REPLIT PROJECT STRUCTURE
+========================================
+backend/  
+frontend/  
+scripts/  
+docs/  
+database/  
+========================================
+12. BUILD SCOPE
+========================================
+Full Build (Option A)
+========================================
+13. YOUR TASK (Replit Agent 4)
+========================================
+Build the entire LRMC ecosystem exactly as specified above.  
+Implement all modules, dashboards, APIs, database tables, automation, routing, and PWA functionality.  
+Deploy the full institution on Replit.  
+Connect all domains.  
+Integrate all email inboxes.  
+Produce a fully functional, production-ready African institution.
