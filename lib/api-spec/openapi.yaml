@@ -1415,6 +1415,7 @@ components:
         placement: { type: string }
         status: { type: string }
         parentAdId: { type: integer, nullable: true }
+        rejectionNote: { type: string, nullable: true }
         createdAt: { type: string, format: date-time }
     AdRejectionChainItem:
       type: object
@@ -1435,6 +1436,7 @@ components:
         placement: { type: string }
         status: { type: string }
         parentAdId: { type: integer, nullable: true }
+        rejectionNote: { type: string, nullable: true }
         createdAt: { type: string, format: date-time }
         rejectionChain:
           type: array
@@ -1456,12 +1458,13 @@ components:
         status: { type: string }
     AdContentUpdate:
       type: object
-      description: Fields a seller can edit on their own pending ad
+      description: Fields a seller can edit on their own pending ad. rejectionNote is admin-only on write.
       properties:
         title: { type: string, minLength: 1 }
         content: { type: string, minLength: 1 }
         placement: { type: string, minLength: 1 }
         status: { type: string }
+        rejectionNote: { type: string, nullable: true }
 
     # ---------- YOUTH ----------
     YouthEmploymentRecord:

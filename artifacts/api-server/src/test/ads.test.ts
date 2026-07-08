@@ -859,4 +859,88 @@ describe("ads authorization", () => {
     expect(res.body.advertiserId).toBe(realSeller.id);
     expect(res.body.advertiserId).not.toBe(victim.id);
   });
+
+  describe("rejectionNote", () => {
+    it("admin can set rejectionNote when rejecting an ad", async () => {
+      const seller = await createMemberUser("rn-admin-set-seller");
+      const admin = await createAdminUser("rn-admin-set-admin");
+      const ad = await createAd(seller.agent);
+
+      const res = await admin.agent
+        .patch(`/api/ads/${ad.id}`)
+        .send({ status: "rejected", rejectionNote: "Content violates policy." });
+
+      expect(res.status).toBe(200);
+      expect(res.body.status).toBe("rejected");
+      expect(res.body.rejectionNote).toBe("Content violates policy.");
+    });
+
+    it("owner can see rejectionNote on their own rejected ad via GET /ads/:id", async () => {
+      const seller = await createMemberUser("rn-owner-get-seller");
+      const admin = await createAdminUser("rn-owner-get-admin");
+      const ad = await createAd(seller.agent);
+
+      await admin.agent
+        .patch(`/api/ads/${ad.id}`)
+        .send({ status: "rejected", rejectionNote: "Fix the headline." });
+
+      const res = await seller.agent.get(`/api/ads/${ad.id}`);
+      expect(res.status).toBe(200);
+      expect(res.body.rejectionNote).toBe("Fix the headline.");
+    });
+
+    it("unauthenticated user cannot see rejectionNote on an active ad", async () => {
+      const seller = await createMemberUser("rn-anon-active-seller");
+      const admin = await createAdminUser("rn-anon-active-admin");
+      const ad = await createAd(seller.agent);
+      // Approve — rejectionNote was never set so it must be null/absent
+      await admin.agent.patch(`/api/ads/${ad.id}`).send({ status: "active" });
+
+      const { anonymousAgent } = await import("./helpers");
+      const res = await anonymousAgent().get(`/api/ads/${ad.id}`);
+      expect(res.status).toBe(200);
+      // rejectionNote must be null or absent for a non-rejected ad
+      expect(res.body.rejectionNote ?? null).toBeNull();
+    });
+
+    it("non-admin cannot write rejectionNote directly", async () => {
+      const seller = await createMemberUser("rn-nonadmin-write-seller");
+      const admin = await createAdminUser("rn-nonAdmin-write-admin");
+      const ad = await createAd(seller.agent);
+
+      // Owner attempts to inject a rejectionNote — server must silently strip it
+      const res = await seller.agent
+        .patch(`/api/ads/${ad.id}`)
+        .send({ title: "Legit edit", rejectionNote: "Self-approved." });
+
+      expect(res.status).toBe(200);
+      // rejectionNote must remain null — owner cannot write it
+      expect(res.body.rejectionNote ?? null).toBeNull();
+    });
+
+    it("rejectionNote is null on a freshly created ad", async () => {
+      const seller = await createMemberUser("rn-null-on-create-seller");
+      const ad = await createAd(seller.agent);
+      expect(ad.rejectionNote ?? null).toBeNull();
+    });
+
+    it("admin can clear rejectionNote by passing null", async () => {
+      const seller = await createMemberUser("rn-clear-seller");
+      const admin = await createAdminUser("rn-clear-admin");
+      const ad = await createAd(seller.agent);
+
+      // First reject with a note
+      await admin.agent
+        .patch(`/api/ads/${ad.id}`)
+        .send({ status: "rejected", rejectionNote: "Fix this." });
+
+      // Admin clears the note (e.g. re-opens for review)
+      const res = await admin.agent
+        .patch(`/api/ads/${ad.id}`)
+        .send({ status: "pending", rejectionNote: null });
+
+      expect(res.status).toBe(200);
+      expect(res.body.rejectionNote ?? null).toBeNull();
+    });
+  });
 });

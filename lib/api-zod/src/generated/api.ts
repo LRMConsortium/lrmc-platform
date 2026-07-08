@@ -671,6 +671,7 @@ export const ListAdsResponseItem = zod.object({
   "placement": zod.string(),
   "status": zod.string(),
   "parentAdId": zod.number().nullish(),
+  "rejectionNote": zod.string().nullish(),
   "createdAt": zod.coerce.date()
 })
 export const ListAdsResponse = zod.array(ListAdsResponseItem)
@@ -696,6 +697,7 @@ export const CreateAdResponse = zod.object({
   "placement": zod.string(),
   "status": zod.string(),
   "parentAdId": zod.number().nullish(),
+  "rejectionNote": zod.string().nullish(),
   "createdAt": zod.coerce.date()
 })
 
@@ -712,6 +714,7 @@ export const GetAdResponse = zod.object({
   "placement": zod.string(),
   "status": zod.string(),
   "parentAdId": zod.number().nullish(),
+  "rejectionNote": zod.string().nullish(),
   "createdAt": zod.coerce.date(),
   "rejectionChain": zod.array(zod.object({
   "id": zod.number(),
@@ -735,8 +738,9 @@ export const UpdateAdBody = zod.object({
   "title": zod.string().min(1).optional(),
   "content": zod.string().min(1).optional(),
   "placement": zod.string().min(1).optional(),
-  "status": zod.string().optional()
-}).describe('Fields a seller can edit on their own pending ad')
+  "status": zod.string().optional(),
+  "rejectionNote": zod.string().nullish()
+}).describe('Fields a seller can edit on their own pending ad. rejectionNote is admin-only on write.')
 
 export const UpdateAdResponse = zod.object({
   "id": zod.number(),
@@ -746,6 +750,7 @@ export const UpdateAdResponse = zod.object({
   "placement": zod.string(),
   "status": zod.string(),
   "parentAdId": zod.number().nullish(),
+  "rejectionNote": zod.string().nullish(),
   "createdAt": zod.coerce.date()
 })
 

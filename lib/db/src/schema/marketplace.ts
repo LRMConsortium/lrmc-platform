@@ -55,6 +55,7 @@ export const adsTable = pgTable("ads", {
   placement: text("placement").notNull(), // homepage | ususu | marketplace
   status: text("status").notNull().default("pending"), // pending | active | rejected
   parentAdId: integer("parent_ad_id"),
+  rejectionNote: text("rejection_note"), // nullable; set by admin when rejecting
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

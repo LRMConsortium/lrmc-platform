@@ -14,5 +14,6 @@ export interface Ad {
   placement: string;
   status: string;
   parentAdId?: number | null;
+  rejectionNote?: string | null;
   createdAt: Date;
 }

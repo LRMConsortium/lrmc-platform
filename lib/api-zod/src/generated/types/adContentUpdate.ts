@@ -7,7 +7,7 @@
  */
 
 /**
- * Fields a seller can edit on their own pending ad
+ * Fields a seller can edit on their own pending ad. rejectionNote is admin-only on write.
  */
 export interface AdContentUpdate {
   /** @minLength 1 */
@@ -17,4 +17,5 @@ export interface AdContentUpdate {
   /** @minLength 1 */
   placement?: string;
   status?: string;
+  rejectionNote?: string | null;
 }

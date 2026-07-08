@@ -15,6 +15,7 @@ export interface AdDetail {
   placement: string;
   status: string;
   parentAdId?: number | null;
+  rejectionNote?: string | null;
   createdAt: Date;
   /** Full ancestor rejection chain, newest first. Admins only. */
   rejectionChain?: AdRejectionChainItem[];
