@@ -599,7 +599,7 @@ export const createDigitalProductBodyPriceCentsMin = 0;
 export const CreateDigitalProductBody = zod.object({
   "title": zod.string().min(1),
   "description": zod.string(),
-  "priceCents": zod.number().min(createDigitalProductBodyPriceCentsMin),
+  "priceCents": zod.number().int().min(createDigitalProductBodyPriceCentsMin),
   "category": zod.string().min(1)
 })
 
@@ -628,7 +628,7 @@ export const updateDigitalProductBodyPriceCentsMin = 0;
 export const UpdateDigitalProductBody = zod.object({
   "title": zod.string().min(1).optional(),
   "description": zod.string().optional(),
-  "priceCents": zod.number().min(updateDigitalProductBodyPriceCentsMin).optional(),
+  "priceCents": zod.number().int().min(updateDigitalProductBodyPriceCentsMin).optional(),
   "category": zod.string().min(1).optional(),
   "status": zod.enum(['active', 'archived']).optional()
 })

@@ -131,6 +131,17 @@ describe("digital-products priceCents validation on PATCH", () => {
     expect(res.status).toBe(400);
   });
 
+  it("rejects PATCH with priceCents: 9.99 (non-integer) with 400", async () => {
+    const seller = await createMemberUser("dp-price-fractional-patch-seller");
+    const product = await createDigitalProduct(seller.agent);
+
+    const res = await seller.agent
+      .patch(`/api/digital-products/${product.id}`)
+      .send({ priceCents: 9.99 });
+
+    expect(res.status).toBe(400);
+  });
+
   it("accepts PATCH with priceCents: 0 (free product is valid per schema)", async () => {
     const seller = await createMemberUser("dp-price-zero-seller");
     const product = await createDigitalProduct(seller.agent);
@@ -141,6 +152,21 @@ describe("digital-products priceCents validation on PATCH", () => {
 
     expect(res.status).toBe(200);
     expect(res.body.priceCents).toBe(0);
+  });
+});
+
+describe("digital-products priceCents validation on POST", () => {
+  it("rejects POST with priceCents: 9.99 (non-integer) with 400", async () => {
+    const seller = await createMemberUser("dp-price-fractional-create-seller");
+
+    const res = await seller.agent.post("/api/digital-products").send({
+      title: "Fractional Price Product",
+      description: "Should be rejected.",
+      priceCents: 9.99,
+      category: "ebook",
+    });
+
+    expect(res.status).toBe(400);
   });
 });
 
