@@ -337,6 +337,82 @@ describe("ads authorization", () => {
     });
   });
 
+  describe("resubmission limit", () => {
+    it("allows a first resubmission after one rejection", async () => {
+      const seller = await createMemberUser("ad-limit-first-seller");
+      const admin = await createAdminUser("ad-limit-first-admin");
+      const original = await createAd(seller.agent);
+
+      await admin.agent.patch(`/api/ads/${original.id}`).send({ status: "rejected" });
+
+      const res = await seller.agent.post("/api/ads").send({
+        title: "First resubmit",
+        content: "One rejection so far — should be allowed.",
+        placement: "marketplace",
+        replacesAdId: original.id,
+      });
+
+      expect(res.status).toBe(201);
+    });
+
+    it("blocks a second resubmission once the chain has two rejected ads", async () => {
+      const seller = await createMemberUser("ad-limit-block-seller");
+      const admin = await createAdminUser("ad-limit-block-admin");
+
+      // Create and reject original ad
+      const original = await createAd(seller.agent);
+      await admin.agent.patch(`/api/ads/${original.id}`).send({ status: "rejected" });
+
+      // First resubmission — allowed (1 rejection in chain)
+      const first = await seller.agent.post("/api/ads").send({
+        title: "First resubmit",
+        content: "After first rejection.",
+        placement: "marketplace",
+        replacesAdId: original.id,
+      });
+      expect(first.status).toBe(201);
+      const firstId = (first.body as { id: number }).id;
+
+      // Admin rejects the resubmission
+      await admin.agent.patch(`/api/ads/${firstId}`).send({ status: "rejected" });
+
+      // Second resubmission — should be blocked (2 rejections in chain)
+      const second = await seller.agent.post("/api/ads").send({
+        title: "Second resubmit",
+        content: "After second rejection — limit reached.",
+        placement: "marketplace",
+        replacesAdId: firstId,
+      });
+
+      expect(second.status).toBe(403);
+      expect(second.body.error).toMatch(/resubmission limit/i);
+    });
+
+    it("does not count non-rejected ancestors toward the limit", async () => {
+      // A chain where the grandparent was approved (active) should not block
+      // resubmission — only rejected entries count.
+      const seller = await createMemberUser("ad-limit-active-ancestor-seller");
+      const admin = await createAdminUser("ad-limit-active-ancestor-admin");
+
+      // Create original, approve it
+      const original = await createAd(seller.agent);
+      await admin.agent.patch(`/api/ads/${original.id}`).send({ status: "active" });
+
+      // Admin reverts to pending so it can be re-moderated, then rejects
+      await admin.agent.patch(`/api/ads/${original.id}`).send({ status: "rejected" });
+
+      // Only one rejected ad in the chain — resubmission must be allowed
+      const res = await seller.agent.post("/api/ads").send({
+        title: "Resubmit after approved-then-rejected",
+        content: "Ancestor was active, not a second rejection.",
+        placement: "marketplace",
+        replacesAdId: original.id,
+      });
+
+      expect(res.status).toBe(201);
+    });
+  });
+
   it("ignores advertiserId in the request body and always uses the session user", async () => {
     const realSeller = await createMemberUser("ad-inject-real");
     const victim = await createMemberUser("ad-inject-victim");

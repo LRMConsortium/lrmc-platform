@@ -352,6 +352,32 @@ router.post("/ads", requireAuth, async (req, res): Promise<void> => {
       return;
     }
 
+    // Count how many rejected ads exist in this chain (including the immediate
+    // parent). The limit is configurable via AD_RESUBMISSION_LIMIT (default 2).
+    const resubmissionLimit = parseInt(
+      process.env.AD_RESUBMISSION_LIMIT ?? "2",
+      10,
+    );
+    let rejectedCount = 1; // parentAd is already confirmed rejected
+    let ancestorId: number | null = parentAd.parentAdId;
+    while (ancestorId !== null) {
+      const [ancestor] = await db
+        .select()
+        .from(adsTable)
+        .where(eq(adsTable.id, ancestorId));
+      if (!ancestor) break;
+      if (ancestor.status === "rejected") rejectedCount++;
+      ancestorId = ancestor.parentAdId;
+    }
+
+    if (rejectedCount >= resubmissionLimit) {
+      res.status(403).json({
+        error:
+          "Resubmission limit reached. Admin approval is required before further submissions.",
+      });
+      return;
+    }
+
     parentAdId = replacesAdId;
   }
 
