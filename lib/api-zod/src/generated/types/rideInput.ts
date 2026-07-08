@@ -11,6 +11,6 @@ export interface RideInput {
   pickup: string;
   /** @minLength 1 */
   dropoff: string;
-  /** @minimum 0 */
+  /** @minimum 1 */
   fareCents: number;
 }

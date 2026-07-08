@@ -81,6 +81,30 @@ describe("property-listings authorization", () => {
   });
 });
 
+describe("property-listings zero-price validation", () => {
+  it("rejects priceCents: 0 on creation with 400", async () => {
+    const owner = await createMemberUser("owner-zero");
+    const res = await owner.agent.post("/api/property-listings").send({
+      category: "property",
+      title: "Zero Price Listing",
+      location: "Fajara",
+      priceCents: 0,
+    });
+    expect(res.status).toBe(400);
+  });
+
+  it("accepts priceCents: 1 on creation", async () => {
+    const owner = await createMemberUser("owner-one-cent");
+    const res = await owner.agent.post("/api/property-listings").send({
+      category: "property",
+      title: "One Cent Listing",
+      location: "Fajara",
+      priceCents: 1,
+    });
+    expect(res.status).toBe(201);
+  });
+});
+
 describe("property-listings status validation", () => {
   it("rejects an invalid status value with 400", async () => {
     const owner = await createMemberUser("owner");

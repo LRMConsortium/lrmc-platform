@@ -19,6 +19,28 @@ async function createRide(agent: Awaited<ReturnType<typeof createMemberUser>>["a
   return res.body.id as number;
 }
 
+describe("rides zero-fare validation", () => {
+  it("rejects fareCents: 0 on creation with 400", async () => {
+    const rider = await createMemberUser("rider-zero");
+    const res = await rider.agent.post("/api/rides").send({
+      pickup: "Test Pickup",
+      dropoff: "Test Dropoff",
+      fareCents: 0,
+    });
+    expect(res.status).toBe(400);
+  });
+
+  it("accepts fareCents: 1 on creation", async () => {
+    const rider = await createMemberUser("rider-one-cent");
+    const res = await rider.agent.post("/api/rides").send({
+      pickup: "Test Pickup",
+      dropoff: "Test Dropoff",
+      fareCents: 1,
+    });
+    expect(res.status).toBe(201);
+  });
+});
+
 describe("drivers authorization", () => {
   it("rejects a non-owner PATCH with 403", async () => {
     const owner = await createMemberUser("driver-owner");

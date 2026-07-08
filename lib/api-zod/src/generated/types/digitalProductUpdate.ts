@@ -11,7 +11,7 @@ export interface DigitalProductUpdate {
   /** @minLength 1 */
   title?: string;
   description?: string;
-  /** @minimum 0 */
+  /** @minimum 1 */
   priceCents?: number;
   /** @minLength 1 */
   category?: string;

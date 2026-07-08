@@ -12,6 +12,6 @@ export interface PropertyListingInput {
   title: string;
   /** @minLength 1 */
   location: string;
-  /** @minimum 0 */
+  /** @minimum 1 */
   priceCents: number;
 }

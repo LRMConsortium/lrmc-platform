@@ -12,7 +12,7 @@ export interface LandListingUpdate {
   title?: string;
   /** @minLength 1 */
   location?: string;
-  /** @minimum 0 */
+  /** @minimum 1 */
   priceCents?: number;
   /** @minimum 0 */
   sizeAcres?: number;

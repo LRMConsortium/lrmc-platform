@@ -78,7 +78,7 @@ export interface PropertyListingInput {
   title: string;
   /** @minLength 1 */
   location: string;
-  /** @minimum 0 */
+  /** @minimum 1 */
   priceCents: number;
 }
 
@@ -96,7 +96,7 @@ export interface PropertyListingUpdate {
   title?: string;
   /** @minLength 1 */
   location?: string;
-  /** @minimum 0 */
+  /** @minimum 1 */
   priceCents?: number;
   status?: PropertyListingUpdateStatus;
 }
@@ -117,7 +117,7 @@ export interface LandListingInput {
   title: string;
   /** @minLength 1 */
   location: string;
-  /** @minimum 0 */
+  /** @minimum 1 */
   priceCents: number;
   /** @minimum 0 */
   sizeAcres: number;
@@ -137,7 +137,7 @@ export interface LandListingUpdate {
   title?: string;
   /** @minLength 1 */
   location?: string;
-  /** @minimum 0 */
+  /** @minimum 1 */
   priceCents?: number;
   /** @minimum 0 */
   sizeAcres?: number;
@@ -253,7 +253,7 @@ export interface RideInput {
   pickup: string;
   /** @minLength 1 */
   dropoff: string;
-  /** @minimum 0 */
+  /** @minimum 1 */
   fareCents: number;
 }
 
@@ -347,7 +347,7 @@ export interface DigitalProductUpdate {
   /** @minLength 1 */
   title?: string;
   description?: string;
-  /** @minimum 0 */
+  /** @minimum 1 */
   priceCents?: number;
   /** @minLength 1 */
   category?: string;

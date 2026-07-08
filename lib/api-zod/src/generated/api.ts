@@ -150,7 +150,6 @@ export const ListPropertyListingsResponse = zod.array(ListPropertyListingsRespon
 
 
 
-export const createPropertyListingBodyPriceCentsMin = 0;
 
 
 
@@ -158,7 +157,7 @@ export const CreatePropertyListingBody = zod.object({
   "category": zod.string(),
   "title": zod.string().min(1),
   "location": zod.string().min(1),
-  "priceCents": zod.number().int().min(createPropertyListingBodyPriceCentsMin)
+  "priceCents": zod.number().int().min(1)
 })
 
 export const CreatePropertyListingResponse = zod.object({
@@ -179,14 +178,13 @@ export const UpdatePropertyListingParams = zod.object({
 
 
 
-export const updatePropertyListingBodyPriceCentsMin = 0;
 
 
 
 export const UpdatePropertyListingBody = zod.object({
   "title": zod.string().min(1).optional(),
   "location": zod.string().min(1).optional(),
-  "priceCents": zod.number().int().min(updatePropertyListingBodyPriceCentsMin).optional(),
+  "priceCents": zod.number().int().min(1).optional(),
   "status": zod.enum(['active', 'rented', 'inactive']).optional()
 })
 
@@ -224,7 +222,6 @@ export const ListLandListingsResponse = zod.array(ListLandListingsResponseItem)
 
 
 
-export const createLandListingBodyPriceCentsMin = 0;
 
 export const createLandListingBodySizeAcresMin = 0;
 
@@ -233,7 +230,7 @@ export const createLandListingBodySizeAcresMin = 0;
 export const CreateLandListingBody = zod.object({
   "title": zod.string().min(1),
   "location": zod.string().min(1),
-  "priceCents": zod.number().int().min(createLandListingBodyPriceCentsMin),
+  "priceCents": zod.number().int().min(1),
   "sizeAcres": zod.number().min(createLandListingBodySizeAcresMin)
 })
 
@@ -255,7 +252,6 @@ export const UpdateLandListingParams = zod.object({
 
 
 
-export const updateLandListingBodyPriceCentsMin = 0;
 
 export const updateLandListingBodySizeAcresMin = 0;
 
@@ -264,7 +260,7 @@ export const updateLandListingBodySizeAcresMin = 0;
 export const UpdateLandListingBody = zod.object({
   "title": zod.string().min(1).optional(),
   "location": zod.string().min(1).optional(),
-  "priceCents": zod.number().int().min(updateLandListingBodyPriceCentsMin).optional(),
+  "priceCents": zod.number().int().min(1).optional(),
   "sizeAcres": zod.number().min(updateLandListingBodySizeAcresMin).optional(),
   "status": zod.enum(['available', 'under_contract', 'sold']).optional()
 })
@@ -457,14 +453,13 @@ export const ListRidesResponse = zod.array(ListRidesResponseItem)
 
 
 
-export const createRideBodyFareCentsMin = 0;
 
 
 
 export const CreateRideBody = zod.object({
   "pickup": zod.string().min(1),
   "dropoff": zod.string().min(1),
-  "fareCents": zod.number().int().min(createRideBodyFareCentsMin)
+  "fareCents": zod.number().int().min(1)
 })
 
 export const CreateRideResponse = zod.object({
@@ -619,7 +614,6 @@ export const UpdateDigitalProductParams = zod.object({
 })
 
 
-export const updateDigitalProductBodyPriceCentsMin = 1;
 
 
 
@@ -627,7 +621,7 @@ export const updateDigitalProductBodyPriceCentsMin = 1;
 export const UpdateDigitalProductBody = zod.object({
   "title": zod.string().min(1).optional(),
   "description": zod.string().optional(),
-  "priceCents": zod.number().int().min(updateDigitalProductBodyPriceCentsMin).optional(),
+  "priceCents": zod.number().int().min(1).optional(),
   "category": zod.string().min(1).optional(),
   "status": zod.enum(['active', 'archived']).optional()
 })

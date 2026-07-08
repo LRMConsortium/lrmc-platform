@@ -12,7 +12,7 @@ export interface PropertyListingUpdate {
   title?: string;
   /** @minLength 1 */
   location?: string;
-  /** @minimum 0 */
+  /** @minimum 1 */
   priceCents?: number;
   status?: PropertyListingUpdateStatus;
 }

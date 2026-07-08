@@ -72,6 +72,30 @@ describe("land-listings authorization", () => {
   });
 });
 
+describe("land-listings zero-price validation", () => {
+  it("rejects priceCents: 0 on creation with 400", async () => {
+    const seller = await createMemberUser("seller-zero");
+    const res = await seller.agent.post("/api/land-listings").send({
+      title: "Zero Price Plot",
+      location: "Brikama",
+      priceCents: 0,
+      sizeAcres: 1,
+    });
+    expect(res.status).toBe(400);
+  });
+
+  it("accepts priceCents: 1 on creation", async () => {
+    const seller = await createMemberUser("seller-one-cent");
+    const res = await seller.agent.post("/api/land-listings").send({
+      title: "One Cent Plot",
+      location: "Brikama",
+      priceCents: 1,
+      sizeAcres: 1,
+    });
+    expect(res.status).toBe(201);
+  });
+});
+
 describe("land-transactions scoping", () => {
   it("only returns transactions where the caller is buyer or seller, not other users' transactions", async () => {
     const seller = await createMemberUser("seller");

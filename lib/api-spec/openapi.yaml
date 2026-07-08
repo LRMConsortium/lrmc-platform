@@ -1199,13 +1199,13 @@ components:
         category: { type: string }
         title: { type: string, minLength: 1 }
         location: { type: string, minLength: 1 }
-        priceCents: { type: integer, minimum: 0 }
+        priceCents: { type: integer, minimum: 1 }
     PropertyListingUpdate:
       type: object
       properties:
         title: { type: string, minLength: 1 }
         location: { type: string, minLength: 1 }
-        priceCents: { type: integer, minimum: 0 }
+        priceCents: { type: integer, minimum: 1 }
         status: { type: string, enum: [active, rented, inactive] }
 
     # ---------- LAND ----------
@@ -1227,14 +1227,14 @@ components:
       properties:
         title: { type: string, minLength: 1 }
         location: { type: string, minLength: 1 }
-        priceCents: { type: integer, minimum: 0 }
+        priceCents: { type: integer, minimum: 1 }
         sizeAcres: { type: integer, minimum: 0 }
     LandListingUpdate:
       type: object
       properties:
         title: { type: string, minLength: 1 }
         location: { type: string, minLength: 1 }
-        priceCents: { type: integer, minimum: 0 }
+        priceCents: { type: integer, minimum: 1 }
         sizeAcres: { type: integer, minimum: 0 }
         status: { type: string, enum: [available, under_contract, sold] }
     LandTransaction:
@@ -1334,7 +1334,7 @@ components:
       properties:
         pickup: { type: string, minLength: 1 }
         dropoff: { type: string, minLength: 1 }
-        fareCents: { type: integer, minimum: 0 }
+        fareCents: { type: integer, minimum: 1 }
     RideUpdate:
       type: object
       properties:
