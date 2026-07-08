@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq } from "drizzle-orm";
+import { eq, ne } from "drizzle-orm";
 import {
   db,
   marketplaceListingsTable,
@@ -14,6 +14,7 @@ import {
   UpdateMarketplaceListingBody,
   UpdateMarketplaceListingResponse,
   DeleteMarketplaceListingParams,
+  ListDigitalProductsQueryParams,
   ListDigitalProductsResponse,
   CreateDigitalProductBody,
   CreateDigitalProductResponse,
@@ -134,8 +135,13 @@ router.delete(
   },
 );
 
-router.get("/digital-products", async (_req, res): Promise<void> => {
-  const rows = await db.select().from(digitalProductsTable);
+router.get("/digital-products", async (req, res): Promise<void> => {
+  const query = ListDigitalProductsQueryParams.safeParse(req.query);
+  const statusFilter = query.success && query.data.status ? query.data.status : "active";
+  const rows = await db
+    .select()
+    .from(digitalProductsTable)
+    .where(eq(digitalProductsTable.status, statusFilter));
   res.json(ListDigitalProductsResponse.parse(rows));
 });
 

@@ -573,6 +573,10 @@ export const DeleteMarketplaceListingParams = zod.object({
 export const DeleteMarketplaceListingResponse = zod.void()
 
 
+export const ListDigitalProductsQueryParams = zod.object({
+  "status": zod.enum(["active", "archived"]).optional()
+})
+
 export const ListDigitalProductsResponseItem = zod.object({
   "id": zod.number(),
   "sellerId": zod.number().nullable(),
