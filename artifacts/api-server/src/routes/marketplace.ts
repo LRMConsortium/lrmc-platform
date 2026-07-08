@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, ne } from "drizzle-orm";
+import { and, eq, ne } from "drizzle-orm";
 import {
   db,
   marketplaceListingsTable,
@@ -144,6 +144,30 @@ router.delete(
 router.get("/digital-products", async (req, res): Promise<void> => {
   const query = ListDigitalProductsQueryParams.safeParse(req.query);
   const statusFilter = query.success && query.data.status ? query.data.status : "active";
+
+  if (statusFilter === "archived") {
+    if (!req.session.userId) {
+      res.status(401).json({ error: "Not authenticated" });
+      return;
+    }
+
+    const isAdmin = req.session.role === "admin";
+
+    const rows = await db
+      .select()
+      .from(digitalProductsTable)
+      .where(
+        isAdmin
+          ? eq(digitalProductsTable.status, "archived")
+          : and(
+              eq(digitalProductsTable.status, "archived"),
+              eq(digitalProductsTable.sellerId, req.session.userId),
+            ),
+      );
+    res.json(ListDigitalProductsResponse.parse(rows));
+    return;
+  }
+
   const rows = await db
     .select()
     .from(digitalProductsTable)

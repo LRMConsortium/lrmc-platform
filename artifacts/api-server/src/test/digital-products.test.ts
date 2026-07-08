@@ -12,6 +12,49 @@ async function createDigitalProduct(agent: Awaited<ReturnType<typeof createMembe
   return res.body as { id: number; sellerId: number };
 }
 
+describe("digital-products archived filter authorization", () => {
+  it("rejects an anonymous request for ?status=archived with 401", async () => {
+    const res = await anonymousAgent().get("/api/digital-products?status=archived");
+    expect(res.status).toBe(401);
+  });
+
+  it("rejects a regular member requesting ?status=archived for another seller's products with an empty list", async () => {
+    // A seller archives their product, a stranger cannot see it via the archived filter
+    const seller = await createMemberUser("dp-arch-seller");
+    const stranger = await createMemberUser("dp-arch-stranger");
+
+    // Create and archive a product
+    const product = await createDigitalProduct(seller.agent);
+    await seller.agent.delete(`/api/digital-products/${product.id}`);
+
+    // Stranger's archived list should be empty (scoped to their own sellerId)
+    const res = await stranger.agent.get("/api/digital-products?status=archived");
+    expect(res.status).toBe(200);
+    expect(res.body).not.toContainEqual(expect.objectContaining({ id: product.id }));
+  });
+
+  it("allows a seller to see their own archived products", async () => {
+    const seller = await createMemberUser("dp-arch-self");
+    const product = await createDigitalProduct(seller.agent);
+    await seller.agent.delete(`/api/digital-products/${product.id}`);
+
+    const res = await seller.agent.get("/api/digital-products?status=archived");
+    expect(res.status).toBe(200);
+    expect(res.body).toContainEqual(expect.objectContaining({ id: product.id }));
+  });
+
+  it("allows an admin to see all archived products", async () => {
+    const seller = await createMemberUser("dp-arch-admin-seller");
+    const admin = await createAdminUser("dp-arch-admin");
+    const product = await createDigitalProduct(seller.agent);
+    await seller.agent.delete(`/api/digital-products/${product.id}`);
+
+    const res = await admin.agent.get("/api/digital-products?status=archived");
+    expect(res.status).toBe(200);
+    expect(res.body).toContainEqual(expect.objectContaining({ id: product.id }));
+  });
+});
+
 describe("digital-products authorization", () => {
   it("sets sellerId from the authenticated session on create", async () => {
     const seller = await createMemberUser("dp-creator");
