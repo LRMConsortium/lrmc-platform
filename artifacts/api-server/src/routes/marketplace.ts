@@ -289,7 +289,11 @@ router.post(
       return;
     }
 
-    if (product.status === "archived") {
+    // Only "active" products are visible to buyers in the default listing.
+    // Reject purchase of any non-active product so the purchase gate always
+    // mirrors the visibility rules — regardless of how many statuses are added
+    // in the future.
+    if (product.status !== "active") {
       res.status(410).json({ error: "This product is no longer available" });
       return;
     }

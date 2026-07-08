@@ -63,6 +63,69 @@ describe("digital-products purchase flow", () => {
   });
 });
 
+describe("digital-products purchase visibility boundary", () => {
+  it("a product with a non-active status injected directly cannot be purchased — returns 410", async () => {
+    // This test guards the boundary between listing visibility and purchase access.
+    // The GET /digital-products endpoint only returns active products by default.
+    // The purchase endpoint must mirror that rule: only active products are purchasable.
+    // We inject a product with a hypothetical future status ("suspended") directly into
+    // the DB to confirm the handler rejects it regardless of how statuses evolve.
+    const seller = await createMemberUser("dp-vis-suspended-seller");
+    const buyer = await createMemberUser("dp-vis-suspended-buyer");
+    const product = await createProduct(seller.agent);
+
+    // Simulate a product that exists but is not visible to buyers (non-active, non-archived)
+    await db
+      .update(digitalProductsTable)
+      .set({ status: "suspended" })
+      .where(eq(digitalProductsTable.id, product.id));
+
+    const res = await buyer.agent.post(
+      `/api/digital-products/${product.id}/purchase`,
+    );
+
+    expect(res.status).toBe(410);
+  });
+
+  it("only an active product can be purchased — archived returns 410", async () => {
+    // Explicit mirror-of-listing check: archived products don't appear in the
+    // default listing and must not be purchasable either.
+    const seller = await createMemberUser("dp-vis-arch-seller");
+    const buyer = await createMemberUser("dp-vis-arch-buyer");
+    const product = await createProduct(seller.agent);
+
+    await seller.agent.delete(`/api/digital-products/${product.id}`);
+
+    const res = await buyer.agent.post(
+      `/api/digital-products/${product.id}/purchase`,
+    );
+
+    expect(res.status).toBe(410);
+  });
+
+  it("a product reactivated to active can be purchased again after being non-active", async () => {
+    // Confirms the purchase gate correctly opens again once visibility is restored.
+    const seller = await createMemberUser("dp-vis-reactivate-seller");
+    const buyer = await createMemberUser("dp-vis-reactivate-buyer");
+    const product = await createProduct(seller.agent);
+
+    // Archive it
+    await seller.agent.delete(`/api/digital-products/${product.id}`);
+
+    // Reactivate via PATCH
+    await seller.agent
+      .patch(`/api/digital-products/${product.id}`)
+      .send({ status: "active" });
+
+    const res = await buyer.agent.post(
+      `/api/digital-products/${product.id}/purchase`,
+    );
+
+    expect(res.status).toBe(200);
+    expect(res.body.productId).toBe(product.id);
+  });
+});
+
 describe("digital-products archive flow", () => {
   it("DELETE by owner sets status to 'archived' — product still exists in DB", async () => {
     const seller = await createMemberUser("dp-lc-soft-delete");
