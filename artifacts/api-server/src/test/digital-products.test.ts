@@ -161,6 +161,35 @@ describe("digital-products status validation", () => {
   });
 });
 
+describe("digital-products status-only PATCH field preservation", () => {
+  it("does not overwrite title, description, priceCents, or category when PATCH body contains only status", async () => {
+    const seller = await createMemberUser("dp-statusonly-seller");
+
+    const createRes = await seller.agent.post("/api/digital-products").send({
+      title: "Status-Only PATCH Product",
+      description: "Must survive a status-only patch unchanged.",
+      priceCents: 1299,
+      category: "ebook",
+    });
+    expect(createRes.status).toBe(201);
+    const product = createRes.body as { id: number };
+
+    // Send a PATCH that contains ONLY the status field — no content fields
+    const patchRes = await seller.agent
+      .patch(`/api/digital-products/${product.id}`)
+      .send({ status: "archived" });
+
+    expect(patchRes.status).toBe(200);
+    expect(patchRes.body.status).toBe("archived");
+
+    // Non-status fields must be byte-for-byte identical to the values set at creation
+    expect(patchRes.body.title).toBe("Status-Only PATCH Product");
+    expect(patchRes.body.description).toBe("Must survive a status-only patch unchanged.");
+    expect(patchRes.body.priceCents).toBe(1299);
+    expect(patchRes.body.category).toBe("ebook");
+  });
+});
+
 describe("digital-products archive → reactivate data preservation", () => {
   it("preserves all original fields (title, description, priceCents, category) after a full archive → reactivate cycle", async () => {
     const seller = await createMemberUser("dp-preserve-seller");
