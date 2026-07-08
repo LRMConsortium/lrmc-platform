@@ -86,6 +86,39 @@ describe("digital-products archived filter authorization", () => {
   });
 });
 
+describe("digital-products purchase authorization", () => {
+  it("returns 404 when a buyer attempts to purchase a product ID that does not exist", async () => {
+    const buyer = await createMemberUser("dp-purchase-nonexistent-buyer");
+
+    // Use a product ID that is astronomically unlikely to exist
+    const res = await buyer.agent.post("/api/digital-products/999999999/purchase");
+    expect(res.status).toBe(404);
+  });
+
+  it("returns 401 when an unauthenticated user attempts to purchase any product", async () => {
+    const seller = await createMemberUser("dp-purchase-unauth-seller");
+    const product = await createDigitalProduct(seller.agent);
+
+    const res = await anonymousAgent().post(`/api/digital-products/${product.id}/purchase`);
+    expect(res.status).toBe(401);
+  });
+
+  it("returns a clear error when a buyer purchases a product that was never publicly available to them", async () => {
+    const seller = await createMemberUser("dp-purchase-never-active-seller");
+    const buyer = await createMemberUser("dp-purchase-never-active-buyer");
+
+    // Seller creates a product and immediately archives it — it was never visible
+    // in the public active listing so the buyer never had legitimate access to it.
+    const product = await createDigitalProduct(seller.agent);
+    await seller.agent.delete(`/api/digital-products/${product.id}`);
+
+    // Buyer guesses the product ID (never saw it in a listing) and attempts purchase.
+    const res = await buyer.agent.post(`/api/digital-products/${product.id}/purchase`);
+    expect(res.status).toBe(410);
+    expect(res.body).toHaveProperty("error");
+  });
+});
+
 describe("digital-products authorization", () => {
   it("sets sellerId from the authenticated session on create", async () => {
     const seller = await createMemberUser("dp-creator");
