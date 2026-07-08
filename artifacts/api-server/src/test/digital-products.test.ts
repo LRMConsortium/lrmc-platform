@@ -12,6 +12,37 @@ async function createDigitalProduct(agent: Awaited<ReturnType<typeof createMembe
   return res.body as { id: number; sellerId: number };
 }
 
+describe("digital-products mid-session archive", () => {
+  it("returns 410 when a buyer attempts to purchase a product archived mid-session", async () => {
+    const seller = await createMemberUser("dp-midsession-seller");
+    const buyer = await createMemberUser("dp-midsession-buyer");
+
+    // Seller creates an active product
+    const product = await createDigitalProduct(seller.agent);
+
+    // Seller archives the product (simulating mid-session disappearance)
+    await seller.agent.delete(`/api/digital-products/${product.id}`);
+
+    // Buyer attempts to purchase the now-archived product
+    const res = await buyer.agent.post(`/api/digital-products/${product.id}/purchase`);
+    expect(res.status).toBe(410);
+  });
+
+  it("does not include archived products in the default (active) listing", async () => {
+    const seller = await createMemberUser("dp-midsession-listing-seller");
+    const buyer = await createMemberUser("dp-midsession-listing-buyer");
+
+    // Seller creates and then archives a product
+    const product = await createDigitalProduct(seller.agent);
+    await seller.agent.delete(`/api/digital-products/${product.id}`);
+
+    // Default listing (no status param) should not include the archived product
+    const res = await buyer.agent.get("/api/digital-products");
+    expect(res.status).toBe(200);
+    expect(res.body).not.toContainEqual(expect.objectContaining({ id: product.id }));
+  });
+});
+
 describe("digital-products archived filter authorization", () => {
   it("rejects an anonymous request for ?status=archived with 401", async () => {
     const res = await anonymousAgent().get("/api/digital-products?status=archived");
