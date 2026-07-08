@@ -364,6 +364,82 @@ describe("ads authorization", () => {
     });
   });
 
+  describe("GET /ads status visibility", () => {
+    it("unauthenticated users do not see a freshly-created (pending) ad", async () => {
+      const seller = await createMemberUser("ad-vis-anon-pending-seller");
+      const ad = await createAd(seller.agent);
+
+      const { anonymousAgent } = await import("./helpers");
+      const res = await anonymousAgent().get("/api/ads");
+      expect(res.status).toBe(200);
+      const ids = (res.body as { id: number }[]).map((a) => a.id);
+      expect(ids).not.toContain(ad.id);
+    });
+
+    it("member users do not see a pending ad", async () => {
+      const seller = await createMemberUser("ad-vis-member-pending-seller");
+      const viewer = await createMemberUser("ad-vis-member-pending-viewer");
+      const ad = await createAd(seller.agent);
+
+      const res = await viewer.agent.get("/api/ads");
+      expect(res.status).toBe(200);
+      const ids = (res.body as { id: number }[]).map((a) => a.id);
+      expect(ids).not.toContain(ad.id);
+    });
+
+    it("member users do not see a rejected ad", async () => {
+      const seller = await createMemberUser("ad-vis-member-rejected-seller");
+      const viewer = await createMemberUser("ad-vis-member-rejected-viewer");
+      const admin = await createAdminUser("ad-vis-member-rejected-admin");
+      const ad = await createAd(seller.agent);
+
+      await admin.agent.patch(`/api/ads/${ad.id}`).send({ status: "rejected" });
+
+      const res = await viewer.agent.get("/api/ads");
+      expect(res.status).toBe(200);
+      const ids = (res.body as { id: number }[]).map((a) => a.id);
+      expect(ids).not.toContain(ad.id);
+    });
+
+    it("admin sees a pending ad in the listing", async () => {
+      const seller = await createMemberUser("ad-vis-admin-pending-seller");
+      const admin = await createAdminUser("ad-vis-admin-pending-admin");
+      const ad = await createAd(seller.agent);
+
+      const res = await admin.agent.get("/api/ads");
+      expect(res.status).toBe(200);
+      const ids = (res.body as { id: number }[]).map((a) => a.id);
+      expect(ids).toContain(ad.id);
+    });
+
+    it("admin sees a rejected ad in the listing", async () => {
+      const seller = await createMemberUser("ad-vis-admin-rejected-seller");
+      const admin = await createAdminUser("ad-vis-admin-rejected-admin");
+      const ad = await createAd(seller.agent);
+
+      await admin.agent.patch(`/api/ads/${ad.id}`).send({ status: "rejected" });
+
+      const res = await admin.agent.get("/api/ads");
+      expect(res.status).toBe(200);
+      const ids = (res.body as { id: number }[]).map((a) => a.id);
+      expect(ids).toContain(ad.id);
+    });
+
+    it("non-admin can see an active ad after admin approval", async () => {
+      const seller = await createMemberUser("ad-vis-member-active-seller");
+      const viewer = await createMemberUser("ad-vis-member-active-viewer");
+      const admin = await createAdminUser("ad-vis-member-active-admin");
+      const ad = await createAd(seller.agent);
+
+      await admin.agent.patch(`/api/ads/${ad.id}`).send({ status: "active" });
+
+      const res = await viewer.agent.get("/api/ads");
+      expect(res.status).toBe(200);
+      const ids = (res.body as { id: number }[]).map((a) => a.id);
+      expect(ids).toContain(ad.id);
+    });
+  });
+
   describe("GET /ads admin-only field visibility", () => {
     async function createAdWithParent(
       seller: Awaited<ReturnType<typeof createMemberUser>>,

@@ -313,11 +313,16 @@ router.post(
 );
 
 router.get("/ads", async (req, res): Promise<void> => {
-  const rows = await db.select().from(adsTable);
   const isAdmin = req.session?.role === "admin";
   if (isAdmin) {
+    const rows = await db.select().from(adsTable);
     res.json(ListAdsResponse.parse(rows));
   } else {
+    // Non-admins only see approved ads — pending and rejected are moderation-only.
+    const rows = await db
+      .select()
+      .from(adsTable)
+      .where(eq(adsTable.status, "active"));
     res.json(ListAdsPublicResponse.parse(rows));
   }
 });
