@@ -619,7 +619,7 @@ export const UpdateDigitalProductParams = zod.object({
 })
 
 
-export const updateDigitalProductBodyPriceCentsMin = 0;
+export const updateDigitalProductBodyPriceCentsMin = 1;
 
 
 

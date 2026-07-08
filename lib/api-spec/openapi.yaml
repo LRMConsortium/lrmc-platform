@@ -1394,7 +1394,7 @@ components:
       properties:
         title: { type: string, minLength: 1 }
         description: { type: string }
-        priceCents: { type: integer, minimum: 0 }
+        priceCents: { type: integer, minimum: 1 }
         category: { type: string, minLength: 1 }
         status: { type: string, enum: [active, archived] }
     PurchaseReceipt:
