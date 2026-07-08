@@ -286,9 +286,39 @@ router.post("/ads", requireAuth, async (req, res): Promise<void> => {
     return;
   }
 
+  const { replacesAdId, ...adFields } = parsed.data;
+
+  let parentAdId: number | null = null;
+
+  if (replacesAdId !== undefined) {
+    const [parentAd] = await db
+      .select()
+      .from(adsTable)
+      .where(eq(adsTable.id, replacesAdId));
+
+    if (!parentAd) {
+      res.status(404).json({ error: "Referenced ad not found" });
+      return;
+    }
+
+    if (parentAd.advertiserId !== req.session.userId) {
+      res.status(403).json({ error: "You can only resubmit your own ads" });
+      return;
+    }
+
+    if (parentAd.status !== "rejected") {
+      res.status(400).json({
+        error: "Only rejected ads can be resubmitted",
+      });
+      return;
+    }
+
+    parentAdId = replacesAdId;
+  }
+
   const [ad] = await db
     .insert(adsTable)
-    .values({ ...parsed.data, advertiserId: req.session.userId! })
+    .values({ ...adFields, advertiserId: req.session.userId!, parentAdId })
     .returning();
 
   res.status(201).json(CreateAdResponse.parse(ad));

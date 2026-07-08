@@ -167,6 +167,114 @@ describe("ads authorization", () => {
     expect(revertRes.body.status).toBe("pending");
   });
 
+  it("allows resubmission of a rejected ad with replacesAdId", async () => {
+    const seller = await createMemberUser("ad-resubmit-ok-seller");
+    const admin = await createAdminUser("ad-resubmit-ok-admin");
+    const original = await createAd(seller.agent);
+
+    // Admin rejects the ad
+    await admin.agent.patch(`/api/ads/${original.id}`).send({ status: "rejected" });
+
+    // Seller resubmits referencing the rejected ad
+    const res = await seller.agent.post("/api/ads").send({
+      title: "Revised Ad",
+      content: "Updated content after rejection.",
+      placement: "marketplace",
+      replacesAdId: original.id,
+    });
+
+    expect(res.status).toBe(201);
+    expect(res.body.status).toBe("pending");
+    expect(res.body.parentAdId).toBe(original.id);
+  });
+
+  it("rejects resubmission referencing an ad not owned by the session user", async () => {
+    const seller = await createMemberUser("ad-resubmit-stolen-seller");
+    const attacker = await createMemberUser("ad-resubmit-stolen-attacker");
+    const admin = await createAdminUser("ad-resubmit-stolen-admin");
+    const original = await createAd(seller.agent);
+
+    await admin.agent.patch(`/api/ads/${original.id}`).send({ status: "rejected" });
+
+    const res = await attacker.agent.post("/api/ads").send({
+      title: "Stolen resubmit",
+      content: "Attacker tries to reference another user's ad.",
+      placement: "marketplace",
+      replacesAdId: original.id,
+    });
+
+    expect(res.status).toBe(403);
+  });
+
+  it("rejects resubmission when the referenced ad is not rejected (pending)", async () => {
+    const seller = await createMemberUser("ad-resubmit-pending-seller");
+    const pendingAd = await createAd(seller.agent);
+
+    const res = await seller.agent.post("/api/ads").send({
+      title: "Premature resubmit",
+      content: "Trying to replace a still-pending ad.",
+      placement: "marketplace",
+      replacesAdId: pendingAd.id,
+    });
+
+    expect(res.status).toBe(400);
+  });
+
+  it("rejects resubmission when the referenced ad is not rejected (active)", async () => {
+    const seller = await createMemberUser("ad-resubmit-active-seller");
+    const admin = await createAdminUser("ad-resubmit-active-admin");
+    const activeAd = await createAd(seller.agent);
+
+    await admin.agent.patch(`/api/ads/${activeAd.id}`).send({ status: "active" });
+
+    const res = await seller.agent.post("/api/ads").send({
+      title: "Replace active ad",
+      content: "Trying to replace an approved ad.",
+      placement: "marketplace",
+      replacesAdId: activeAd.id,
+    });
+
+    expect(res.status).toBe(400);
+  });
+
+  it("returns 404 when replacesAdId references a non-existent ad", async () => {
+    const seller = await createMemberUser("ad-resubmit-missing-seller");
+
+    const res = await seller.agent.post("/api/ads").send({
+      title: "Ghost resubmit",
+      content: "Referencing an ad that does not exist.",
+      placement: "marketplace",
+      replacesAdId: 999999,
+    });
+
+    expect(res.status).toBe(404);
+  });
+
+  it("admin PATCH response includes parentAdId so moderation chain is visible", async () => {
+    const seller = await createMemberUser("ad-chain-seller");
+    const admin = await createAdminUser("ad-chain-admin");
+    const original = await createAd(seller.agent);
+
+    await admin.agent.patch(`/api/ads/${original.id}`).send({ status: "rejected" });
+
+    const resubmitRes = await seller.agent.post("/api/ads").send({
+      title: "Chain Ad",
+      content: "Second attempt after rejection.",
+      placement: "marketplace",
+      replacesAdId: original.id,
+    });
+    expect(resubmitRes.status).toBe(201);
+    const resubmittedId = resubmitRes.body.id;
+
+    // Admin reviews and the response must expose parentAdId
+    const patchRes = await admin.agent
+      .patch(`/api/ads/${resubmittedId}`)
+      .send({ status: "active" });
+
+    expect(patchRes.status).toBe(200);
+    expect(patchRes.body.parentAdId).toBe(original.id);
+  });
+
   it("ignores advertiserId in the request body and always uses the session user", async () => {
     const realSeller = await createMemberUser("ad-inject-real");
     const victim = await createMemberUser("ad-inject-victim");

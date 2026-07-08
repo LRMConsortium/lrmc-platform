@@ -1396,6 +1396,7 @@ components:
         content: { type: string }
         placement: { type: string }
         status: { type: string }
+        parentAdId: { type: integer, nullable: true }
         createdAt: { type: string, format: date-time }
     AdInput:
       type: object
@@ -1404,6 +1405,7 @@ components:
         title: { type: string, minLength: 1 }
         content: { type: string, minLength: 1 }
         placement: { type: string, minLength: 1 }
+        replacesAdId: { type: integer }
     AdStatusUpdate:
       type: object
       required: [status]

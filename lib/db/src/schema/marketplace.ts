@@ -54,6 +54,7 @@ export const adsTable = pgTable("ads", {
   content: text("content").notNull(),
   placement: text("placement").notNull(), // homepage | ususu | marketplace
   status: text("status").notNull().default("pending"), // pending | active | rejected
+  parentAdId: integer("parent_ad_id"),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

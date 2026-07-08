@@ -661,6 +661,7 @@ export const ListAdsResponseItem = zod.object({
   "content": zod.string(),
   "placement": zod.string(),
   "status": zod.string(),
+  "parentAdId": zod.number().nullable().optional(),
   "createdAt": zod.coerce.date()
 })
 export const ListAdsResponse = zod.array(ListAdsResponseItem)
@@ -674,7 +675,8 @@ export const ListAdsResponse = zod.array(ListAdsResponseItem)
 export const CreateAdBody = zod.object({
   "title": zod.string().min(1),
   "content": zod.string().min(1),
-  "placement": zod.string().min(1)
+  "placement": zod.string().min(1),
+  "replacesAdId": zod.number().optional()
 })
 
 export const CreateAdResponse = zod.object({
@@ -684,6 +686,7 @@ export const CreateAdResponse = zod.object({
   "content": zod.string(),
   "placement": zod.string(),
   "status": zod.string(),
+  "parentAdId": zod.number().nullable().optional(),
   "createdAt": zod.coerce.date()
 })
 
@@ -710,6 +713,7 @@ export const UpdateAdResponse = zod.object({
   "content": zod.string(),
   "placement": zod.string(),
   "status": zod.string(),
+  "parentAdId": zod.number().nullable().optional(),
   "createdAt": zod.coerce.date()
 })
 
