@@ -162,6 +162,40 @@ describe("digital-products status validation", () => {
 });
 
 describe("digital-products reactivation", () => {
+  it("admin can reactivate a seller's archived product, which then reappears in the listing and can be purchased", async () => {
+    const seller = await createMemberUser("dp-admin-reactivate-seller");
+    const admin = await createAdminUser("dp-admin-reactivate-admin");
+    const buyer = await createMemberUser("dp-admin-reactivate-buyer");
+
+    // Seller creates an active product
+    const product = await createDigitalProduct(seller.agent);
+
+    // Seller archives the product
+    await seller.agent.delete(`/api/digital-products/${product.id}`);
+
+    // Verify it no longer appears in the public listing
+    const archivedCheck = await buyer.agent.get("/api/digital-products");
+    expect(archivedCheck.status).toBe(200);
+    expect(archivedCheck.body).not.toContainEqual(expect.objectContaining({ id: product.id }));
+
+    // Admin reactivates the seller's product on their behalf
+    const reactivate = await admin.agent
+      .patch(`/api/digital-products/${product.id}`)
+      .send({ status: "active" });
+    expect(reactivate.status).toBe(200);
+    expect(reactivate.body.status).toBe("active");
+
+    // Product should now appear in the default (active) listing
+    const listing = await buyer.agent.get("/api/digital-products");
+    expect(listing.status).toBe(200);
+    expect(listing.body).toContainEqual(expect.objectContaining({ id: product.id }));
+
+    // Buyer should be able to purchase the reactivated product
+    const purchase = await buyer.agent.post(`/api/digital-products/${product.id}/purchase`);
+    expect(purchase.status).toBe(200);
+    expect(purchase.body).toHaveProperty("productId", product.id);
+  });
+
   it("reactivated product reappears in the default listing and can be purchased", async () => {
     const seller = await createMemberUser("dp-reactivate-seller");
     const buyer = await createMemberUser("dp-reactivate-buyer");
