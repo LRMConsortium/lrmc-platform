@@ -318,6 +318,25 @@ describe("digital-products reactivation", () => {
   });
 });
 
+describe("digital-products sellerId immutability on PATCH", () => {
+  it("ignores a sellerId field in the PATCH body and preserves the original owner", async () => {
+    const seller = await createMemberUser("dp-sellerid-owner");
+    const other = await createMemberUser("dp-sellerid-other");
+    const product = await createDigitalProduct(seller.agent);
+
+    // Attempt to reassign ownership to the other user via PATCH
+    const res = await seller.agent
+      .patch(`/api/digital-products/${product.id}`)
+      .send({ title: "Ownership attempt", sellerId: other.id });
+
+    // The request must succeed (sellerId is simply ignored, not rejected)
+    expect(res.status).toBe(200);
+    // The sellerId in the response must still be the original seller, not other.id
+    expect(res.body.sellerId).toBe(seller.id);
+    expect(res.body.sellerId).not.toBe(other.id);
+  });
+});
+
 describe("digital-products authorization", () => {
   it("sets sellerId from the authenticated session on create", async () => {
     const seller = await createMemberUser("dp-creator");
