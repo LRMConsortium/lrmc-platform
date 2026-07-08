@@ -225,7 +225,8 @@ router.delete(
     }
 
     await db
-      .delete(digitalProductsTable)
+      .update(digitalProductsTable)
+      .set({ status: "archived" })
       .where(eq(digitalProductsTable.id, params.data.id));
 
     res.sendStatus(204);
@@ -249,6 +250,11 @@ router.post(
 
     if (!product) {
       res.status(404).json({ error: "Digital product not found" });
+      return;
+    }
+
+    if (product.status === "archived") {
+      res.status(410).json({ error: "This product is no longer available" });
       return;
     }
 

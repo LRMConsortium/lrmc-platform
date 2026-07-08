@@ -580,6 +580,7 @@ export const ListDigitalProductsResponseItem = zod.object({
   "description": zod.string(),
   "priceCents": zod.number(),
   "category": zod.string(),
+  "status": zod.string(),
   "createdAt": zod.coerce.date()
 })
 export const ListDigitalProductsResponse = zod.array(ListDigitalProductsResponseItem)
@@ -605,6 +606,7 @@ export const CreateDigitalProductResponse = zod.object({
   "description": zod.string(),
   "priceCents": zod.number(),
   "category": zod.string(),
+  "status": zod.string(),
   "createdAt": zod.coerce.date()
 })
 
@@ -617,7 +619,8 @@ export const UpdateDigitalProductBody = zod.object({
   "title": zod.string().min(1).optional(),
   "description": zod.string().optional(),
   "priceCents": zod.number().min(0).optional(),
-  "category": zod.string().min(1).optional()
+  "category": zod.string().min(1).optional(),
+  "status": zod.string().optional()
 })
 
 export const UpdateDigitalProductResponse = zod.object({
@@ -627,6 +630,7 @@ export const UpdateDigitalProductResponse = zod.object({
   "description": zod.string(),
   "priceCents": zod.number(),
   "category": zod.string(),
+  "status": zod.string(),
   "createdAt": zod.coerce.date()
 })
 

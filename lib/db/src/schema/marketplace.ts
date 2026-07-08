@@ -33,6 +33,7 @@ export const digitalProductsTable = pgTable("digital_products", {
   description: text("description").notNull(),
   priceCents: integer("price_cents").notNull(),
   category: text("category").notNull(),
+  status: text("status").notNull().default("active"), // active | archived
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
@@ -40,7 +41,7 @@ export const digitalProductsTable = pgTable("digital_products", {
 
 export const insertDigitalProductSchema = createInsertSchema(
   digitalProductsTable,
-).omit({ id: true, createdAt: true, sellerId: true });
+).omit({ id: true, createdAt: true, sellerId: true, status: true });
 export type InsertDigitalProduct = z.infer<typeof insertDigitalProductSchema>;
 export type DigitalProduct = typeof digitalProductsTable.$inferSelect;
 

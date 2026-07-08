@@ -656,6 +656,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PurchaseReceipt"
+        "410":
+          description: Product is no longer available
   /ads:
     get:
       operationId: listAds
@@ -1344,7 +1346,7 @@ components:
         status: { type: string }
     DigitalProduct:
       type: object
-      required: [id, title, description, priceCents, category, createdAt]
+      required: [id, title, description, priceCents, category, status, createdAt]
       properties:
         id: { type: integer }
         sellerId: { type: ["integer", "null"] }
@@ -1352,6 +1354,7 @@ components:
         description: { type: string }
         priceCents: { type: integer }
         category: { type: string }
+        status: { type: string }
         createdAt: { type: string, format: date-time }
     DigitalProductInput:
       type: object
@@ -1368,6 +1371,7 @@ components:
         description: { type: string }
         priceCents: { type: integer, minimum: 0 }
         category: { type: string, minLength: 1 }
+        status: { type: string }
     PurchaseReceipt:
       type: object
       required: [productId, amountCents, message]
