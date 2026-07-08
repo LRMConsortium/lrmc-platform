@@ -47,6 +47,29 @@ describe("land-listings authorization", () => {
 
     expect(res.status).toBe(200);
   });
+
+  it("rejects an invalid status value with 400", async () => {
+    const seller = await createMemberUser("seller");
+    const listingId = await createLandListing(seller.agent);
+
+    const res = await seller.agent
+      .patch(`/api/land-listings/${listingId}`)
+      .send({ status: "hacked" });
+
+    expect(res.status).toBe(400);
+  });
+
+  it("accepts a valid status value", async () => {
+    const seller = await createMemberUser("seller");
+    const listingId = await createLandListing(seller.agent);
+
+    const res = await seller.agent
+      .patch(`/api/land-listings/${listingId}`)
+      .send({ status: "sold" });
+
+    expect(res.status).toBe(200);
+    expect(res.body.status).toBe("sold");
+  });
 });
 
 describe("land-transactions scoping", () => {

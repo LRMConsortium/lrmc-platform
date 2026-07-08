@@ -1236,7 +1236,7 @@ components:
         location: { type: string, minLength: 1 }
         priceCents: { type: integer, minimum: 0 }
         sizeAcres: { type: integer, minimum: 0 }
-        status: { type: string }
+        status: { type: string, enum: [available, under_contract, sold] }
     LandTransaction:
       type: object
       required: [id, listingId, buyerId, amountCents, status, createdAt]
@@ -1368,7 +1368,7 @@ components:
         title: { type: string, minLength: 1 }
         description: { type: string }
         priceCents: { type: integer, minimum: 0 }
-        status: { type: string }
+        status: { type: string, enum: [active, sold, inactive] }
     DigitalProduct:
       type: object
       required: [id, title, description, priceCents, category, status, createdAt]

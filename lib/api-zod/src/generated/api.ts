@@ -266,7 +266,7 @@ export const UpdateLandListingBody = zod.object({
   "location": zod.string().min(1).optional(),
   "priceCents": zod.number().min(updateLandListingBodyPriceCentsMin).optional(),
   "sizeAcres": zod.number().min(updateLandListingBodySizeAcresMin).optional(),
-  "status": zod.string().optional()
+  "status": zod.enum(['available', 'under_contract', 'sold']).optional()
 })
 
 export const UpdateLandListingResponse = zod.object({
@@ -551,7 +551,7 @@ export const UpdateMarketplaceListingBody = zod.object({
   "title": zod.string().min(1).optional(),
   "description": zod.string().optional(),
   "priceCents": zod.number().min(updateMarketplaceListingBodyPriceCentsMin).optional(),
-  "status": zod.string().optional()
+  "status": zod.enum(['active', 'sold', 'inactive']).optional()
 })
 
 export const UpdateMarketplaceListingResponse = zod.object({

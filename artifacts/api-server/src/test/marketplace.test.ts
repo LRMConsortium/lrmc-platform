@@ -66,4 +66,27 @@ describe("marketplace-listings authorization", () => {
 
     expect(res.status).toBe(204);
   });
+
+  it("rejects an invalid status value with 400", async () => {
+    const seller = await createMemberUser("seller");
+    const listingId = await createListing(seller.agent);
+
+    const res = await seller.agent
+      .patch(`/api/marketplace-listings/${listingId}`)
+      .send({ status: "hacked" });
+
+    expect(res.status).toBe(400);
+  });
+
+  it("accepts a valid status value", async () => {
+    const seller = await createMemberUser("seller");
+    const listingId = await createListing(seller.agent);
+
+    const res = await seller.agent
+      .patch(`/api/marketplace-listings/${listingId}`)
+      .send({ status: "sold" });
+
+    expect(res.status).toBe(200);
+    expect(res.body.status).toBe("sold");
+  });
 });
