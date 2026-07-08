@@ -130,4 +130,58 @@ describe("ads authorization", () => {
     const res = await admin.agent.delete(`/api/ads/${ad.id}`);
     expect(res.status).toBe(204);
   });
+
+  it("prevents the owner from editing a rejected ad", async () => {
+    const seller = await createMemberUser("ad-edit-rejected-seller");
+    const admin = await createAdminUser("ad-edit-rejected-admin");
+    const ad = await createAd(seller.agent);
+
+    // Admin rejects the ad
+    await admin.agent.patch(`/api/ads/${ad.id}`).send({ status: "rejected" });
+
+    // Owner attempts to edit after rejection — must be blocked the same as after approval
+    const res = await seller.agent
+      .patch(`/api/ads/${ad.id}`)
+      .send({ title: "Edit after rejection" });
+
+    expect(res.status).toBe(403);
+  });
+
+  it("allows an admin to revert an active ad back to pending", async () => {
+    const seller = await createMemberUser("ad-revert-pending-seller");
+    const admin = await createAdminUser("ad-revert-pending-admin");
+    const ad = await createAd(seller.agent);
+
+    // Approve the ad first
+    const approveRes = await admin.agent
+      .patch(`/api/ads/${ad.id}`)
+      .send({ status: "active" });
+    expect(approveRes.status).toBe(200);
+    expect(approveRes.body.status).toBe("active");
+
+    // Admin reverts it back to pending (regression guard — must not be blocked)
+    const revertRes = await admin.agent
+      .patch(`/api/ads/${ad.id}`)
+      .send({ status: "pending" });
+    expect(revertRes.status).toBe(200);
+    expect(revertRes.body.status).toBe("pending");
+  });
+
+  it("ignores advertiserId in the request body and always uses the session user", async () => {
+    const realSeller = await createMemberUser("ad-inject-real");
+    const victim = await createMemberUser("ad-inject-victim");
+
+    // Attacker sends victim's ID as advertiserId in the body
+    const res = await realSeller.agent.post("/api/ads").send({
+      title: "Injected Ad",
+      content: "Attempting to set advertiserId via body.",
+      placement: "sidebar",
+      advertiserId: victim.id,
+    });
+
+    expect(res.status).toBe(201);
+    // The created ad must be owned by the session user, not the injected victim ID
+    expect(res.body.advertiserId).toBe(realSeller.id);
+    expect(res.body.advertiserId).not.toBe(victim.id);
+  });
 });
