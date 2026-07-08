@@ -119,6 +119,48 @@ describe("digital-products purchase authorization", () => {
   });
 });
 
+describe("digital-products status validation", () => {
+  it("rejects PATCH with an invalid status value with 400", async () => {
+    const seller = await createMemberUser("dp-invalid-status-seller");
+    const product = await createDigitalProduct(seller.agent);
+
+    const res = await seller.agent
+      .patch(`/api/digital-products/${product.id}`)
+      .send({ status: "suspended" });
+
+    expect(res.status).toBe(400);
+  });
+
+  it("accepts PATCH with a valid status value 'archived'", async () => {
+    const seller = await createMemberUser("dp-valid-status-seller");
+    const product = await createDigitalProduct(seller.agent);
+
+    const res = await seller.agent
+      .patch(`/api/digital-products/${product.id}`)
+      .send({ status: "archived" });
+
+    expect(res.status).toBe(200);
+    expect(res.body.status).toBe("archived");
+  });
+
+  it("accepts PATCH with a valid status value 'active'", async () => {
+    const seller = await createMemberUser("dp-valid-status-active-seller");
+    const product = await createDigitalProduct(seller.agent);
+
+    // Archive first, then re-activate
+    await seller.agent
+      .patch(`/api/digital-products/${product.id}`)
+      .send({ status: "archived" });
+
+    const res = await seller.agent
+      .patch(`/api/digital-products/${product.id}`)
+      .send({ status: "active" });
+
+    expect(res.status).toBe(200);
+    expect(res.body.status).toBe("active");
+  });
+});
+
 describe("digital-products authorization", () => {
   it("sets sellerId from the authenticated session on create", async () => {
     const seller = await createMemberUser("dp-creator");

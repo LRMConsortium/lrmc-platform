@@ -1396,7 +1396,7 @@ components:
         description: { type: string }
         priceCents: { type: integer, minimum: 0 }
         category: { type: string, minLength: 1 }
-        status: { type: string }
+        status: { type: string, enum: [active, archived] }
     PurchaseReceipt:
       type: object
       required: [productId, amountCents, message]

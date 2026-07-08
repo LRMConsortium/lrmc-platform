@@ -630,7 +630,7 @@ export const UpdateDigitalProductBody = zod.object({
   "description": zod.string().optional(),
   "priceCents": zod.number().min(updateDigitalProductBodyPriceCentsMin).optional(),
   "category": zod.string().min(1).optional(),
-  "status": zod.string().optional()
+  "status": zod.enum(['active', 'archived']).optional()
 })
 
 export const UpdateDigitalProductResponse = zod.object({
