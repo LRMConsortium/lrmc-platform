@@ -3,13 +3,27 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: LRMC / Ususu institution API specification
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: auth
+  - name: memberships
+  - name: property-listings
+  - name: land
+  - name: construction
+  - name: mobility
+  - name: marketplace
+  - name: youth
+  - name: prospecting
+  - name: treasury
+  - name: risk
+  - name: settlement
+  - name: internal
+  - name: dashboard
 paths:
   /healthz:
     get:
@@ -24,6 +38,1015 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  # ---------------- AUTH ----------------
+  /auth/register:
+    post:
+      operationId: register
+      tags: [auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterInput"
+      responses:
+        "201":
+          description: Registered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+  /auth/login:
+    post:
+      operationId: login
+      tags: [auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginInput"
+      responses:
+        "200":
+          description: Logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+  /auth/logout:
+    post:
+      operationId: logout
+      tags: [auth]
+      responses:
+        "204":
+          description: Logged out
+  /auth/me:
+    get:
+      operationId: getCurrentUser
+      tags: [auth]
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401":
+          description: Not authenticated
+
+  # ---------------- MEMBERSHIPS ----------------
+  /memberships:
+    get:
+      operationId: listMemberships
+      tags: [memberships]
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of memberships
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Membership"
+    post:
+      operationId: createMembership
+      tags: [memberships]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MembershipInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Membership"
+  /memberships/me:
+    get:
+      operationId: getMyMembership
+      tags: [memberships]
+      responses:
+        "200":
+          description: My membership
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Membership"
+        "404":
+          description: No membership found
+  /memberships/{id}:
+    patch:
+      operationId: updateMembership
+      tags: [memberships]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MembershipStatusUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Membership"
+
+  # ---------------- PROPERTY LISTINGS ----------------
+  /property-listings:
+    get:
+      operationId: listPropertyListings
+      tags: [property-listings]
+      parameters:
+        - name: category
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PropertyListing"
+    post:
+      operationId: createPropertyListing
+      tags: [property-listings]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PropertyListingInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PropertyListing"
+  /property-listings/{id}:
+    patch:
+      operationId: updatePropertyListing
+      tags: [property-listings]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PropertyListingUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PropertyListing"
+    delete:
+      operationId: deletePropertyListing
+      tags: [property-listings]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  # ---------------- LAND ----------------
+  /land-listings:
+    get:
+      operationId: listLandListings
+      tags: [land]
+      responses:
+        "200":
+          description: List
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/LandListing"
+    post:
+      operationId: createLandListing
+      tags: [land]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LandListingInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LandListing"
+  /land-listings/{id}:
+    patch:
+      operationId: updateLandListing
+      tags: [land]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LandListingUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LandListing"
+  /land-transactions:
+    get:
+      operationId: listLandTransactions
+      tags: [land]
+      responses:
+        "200":
+          description: List
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/LandTransaction"
+    post:
+      operationId: createLandTransaction
+      tags: [land]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LandTransactionInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LandTransaction"
+
+  # ---------------- CONSTRUCTION ----------------
+  /construction-contractors:
+    get:
+      operationId: listConstructionContractors
+      tags: [construction]
+      responses:
+        "200":
+          description: List
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ConstructionContractor"
+    post:
+      operationId: createConstructionContractor
+      tags: [construction]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ConstructionContractorInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConstructionContractor"
+  /construction-projects:
+    get:
+      operationId: listConstructionProjects
+      tags: [construction]
+      responses:
+        "200":
+          description: List
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ConstructionProject"
+    post:
+      operationId: createConstructionProject
+      tags: [construction]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ConstructionProjectInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConstructionProject"
+  /construction-projects/{id}:
+    patch:
+      operationId: updateConstructionProject
+      tags: [construction]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ConstructionProjectUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConstructionProject"
+
+  # ---------------- MOBILITY (USUSU) ----------------
+  /drivers:
+    get:
+      operationId: listDrivers
+      tags: [mobility]
+      responses:
+        "200":
+          description: List
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Driver"
+    post:
+      operationId: createDriver
+      tags: [mobility]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DriverInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Driver"
+  /drivers/{id}:
+    patch:
+      operationId: updateDriver
+      tags: [mobility]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DriverStatusUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Driver"
+  /rides:
+    get:
+      operationId: listRides
+      tags: [mobility]
+      responses:
+        "200":
+          description: List
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Ride"
+    post:
+      operationId: createRide
+      tags: [mobility]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RideInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Ride"
+  /rides/{id}:
+    patch:
+      operationId: updateRide
+      tags: [mobility]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RideUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Ride"
+
+  # ---------------- MARKETPLACE / E-COMMERCE ----------------
+  /marketplace-listings:
+    get:
+      operationId: listMarketplaceListings
+      tags: [marketplace]
+      responses:
+        "200":
+          description: List
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/MarketplaceListing"
+    post:
+      operationId: createMarketplaceListing
+      tags: [marketplace]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MarketplaceListingInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MarketplaceListing"
+  /marketplace-listings/{id}:
+    patch:
+      operationId: updateMarketplaceListing
+      tags: [marketplace]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MarketplaceListingUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MarketplaceListing"
+    delete:
+      operationId: deleteMarketplaceListing
+      tags: [marketplace]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+  /digital-products:
+    get:
+      operationId: listDigitalProducts
+      tags: [marketplace]
+      responses:
+        "200":
+          description: List
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DigitalProduct"
+    post:
+      operationId: createDigitalProduct
+      tags: [marketplace]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DigitalProductInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DigitalProduct"
+  /digital-products/{id}/purchase:
+    post:
+      operationId: purchaseDigitalProduct
+      tags: [marketplace]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Purchase confirmation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PurchaseReceipt"
+  /ads:
+    get:
+      operationId: listAds
+      tags: [marketplace]
+      responses:
+        "200":
+          description: List
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Ad"
+    post:
+      operationId: createAd
+      tags: [marketplace]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Ad"
+  /ads/{id}:
+    patch:
+      operationId: updateAd
+      tags: [marketplace]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdStatusUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Ad"
+
+  # ---------------- YOUTH EMPLOYMENT ----------------
+  /youth-employment-records:
+    get:
+      operationId: listYouthEmploymentRecords
+      tags: [youth]
+      responses:
+        "200":
+          description: List
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/YouthEmploymentRecord"
+    post:
+      operationId: createYouthEmploymentRecord
+      tags: [youth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/YouthEmploymentRecordInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/YouthEmploymentRecord"
+  /youth-employment-records/{id}:
+    patch:
+      operationId: updateYouthEmploymentRecord
+      tags: [youth]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/YouthEmploymentRecordUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/YouthEmploymentRecord"
+
+  # ---------------- PROSPECTING ----------------
+  /prospect-leads:
+    get:
+      operationId: listProspectLeads
+      tags: [prospecting]
+      responses:
+        "200":
+          description: List
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ProspectLead"
+    post:
+      operationId: createProspectLead
+      tags: [prospecting]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProspectLeadInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProspectLead"
+  /prospect-leads/{id}:
+    patch:
+      operationId: updateProspectLead
+      tags: [prospecting]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProspectLeadUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProspectLead"
+
+  # ---------------- TREASURY ----------------
+  /treasury/accounts:
+    get:
+      operationId: listTreasuryAccounts
+      tags: [treasury]
+      responses:
+        "200":
+          description: List
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TreasuryAccount"
+  /treasury/transactions:
+    get:
+      operationId: listTreasuryTransactions
+      tags: [treasury]
+      responses:
+        "200":
+          description: List
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TreasuryTransaction"
+  /treasury/liquidity-snapshots:
+    get:
+      operationId: listLiquiditySnapshots
+      tags: [treasury]
+      responses:
+        "200":
+          description: List
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/LiquiditySnapshot"
+  /treasury/currency-rates:
+    get:
+      operationId: listCurrencyRates
+      tags: [treasury]
+      responses:
+        "200":
+          description: List
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CurrencyRate"
+  /treasury/summary:
+    get:
+      operationId: getTreasurySummary
+      tags: [treasury]
+      responses:
+        "200":
+          description: Treasury dashboard summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TreasurySummary"
+
+  # ---------------- RISK ----------------
+  /risk-events:
+    get:
+      operationId: listRiskEvents
+      tags: [risk]
+      responses:
+        "200":
+          description: List
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RiskEvent"
+  /risk-events/{id}:
+    patch:
+      operationId: updateRiskEvent
+      tags: [risk]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RiskEventUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RiskEvent"
+
+  # ---------------- SETTLEMENT ----------------
+  /settlement-obligations:
+    get:
+      operationId: listSettlementObligations
+      tags: [settlement]
+      responses:
+        "200":
+          description: List
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SettlementObligation"
+  /settlement-obligations/{id}:
+    patch:
+      operationId: updateSettlementObligation
+      tags: [settlement]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SettlementObligationUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SettlementObligation"
+
+  # ---------------- INTERNAL MESSAGING / TICKETING ----------------
+  /internal-messages:
+    get:
+      operationId: listInternalMessages
+      tags: [internal]
+      responses:
+        "200":
+          description: Inbox and sent for current user
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/InternalMessage"
+    post:
+      operationId: createInternalMessage
+      tags: [internal]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InternalMessageInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InternalMessage"
+  /internal-messages/{id}/read:
+    patch:
+      operationId: markInternalMessageRead
+      tags: [internal]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InternalMessage"
+  /internal-tickets:
+    get:
+      operationId: listInternalTickets
+      tags: [internal]
+      responses:
+        "200":
+          description: List
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/InternalTicket"
+    post:
+      operationId: createInternalTicket
+      tags: [internal]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InternalTicketInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InternalTicket"
+  /internal-tickets/{id}:
+    patch:
+      operationId: updateInternalTicket
+      tags: [internal]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InternalTicketUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InternalTicket"
+
+  # ---------------- DASHBOARDS ----------------
+  /dashboard/admin:
+    get:
+      operationId: getAdminDashboard
+      tags: [dashboard]
+      responses:
+        "200":
+          description: Admin dashboard aggregate
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminDashboard"
+  /dashboard/member:
+    get:
+      operationId: getMemberDashboard
+      tags: [dashboard]
+      responses:
+        "200":
+          description: Member dashboard aggregate
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MemberDashboard"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +1057,521 @@ components:
       required:
         - status
 
+    # ---------- AUTH ----------
+    User:
+      type: object
+      required: [id, email, fullName, phone, role, createdAt]
+      properties:
+        id: { type: integer }
+        email: { type: string }
+        fullName: { type: string }
+        phone: { type: string }
+        role: { type: string }
+        createdAt: { type: string, format: date-time }
+    RegisterInput:
+      type: object
+      required: [email, password, fullName, phone]
+      properties:
+        email: { type: string, minLength: 3 }
+        password: { type: string, minLength: 6 }
+        fullName: { type: string, minLength: 1 }
+        phone: { type: string, minLength: 1 }
+    LoginInput:
+      type: object
+      required: [email, password]
+      properties:
+        email: { type: string, minLength: 3 }
+        password: { type: string }
+
+    # ---------- MEMBERSHIPS ----------
+    Membership:
+      type: object
+      required: [id, userId, type, feePaidCents, status, createdAt]
+      properties:
+        id: { type: integer }
+        userId: { type: integer }
+        type: { type: string }
+        feePaidCents: { type: integer }
+        status: { type: string }
+        createdAt: { type: string, format: date-time }
+    MembershipInput:
+      type: object
+      required: [type]
+      properties:
+        type: { type: string }
+    MembershipStatusUpdate:
+      type: object
+      required: [status]
+      properties:
+        status: { type: string }
+
+    # ---------- PROPERTY LISTINGS ----------
+    PropertyListing:
+      type: object
+      required: [id, ownerId, category, title, location, priceCents, status, createdAt]
+      properties:
+        id: { type: integer }
+        ownerId: { type: integer }
+        category: { type: string }
+        title: { type: string }
+        location: { type: string }
+        priceCents: { type: integer }
+        status: { type: string }
+        createdAt: { type: string, format: date-time }
+    PropertyListingInput:
+      type: object
+      required: [category, title, location, priceCents]
+      properties:
+        category: { type: string }
+        title: { type: string, minLength: 1 }
+        location: { type: string, minLength: 1 }
+        priceCents: { type: integer, minimum: 0 }
+    PropertyListingUpdate:
+      type: object
+      properties:
+        title: { type: string, minLength: 1 }
+        location: { type: string, minLength: 1 }
+        priceCents: { type: integer, minimum: 0 }
+        status: { type: string }
+
+    # ---------- LAND ----------
+    LandListing:
+      type: object
+      required: [id, sellerId, title, location, priceCents, sizeAcres, status, createdAt]
+      properties:
+        id: { type: integer }
+        sellerId: { type: integer }
+        title: { type: string }
+        location: { type: string }
+        priceCents: { type: integer }
+        sizeAcres: { type: integer }
+        status: { type: string }
+        createdAt: { type: string, format: date-time }
+    LandListingInput:
+      type: object
+      required: [title, location, priceCents, sizeAcres]
+      properties:
+        title: { type: string, minLength: 1 }
+        location: { type: string, minLength: 1 }
+        priceCents: { type: integer, minimum: 0 }
+        sizeAcres: { type: integer, minimum: 0 }
+    LandListingUpdate:
+      type: object
+      properties:
+        title: { type: string, minLength: 1 }
+        location: { type: string, minLength: 1 }
+        priceCents: { type: integer, minimum: 0 }
+        sizeAcres: { type: integer, minimum: 0 }
+        status: { type: string }
+    LandTransaction:
+      type: object
+      required: [id, listingId, buyerId, amountCents, status, createdAt]
+      properties:
+        id: { type: integer }
+        listingId: { type: integer }
+        buyerId: { type: integer }
+        amountCents: { type: integer }
+        status: { type: string }
+        createdAt: { type: string, format: date-time }
+    LandTransactionInput:
+      type: object
+      required: [listingId]
+      properties:
+        listingId: { type: integer }
+
+    # ---------- CONSTRUCTION ----------
+    ConstructionContractor:
+      type: object
+      required: [id, userId, companyName, specialty, rating, createdAt]
+      properties:
+        id: { type: integer }
+        userId: { type: integer }
+        companyName: { type: string }
+        specialty: { type: string }
+        rating: { type: integer }
+        createdAt: { type: string, format: date-time }
+    ConstructionContractorInput:
+      type: object
+      required: [companyName, specialty]
+      properties:
+        companyName: { type: string, minLength: 1 }
+        specialty: { type: string, minLength: 1 }
+    ConstructionProject:
+      type: object
+      required: [id, contractorId, title, location, budgetCents, status, createdAt]
+      properties:
+        id: { type: integer }
+        contractorId: { type: integer }
+        title: { type: string }
+        location: { type: string }
+        budgetCents: { type: integer }
+        status: { type: string }
+        createdAt: { type: string, format: date-time }
+    ConstructionProjectInput:
+      type: object
+      required: [contractorId, title, location, budgetCents]
+      properties:
+        contractorId: { type: integer }
+        title: { type: string, minLength: 1 }
+        location: { type: string, minLength: 1 }
+        budgetCents: { type: integer, minimum: 0 }
+    ConstructionProjectUpdate:
+      type: object
+      properties:
+        status: { type: string }
+        budgetCents: { type: integer, minimum: 0 }
+
+    # ---------- MOBILITY ----------
+    Driver:
+      type: object
+      required: [id, userId, vehicleInfo, status, rating, createdAt]
+      properties:
+        id: { type: integer }
+        userId: { type: integer }
+        vehicleInfo: { type: string }
+        status: { type: string }
+        rating: { type: integer }
+        createdAt: { type: string, format: date-time }
+    DriverInput:
+      type: object
+      required: [vehicleInfo]
+      properties:
+        vehicleInfo: { type: string, minLength: 1 }
+    DriverStatusUpdate:
+      type: object
+      required: [status]
+      properties:
+        status: { type: string }
+    Ride:
+      type: object
+      required: [id, riderId, driverId, pickup, dropoff, fareCents, status, createdAt]
+      properties:
+        id: { type: integer }
+        riderId: { type: integer }
+        driverId: { type: ["integer", "null"] }
+        pickup: { type: string }
+        dropoff: { type: string }
+        fareCents: { type: integer }
+        status: { type: string }
+        createdAt: { type: string, format: date-time }
+    RideInput:
+      type: object
+      required: [pickup, dropoff, fareCents]
+      properties:
+        pickup: { type: string, minLength: 1 }
+        dropoff: { type: string, minLength: 1 }
+        fareCents: { type: integer, minimum: 0 }
+    RideUpdate:
+      type: object
+      properties:
+        status: { type: string }
+        driverId: { type: ["integer", "null"] }
+
+    # ---------- MARKETPLACE ----------
+    MarketplaceListing:
+      type: object
+      required: [id, sellerId, title, description, priceCents, category, status, createdAt]
+      properties:
+        id: { type: integer }
+        sellerId: { type: integer }
+        title: { type: string }
+        description: { type: string }
+        priceCents: { type: integer }
+        category: { type: string }
+        status: { type: string }
+        createdAt: { type: string, format: date-time }
+    MarketplaceListingInput:
+      type: object
+      required: [title, description, priceCents, category]
+      properties:
+        title: { type: string, minLength: 1 }
+        description: { type: string }
+        priceCents: { type: integer, minimum: 0 }
+        category: { type: string, minLength: 1 }
+    MarketplaceListingUpdate:
+      type: object
+      properties:
+        title: { type: string, minLength: 1 }
+        description: { type: string }
+        priceCents: { type: integer, minimum: 0 }
+        status: { type: string }
+    DigitalProduct:
+      type: object
+      required: [id, title, description, priceCents, category, createdAt]
+      properties:
+        id: { type: integer }
+        title: { type: string }
+        description: { type: string }
+        priceCents: { type: integer }
+        category: { type: string }
+        createdAt: { type: string, format: date-time }
+    DigitalProductInput:
+      type: object
+      required: [title, description, priceCents, category]
+      properties:
+        title: { type: string, minLength: 1 }
+        description: { type: string }
+        priceCents: { type: integer, minimum: 0 }
+        category: { type: string, minLength: 1 }
+    PurchaseReceipt:
+      type: object
+      required: [productId, amountCents, message]
+      properties:
+        productId: { type: integer }
+        amountCents: { type: integer }
+        message: { type: string }
+    Ad:
+      type: object
+      required: [id, advertiserId, title, content, placement, status, createdAt]
+      properties:
+        id: { type: integer }
+        advertiserId: { type: integer }
+        title: { type: string }
+        content: { type: string }
+        placement: { type: string }
+        status: { type: string }
+        createdAt: { type: string, format: date-time }
+    AdInput:
+      type: object
+      required: [title, content, placement]
+      properties:
+        title: { type: string, minLength: 1 }
+        content: { type: string, minLength: 1 }
+        placement: { type: string, minLength: 1 }
+    AdStatusUpdate:
+      type: object
+      required: [status]
+      properties:
+        status: { type: string }
+
+    # ---------- YOUTH ----------
+    YouthEmploymentRecord:
+      type: object
+      required: [id, userId, program, status, placementCompany, createdAt]
+      properties:
+        id: { type: integer }
+        userId: { type: integer }
+        program: { type: string }
+        status: { type: string }
+        placementCompany: { type: ["string", "null"] }
+        createdAt: { type: string, format: date-time }
+    YouthEmploymentRecordInput:
+      type: object
+      required: [program]
+      properties:
+        program: { type: string, minLength: 1 }
+        placementCompany: { type: string }
+    YouthEmploymentRecordUpdate:
+      type: object
+      properties:
+        status: { type: string }
+        placementCompany: { type: string }
+
+    # ---------- PROSPECTING ----------
+    ProspectLead:
+      type: object
+      required: [id, name, contact, sector, status, notes, createdAt]
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        contact: { type: string }
+        sector: { type: string }
+        status: { type: string }
+        notes: { type: string }
+        createdAt: { type: string, format: date-time }
+    ProspectLeadInput:
+      type: object
+      required: [name, contact, sector]
+      properties:
+        name: { type: string, minLength: 1 }
+        contact: { type: string, minLength: 1 }
+        sector: { type: string, minLength: 1 }
+        notes: { type: string }
+    ProspectLeadUpdate:
+      type: object
+      properties:
+        status: { type: string }
+        notes: { type: string }
+
+    # ---------- TREASURY ----------
+    TreasuryAccount:
+      type: object
+      required: [id, name, currency, balanceCents, type, updatedAt]
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        currency: { type: string }
+        balanceCents: { type: integer }
+        type: { type: string }
+        updatedAt: { type: string, format: date-time }
+    TreasuryTransaction:
+      type: object
+      required: [id, accountId, type, amountCents, description, createdAt]
+      properties:
+        id: { type: integer }
+        accountId: { type: integer }
+        type: { type: string }
+        amountCents: { type: integer }
+        description: { type: string }
+        createdAt: { type: string, format: date-time }
+    LiquiditySnapshot:
+      type: object
+      required: [id, totalUsdCents, totalGmdCents, reserveRatio, createdAt]
+      properties:
+        id: { type: integer }
+        totalUsdCents: { type: integer }
+        totalGmdCents: { type: integer }
+        reserveRatio: { type: number }
+        createdAt: { type: string, format: date-time }
+    CurrencyRate:
+      type: object
+      required: [id, base, quote, rate, updatedAt]
+      properties:
+        id: { type: integer }
+        base: { type: string }
+        quote: { type: string }
+        rate: { type: number }
+        updatedAt: { type: string, format: date-time }
+    TreasurySummary:
+      type: object
+      required:
+        [
+          totalUsdReservesCents,
+          totalGmdOperationalCents,
+          reserveRatio,
+          latestRate,
+          openRiskEvents,
+          pendingSettlementsCents,
+          recentTransactions,
+        ]
+      properties:
+        totalUsdReservesCents: { type: integer }
+        totalGmdOperationalCents: { type: integer }
+        reserveRatio: { type: number }
+        latestRate: { $ref: "#/components/schemas/CurrencyRate" }
+        openRiskEvents: { type: integer }
+        pendingSettlementsCents: { type: integer }
+        recentTransactions:
+          type: array
+          items:
+            $ref: "#/components/schemas/TreasuryTransaction"
+
+    # ---------- RISK ----------
+    RiskEvent:
+      type: object
+      required: [id, severity, category, description, status, createdAt]
+      properties:
+        id: { type: integer }
+        severity: { type: string }
+        category: { type: string }
+        description: { type: string }
+        status: { type: string }
+        createdAt: { type: string, format: date-time }
+    RiskEventUpdate:
+      type: object
+      required: [status]
+      properties:
+        status: { type: string }
+
+    # ---------- SETTLEMENT ----------
+    SettlementObligation:
+      type: object
+      required: [id, description, amountCents, dueDate, status, createdAt]
+      properties:
+        id: { type: integer }
+        description: { type: string }
+        amountCents: { type: integer }
+        dueDate: { type: string }
+        status: { type: string }
+        createdAt: { type: string, format: date-time }
+    SettlementObligationUpdate:
+      type: object
+      required: [status]
+      properties:
+        status: { type: string }
+
+    # ---------- INTERNAL ----------
+    InternalMessage:
+      type: object
+      required: [id, senderId, recipientId, subject, body, readAt, createdAt]
+      properties:
+        id: { type: integer }
+        senderId: { type: integer }
+        recipientId: { type: integer }
+        subject: { type: string }
+        body: { type: string }
+        readAt: { type: ["string", "null"], format: date-time }
+        createdAt: { type: string, format: date-time }
+    InternalMessageInput:
+      type: object
+      required: [recipientId, subject, body]
+      properties:
+        recipientId: { type: integer }
+        subject: { type: string, minLength: 1 }
+        body: { type: string, minLength: 1 }
+    InternalTicket:
+      type: object
+      required: [id, createdById, department, subject, description, status, priority, createdAt]
+      properties:
+        id: { type: integer }
+        createdById: { type: integer }
+        department: { type: string }
+        subject: { type: string }
+        description: { type: string }
+        status: { type: string }
+        priority: { type: string }
+        createdAt: { type: string, format: date-time }
+    InternalTicketInput:
+      type: object
+      required: [department, subject, description, priority]
+      properties:
+        department: { type: string, minLength: 1 }
+        subject: { type: string, minLength: 1 }
+        description: { type: string, minLength: 1 }
+        priority: { type: string }
+    InternalTicketUpdate:
+      type: object
+      properties:
+        status: { type: string }
+        priority: { type: string }
+
+    # ---------- DASHBOARDS ----------
+    AdminDashboard:
+      type: object
+      required:
+        [
+          totalMembers,
+          pendingMemberships,
+          totalDrivers,
+          activeRides,
+          totalLandListings,
+          totalConstructionProjects,
+          totalMarketplaceListings,
+          totalYouthRecords,
+          totalProspectLeads,
+          openTickets,
+          openRiskEvents,
+          treasurySummary,
+        ]
+      properties:
+        totalMembers: { type: integer }
+        pendingMemberships: { type: integer }
+        totalDrivers: { type: integer }
+        activeRides: { type: integer }
+        totalLandListings: { type: integer }
+        totalConstructionProjects: { type: integer }
+        totalMarketplaceListings: { type: integer }
+        totalYouthRecords: { type: integer }
+        totalProspectLeads: { type: integer }
+        openTickets: { type: integer }
+        openRiskEvents: { type: integer }
+        treasurySummary: { $ref: "#/components/schemas/TreasurySummary" }
+    MemberDashboard:
+      type: object
+      required: [membership, propertyListingsCount, rideCount, unreadMessages, openTickets]
+      properties:
+        membership: { $ref: "#/components/schemas/Membership" }
+        propertyListingsCount: { type: integer }
+        rideCount: { type: integer }
+        unreadMessages: { type: integer }
+        openTickets: { type: integer }
