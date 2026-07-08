@@ -28,6 +28,7 @@ export type MarketplaceListing = typeof marketplaceListingsTable.$inferSelect;
 
 export const digitalProductsTable = pgTable("digital_products", {
   id: serial("id").primaryKey(),
+  sellerId: integer("seller_id").references(() => usersTable.id),
   title: text("title").notNull(),
   description: text("description").notNull(),
   priceCents: integer("price_cents").notNull(),
@@ -39,7 +40,7 @@ export const digitalProductsTable = pgTable("digital_products", {
 
 export const insertDigitalProductSchema = createInsertSchema(
   digitalProductsTable,
-).omit({ id: true, createdAt: true });
+).omit({ id: true, createdAt: true, sellerId: true });
 export type InsertDigitalProduct = z.infer<typeof insertDigitalProductSchema>;
 export type DigitalProduct = typeof digitalProductsTable.$inferSelect;
 

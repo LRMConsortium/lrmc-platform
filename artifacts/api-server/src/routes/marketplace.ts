@@ -17,6 +17,10 @@ import {
   ListDigitalProductsResponse,
   CreateDigitalProductBody,
   CreateDigitalProductResponse,
+  UpdateDigitalProductParams,
+  UpdateDigitalProductBody,
+  UpdateDigitalProductResponse,
+  DeleteDigitalProductParams,
   PurchaseDigitalProductParams,
   PurchaseDigitalProductResponse,
   ListAdsResponse,
@@ -25,8 +29,9 @@ import {
   UpdateAdParams,
   UpdateAdBody,
   UpdateAdResponse,
+  DeleteAdParams,
 } from "@workspace/api-zod";
-import { requireAuth, requireAdmin } from "../middlewares/auth";
+import { requireAuth } from "../middlewares/auth";
 import { isOwnerOrAdmin } from "../middlewares/authz";
 
 const router: IRouter = Router();
@@ -146,10 +151,84 @@ router.post(
 
     const [product] = await db
       .insert(digitalProductsTable)
-      .values(parsed.data)
+      .values({ ...parsed.data, sellerId: req.session.userId! })
       .returning();
 
     res.status(201).json(CreateDigitalProductResponse.parse(product));
+  },
+);
+
+router.patch(
+  "/digital-products/:id",
+  requireAuth,
+  async (req, res): Promise<void> => {
+    const params = UpdateDigitalProductParams.safeParse(req.params);
+    if (!params.success) {
+      res.status(400).json({ error: params.error.message });
+      return;
+    }
+
+    const parsed = UpdateDigitalProductBody.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.message });
+      return;
+    }
+
+    const [existing] = await db
+      .select()
+      .from(digitalProductsTable)
+      .where(eq(digitalProductsTable.id, params.data.id));
+
+    if (!existing) {
+      res.status(404).json({ error: "Digital product not found" });
+      return;
+    }
+
+    if (!isOwnerOrAdmin(req, existing.sellerId)) {
+      res.status(403).json({ error: "Forbidden" });
+      return;
+    }
+
+    const [product] = await db
+      .update(digitalProductsTable)
+      .set(parsed.data)
+      .where(eq(digitalProductsTable.id, params.data.id))
+      .returning();
+
+    res.json(UpdateDigitalProductResponse.parse(product));
+  },
+);
+
+router.delete(
+  "/digital-products/:id",
+  requireAuth,
+  async (req, res): Promise<void> => {
+    const params = DeleteDigitalProductParams.safeParse(req.params);
+    if (!params.success) {
+      res.status(400).json({ error: params.error.message });
+      return;
+    }
+
+    const [existing] = await db
+      .select()
+      .from(digitalProductsTable)
+      .where(eq(digitalProductsTable.id, params.data.id));
+
+    if (!existing) {
+      res.status(404).json({ error: "Digital product not found" });
+      return;
+    }
+
+    if (!isOwnerOrAdmin(req, existing.sellerId)) {
+      res.status(403).json({ error: "Forbidden" });
+      return;
+    }
+
+    await db
+      .delete(digitalProductsTable)
+      .where(eq(digitalProductsTable.id, params.data.id));
+
+    res.sendStatus(204);
   },
 );
 
@@ -203,31 +282,106 @@ router.post("/ads", requireAuth, async (req, res): Promise<void> => {
   res.status(201).json(CreateAdResponse.parse(ad));
 });
 
-router.patch("/ads/:id", requireAdmin, async (req, res): Promise<void> => {
-  const params = UpdateAdParams.safeParse(req.params);
-  if (!params.success) {
-    res.status(400).json({ error: params.error.message });
-    return;
-  }
+router.patch(
+  "/ads/:id",
+  requireAuth,
+  async (req, res): Promise<void> => {
+    const params = UpdateAdParams.safeParse(req.params);
+    if (!params.success) {
+      res.status(400).json({ error: params.error.message });
+      return;
+    }
 
-  const parsed = UpdateAdBody.safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ error: parsed.error.message });
-    return;
-  }
+    const parsed = UpdateAdBody.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.message });
+      return;
+    }
 
-  const [ad] = await db
-    .update(adsTable)
-    .set(parsed.data)
-    .where(eq(adsTable.id, params.data.id))
-    .returning();
+    const [existing] = await db
+      .select()
+      .from(adsTable)
+      .where(eq(adsTable.id, params.data.id));
 
-  if (!ad) {
-    res.status(404).json({ error: "Ad not found" });
-    return;
-  }
+    if (!existing) {
+      res.status(404).json({ error: "Ad not found" });
+      return;
+    }
 
-  res.json(UpdateAdResponse.parse(ad));
-});
+    const isAdmin = req.session.role === "admin";
+    const isOwner = existing.advertiserId === req.session.userId;
+
+    if (!isAdmin && !isOwner) {
+      res.status(403).json({ error: "Forbidden" });
+      return;
+    }
+
+    let update: Partial<typeof parsed.data>;
+
+    if (isAdmin) {
+      // Admins can change status and content fields
+      update = parsed.data;
+    } else {
+      // Owners can only edit content fields on pending ads
+      if (existing.status !== "pending") {
+        res
+          .status(403)
+          .json({ error: "Only pending ads can be edited by their owner" });
+        return;
+      }
+      const { title, content, placement } = parsed.data;
+      update = { title, content, placement };
+    }
+
+    const [ad] = await db
+      .update(adsTable)
+      .set(update)
+      .where(eq(adsTable.id, params.data.id))
+      .returning();
+
+    res.json(UpdateAdResponse.parse(ad));
+  },
+);
+
+router.delete(
+  "/ads/:id",
+  requireAuth,
+  async (req, res): Promise<void> => {
+    const params = DeleteAdParams.safeParse(req.params);
+    if (!params.success) {
+      res.status(400).json({ error: params.error.message });
+      return;
+    }
+
+    const [existing] = await db
+      .select()
+      .from(adsTable)
+      .where(eq(adsTable.id, params.data.id));
+
+    if (!existing) {
+      res.status(404).json({ error: "Ad not found" });
+      return;
+    }
+
+    const isAdmin = req.session.role === "admin";
+    const isOwner = existing.advertiserId === req.session.userId;
+
+    if (!isAdmin && !isOwner) {
+      res.status(403).json({ error: "Forbidden" });
+      return;
+    }
+
+    if (!isAdmin && existing.status !== "pending") {
+      res
+        .status(403)
+        .json({ error: "Only pending ads can be withdrawn by their owner" });
+      return;
+    }
+
+    await db.delete(adsTable).where(eq(adsTable.id, params.data.id));
+
+    res.sendStatus(204);
+  },
+);
 
 export default router;

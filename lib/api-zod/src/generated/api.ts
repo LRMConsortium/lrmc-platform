@@ -575,6 +575,7 @@ export const DeleteMarketplaceListingResponse = zod.void()
 
 export const ListDigitalProductsResponseItem = zod.object({
   "id": zod.number(),
+  "sellerId": zod.number().nullable(),
   "title": zod.string(),
   "description": zod.string(),
   "priceCents": zod.number(),
@@ -599,11 +600,38 @@ export const CreateDigitalProductBody = zod.object({
 
 export const CreateDigitalProductResponse = zod.object({
   "id": zod.number(),
+  "sellerId": zod.number().nullable(),
   "title": zod.string(),
   "description": zod.string(),
   "priceCents": zod.number(),
   "category": zod.string(),
   "createdAt": zod.coerce.date()
+})
+
+
+export const UpdateDigitalProductParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const UpdateDigitalProductBody = zod.object({
+  "title": zod.string().min(1).optional(),
+  "description": zod.string().optional(),
+  "priceCents": zod.number().min(0).optional(),
+  "category": zod.string().min(1).optional()
+})
+
+export const UpdateDigitalProductResponse = zod.object({
+  "id": zod.number(),
+  "sellerId": zod.number().nullable(),
+  "title": zod.string(),
+  "description": zod.string(),
+  "priceCents": zod.number(),
+  "category": zod.string(),
+  "createdAt": zod.coerce.date()
+})
+
+export const DeleteDigitalProductParams = zod.object({
+  "id": zod.coerce.number()
 })
 
 
@@ -657,7 +685,14 @@ export const UpdateAdParams = zod.object({
 })
 
 export const UpdateAdBody = zod.object({
-  "status": zod.string()
+  "title": zod.string().min(1).optional(),
+  "content": zod.string().min(1).optional(),
+  "placement": zod.string().min(1).optional(),
+  "status": zod.string().optional()
+})
+
+export const DeleteAdParams = zod.object({
+  "id": zod.coerce.number()
 })
 
 export const UpdateAdResponse = zod.object({
