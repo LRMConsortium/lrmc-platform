@@ -5,6 +5,7 @@
  * LRMC / Ususu institution API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { MarketplaceListingUpdateStatus } from './marketplaceListingUpdateStatus';
 
 export interface MarketplaceListingUpdate {
   /** @minLength 1 */
@@ -12,5 +13,5 @@ export interface MarketplaceListingUpdate {
   description?: string;
   /** @minimum 0 */
   priceCents?: number;
-  status?: string;
+  status?: MarketplaceListingUpdateStatus;
 }

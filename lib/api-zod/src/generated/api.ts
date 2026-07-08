@@ -591,7 +591,6 @@ export const ListDigitalProductsResponse = zod.array(ListDigitalProductsResponse
 
 
 
-export const createDigitalProductBodyPriceCentsMin = 0;
 
 
 
@@ -599,7 +598,7 @@ export const createDigitalProductBodyPriceCentsMin = 0;
 export const CreateDigitalProductBody = zod.object({
   "title": zod.string().min(1),
   "description": zod.string(),
-  "priceCents": zod.number().int().min(createDigitalProductBodyPriceCentsMin),
+  "priceCents": zod.number().int().min(1),
   "category": zod.string().min(1)
 })
 

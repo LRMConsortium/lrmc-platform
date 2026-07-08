@@ -48,8 +48,17 @@ export interface MembershipInput {
   type: string;
 }
 
+export type MembershipStatusUpdateStatus = typeof MembershipStatusUpdateStatus[keyof typeof MembershipStatusUpdateStatus];
+
+
+export const MembershipStatusUpdateStatus = {
+  pending: 'pending',
+  active: 'active',
+  rejected: 'rejected',
+} as const;
+
 export interface MembershipStatusUpdate {
-  status: string;
+  status: MembershipStatusUpdateStatus;
 }
 
 export interface PropertyListing {
@@ -73,6 +82,15 @@ export interface PropertyListingInput {
   priceCents: number;
 }
 
+export type PropertyListingUpdateStatus = typeof PropertyListingUpdateStatus[keyof typeof PropertyListingUpdateStatus];
+
+
+export const PropertyListingUpdateStatus = {
+  active: 'active',
+  rented: 'rented',
+  inactive: 'inactive',
+} as const;
+
 export interface PropertyListingUpdate {
   /** @minLength 1 */
   title?: string;
@@ -80,7 +98,7 @@ export interface PropertyListingUpdate {
   location?: string;
   /** @minimum 0 */
   priceCents?: number;
-  status?: string;
+  status?: PropertyListingUpdateStatus;
 }
 
 export interface LandListing {
@@ -105,6 +123,15 @@ export interface LandListingInput {
   sizeAcres: number;
 }
 
+export type LandListingUpdateStatus = typeof LandListingUpdateStatus[keyof typeof LandListingUpdateStatus];
+
+
+export const LandListingUpdateStatus = {
+  available: 'available',
+  under_contract: 'under_contract',
+  sold: 'sold',
+} as const;
+
 export interface LandListingUpdate {
   /** @minLength 1 */
   title?: string;
@@ -114,7 +141,7 @@ export interface LandListingUpdate {
   priceCents?: number;
   /** @minimum 0 */
   sizeAcres?: number;
-  status?: string;
+  status?: LandListingUpdateStatus;
 }
 
 export interface LandTransaction {
@@ -166,8 +193,18 @@ export interface ConstructionProjectInput {
   budgetCents: number;
 }
 
+export type ConstructionProjectUpdateStatus = typeof ConstructionProjectUpdateStatus[keyof typeof ConstructionProjectUpdateStatus];
+
+
+export const ConstructionProjectUpdateStatus = {
+  planning: 'planning',
+  in_progress: 'in_progress',
+  completed: 'completed',
+  on_hold: 'on_hold',
+} as const;
+
 export interface ConstructionProjectUpdate {
-  status?: string;
+  status?: ConstructionProjectUpdateStatus;
   /** @minimum 0 */
   budgetCents?: number;
 }
@@ -186,8 +223,17 @@ export interface DriverInput {
   vehicleInfo: string;
 }
 
+export type DriverStatusUpdateStatus = typeof DriverStatusUpdateStatus[keyof typeof DriverStatusUpdateStatus];
+
+
+export const DriverStatusUpdateStatus = {
+  pending: 'pending',
+  approved: 'approved',
+  suspended: 'suspended',
+} as const;
+
 export interface DriverStatusUpdate {
-  status: string;
+  status: DriverStatusUpdateStatus;
 }
 
 export interface Ride {
@@ -211,8 +257,19 @@ export interface RideInput {
   fareCents: number;
 }
 
+export type RideUpdateStatus = typeof RideUpdateStatus[keyof typeof RideUpdateStatus];
+
+
+export const RideUpdateStatus = {
+  requested: 'requested',
+  accepted: 'accepted',
+  in_progress: 'in_progress',
+  completed: 'completed',
+  cancelled: 'cancelled',
+} as const;
+
 export interface RideUpdate {
-  status?: string;
+  status?: RideUpdateStatus;
   /** @nullable */
   driverId?: number | null;
 }
@@ -238,13 +295,22 @@ export interface MarketplaceListingInput {
   category: string;
 }
 
+export type MarketplaceListingUpdateStatus = typeof MarketplaceListingUpdateStatus[keyof typeof MarketplaceListingUpdateStatus];
+
+
+export const MarketplaceListingUpdateStatus = {
+  active: 'active',
+  sold: 'sold',
+  inactive: 'inactive',
+} as const;
+
 export interface MarketplaceListingUpdate {
   /** @minLength 1 */
   title?: string;
   description?: string;
   /** @minimum 0 */
   priceCents?: number;
-  status?: string;
+  status?: MarketplaceListingUpdateStatus;
 }
 
 export interface DigitalProduct {
@@ -263,11 +329,19 @@ export interface DigitalProductInput {
   /** @minLength 1 */
   title: string;
   description: string;
-  /** @minimum 0 */
+  /** @minimum 1 */
   priceCents: number;
   /** @minLength 1 */
   category: string;
 }
+
+export type DigitalProductUpdateStatus = typeof DigitalProductUpdateStatus[keyof typeof DigitalProductUpdateStatus];
+
+
+export const DigitalProductUpdateStatus = {
+  active: 'active',
+  archived: 'archived',
+} as const;
 
 export interface DigitalProductUpdate {
   /** @minLength 1 */
@@ -277,7 +351,7 @@ export interface DigitalProductUpdate {
   priceCents?: number;
   /** @minLength 1 */
   category?: string;
-  status?: string;
+  status?: DigitalProductUpdateStatus;
 }
 
 export interface PurchaseReceipt {
@@ -294,6 +368,7 @@ export interface Ad {
   placement: string;
   status: string;
   parentAdId?: number | null;
+  rejectionNote?: string | null;
   createdAt: string;
 }
 
@@ -312,6 +387,7 @@ export interface AdDetail {
   placement: string;
   status: string;
   parentAdId?: number | null;
+  rejectionNote?: string | null;
   createdAt: string;
   /** Full ancestor rejection chain, newest first. Admins only. */
   rejectionChain?: AdRejectionChainItem[];
@@ -332,7 +408,7 @@ export interface AdStatusUpdate {
 }
 
 /**
- * Fields a seller can edit on their own pending ad
+ * Fields a seller can edit on their own pending ad. rejectionNote is admin-only on write.
  */
 export interface AdContentUpdate {
   /** @minLength 1 */
@@ -342,6 +418,7 @@ export interface AdContentUpdate {
   /** @minLength 1 */
   placement?: string;
   status?: string;
+  rejectionNote?: string | null;
 }
 
 export interface YouthEmploymentRecord {

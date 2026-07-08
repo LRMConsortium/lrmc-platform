@@ -5,6 +5,7 @@
  * LRMC / Ususu institution API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { LandListingUpdateStatus } from './landListingUpdateStatus';
 
 export interface LandListingUpdate {
   /** @minLength 1 */
@@ -15,5 +16,5 @@ export interface LandListingUpdate {
   priceCents?: number;
   /** @minimum 0 */
   sizeAcres?: number;
-  status?: string;
+  status?: LandListingUpdateStatus;
 }

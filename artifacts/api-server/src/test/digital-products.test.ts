@@ -168,6 +168,48 @@ describe("digital-products priceCents validation on POST", () => {
 
     expect(res.status).toBe(400);
   });
+
+  it("rejects POST with priceCents: 0 (free products are not supported) with 400", async () => {
+    // Free digital products are not a supported business case.
+    // The DigitalProductInput schema enforces minimum: 1 to prevent zero-price creation.
+    const seller = await createMemberUser("dp-price-zero-create-seller");
+
+    const res = await seller.agent.post("/api/digital-products").send({
+      title: "Free Product",
+      description: "Should be rejected because priceCents must be at least 1.",
+      priceCents: 0,
+      category: "ebook",
+    });
+
+    expect(res.status).toBe(400);
+  });
+
+  it("rejects POST with priceCents: -1 (negative price) with 400", async () => {
+    const seller = await createMemberUser("dp-price-negative-create-seller");
+
+    const res = await seller.agent.post("/api/digital-products").send({
+      title: "Negative Price Product",
+      description: "Should be rejected.",
+      priceCents: -1,
+      category: "ebook",
+    });
+
+    expect(res.status).toBe(400);
+  });
+
+  it("accepts POST with priceCents: 1 (minimum valid price) with 201", async () => {
+    const seller = await createMemberUser("dp-price-one-create-seller");
+
+    const res = await seller.agent.post("/api/digital-products").send({
+      title: "One Cent Product",
+      description: "Minimum valid price.",
+      priceCents: 1,
+      category: "ebook",
+    });
+
+    expect(res.status).toBe(201);
+    expect(res.body.priceCents).toBe(1);
+  });
 });
 
 describe("digital-products status validation", () => {

@@ -5,6 +5,7 @@
  * LRMC / Ususu institution API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { DigitalProductUpdateStatus } from './digitalProductUpdateStatus';
 
 export interface DigitalProductUpdate {
   /** @minLength 1 */
@@ -14,5 +15,5 @@ export interface DigitalProductUpdate {
   priceCents?: number;
   /** @minLength 1 */
   category?: string;
-  status?: string;
+  status?: DigitalProductUpdateStatus;
 }

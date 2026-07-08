@@ -5,9 +5,10 @@
  * LRMC / Ususu institution API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { RideUpdateStatus } from './rideUpdateStatus';
 
 export interface RideUpdate {
-  status?: string;
+  status?: RideUpdateStatus;
   /** @nullable */
   driverId?: number | null;
 }

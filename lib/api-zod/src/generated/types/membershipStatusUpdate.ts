@@ -5,7 +5,8 @@
  * LRMC / Ususu institution API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { MembershipStatusUpdateStatus } from './membershipStatusUpdateStatus';
 
 export interface MembershipStatusUpdate {
-  status: string;
+  status: MembershipStatusUpdateStatus;
 }
