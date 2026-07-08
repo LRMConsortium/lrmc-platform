@@ -80,3 +80,40 @@ describe("property-listings authorization", () => {
     expect(res.status).toBe(204);
   });
 });
+
+describe("property-listings status validation", () => {
+  it("rejects an invalid status value with 400", async () => {
+    const owner = await createMemberUser("owner");
+    const listingId = await createListing(owner.agent);
+
+    const res = await owner.agent
+      .patch(`/api/property-listings/${listingId}`)
+      .send({ status: "hacked" });
+
+    expect(res.status).toBe(400);
+  });
+
+  it("accepts a valid status value (rented)", async () => {
+    const owner = await createMemberUser("owner");
+    const listingId = await createListing(owner.agent);
+
+    const res = await owner.agent
+      .patch(`/api/property-listings/${listingId}`)
+      .send({ status: "rented" });
+
+    expect(res.status).toBe(200);
+    expect(res.body.status).toBe("rented");
+  });
+
+  it("accepts a valid status value (inactive)", async () => {
+    const owner = await createMemberUser("owner");
+    const listingId = await createListing(owner.agent);
+
+    const res = await owner.agent
+      .patch(`/api/property-listings/${listingId}`)
+      .send({ status: "inactive" });
+
+    expect(res.status).toBe(200);
+    expect(res.body.status).toBe("inactive");
+  });
+});

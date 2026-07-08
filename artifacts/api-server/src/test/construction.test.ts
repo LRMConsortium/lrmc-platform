@@ -63,3 +63,30 @@ describe("construction-projects authorization", () => {
     expect(res.status).toBe(200);
   });
 });
+
+describe("construction-projects status validation", () => {
+  it("rejects an invalid status value with 400", async () => {
+    const owner = await createMemberUser("contractor-owner");
+    const contractorId = await createContractor(owner.agent);
+    const projectId = await createProject(owner.agent, contractorId);
+
+    const res = await owner.agent
+      .patch(`/api/construction-projects/${projectId}`)
+      .send({ status: "hacked" });
+
+    expect(res.status).toBe(400);
+  });
+
+  it("accepts a valid status value (completed)", async () => {
+    const owner = await createMemberUser("contractor-owner");
+    const contractorId = await createContractor(owner.agent);
+    const projectId = await createProject(owner.agent, contractorId);
+
+    const res = await owner.agent
+      .patch(`/api/construction-projects/${projectId}`)
+      .send({ status: "completed" });
+
+    expect(res.status).toBe(200);
+    expect(res.body.status).toBe("completed");
+  });
+});

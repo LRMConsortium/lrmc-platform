@@ -1177,7 +1177,7 @@ components:
       type: object
       required: [status]
       properties:
-        status: { type: string }
+        status: { type: string, enum: [pending, active, rejected] }
 
     # ---------- PROPERTY LISTINGS ----------
     PropertyListing:
@@ -1206,7 +1206,7 @@ components:
         title: { type: string, minLength: 1 }
         location: { type: string, minLength: 1 }
         priceCents: { type: integer, minimum: 0 }
-        status: { type: string }
+        status: { type: string, enum: [active, rented, inactive] }
 
     # ---------- LAND ----------
     LandListing:
@@ -1292,7 +1292,7 @@ components:
     ConstructionProjectUpdate:
       type: object
       properties:
-        status: { type: string }
+        status: { type: string, enum: [planning, in_progress, completed, on_hold] }
         budgetCents: { type: integer, minimum: 0 }
 
     # ---------- MOBILITY ----------
@@ -1315,7 +1315,7 @@ components:
       type: object
       required: [status]
       properties:
-        status: { type: string }
+        status: { type: string, enum: [pending, approved, suspended] }
     Ride:
       type: object
       required: [id, riderId, driverId, pickup, dropoff, fareCents, status, createdAt]
@@ -1338,7 +1338,7 @@ components:
     RideUpdate:
       type: object
       properties:
-        status: { type: string }
+        status: { type: string, enum: [requested, accepted, in_progress, completed, cancelled] }
         driverId: { type: ["integer", "null"] }
 
     # ---------- MARKETPLACE ----------

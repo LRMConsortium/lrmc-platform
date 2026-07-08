@@ -101,3 +101,53 @@ describe("rides authorization and scoping", () => {
     expect(res.status).toBe(200);
   });
 });
+
+describe("drivers status validation", () => {
+  it("rejects an invalid driver status value with 400", async () => {
+    const owner = await createMemberUser("driver-owner");
+    const driverId = await createDriver(owner.agent);
+
+    const res = await owner.agent
+      .patch(`/api/drivers/${driverId}`)
+      .send({ status: "hacked" });
+
+    expect(res.status).toBe(400);
+  });
+
+  it("accepts a valid driver status value (approved)", async () => {
+    const owner = await createMemberUser("driver-owner");
+    const driverId = await createDriver(owner.agent);
+
+    const res = await owner.agent
+      .patch(`/api/drivers/${driverId}`)
+      .send({ status: "approved" });
+
+    expect(res.status).toBe(200);
+    expect(res.body.status).toBe("approved");
+  });
+});
+
+describe("rides status validation", () => {
+  it("rejects an invalid ride status value with 400", async () => {
+    const rider = await createMemberUser("rider");
+    const rideId = await createRide(rider.agent);
+
+    const res = await rider.agent
+      .patch(`/api/rides/${rideId}`)
+      .send({ status: "hacked" });
+
+    expect(res.status).toBe(400);
+  });
+
+  it("accepts a valid ride status value (cancelled)", async () => {
+    const rider = await createMemberUser("rider");
+    const rideId = await createRide(rider.agent);
+
+    const res = await rider.agent
+      .patch(`/api/rides/${rideId}`)
+      .send({ status: "cancelled" });
+
+    expect(res.status).toBe(200);
+    expect(res.body.status).toBe("cancelled");
+  });
+});

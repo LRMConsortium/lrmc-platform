@@ -118,7 +118,7 @@ export const UpdateMembershipParams = zod.object({
 })
 
 export const UpdateMembershipBody = zod.object({
-  "status": zod.string()
+  "status": zod.enum(['pending', 'active', 'rejected'])
 })
 
 export const UpdateMembershipResponse = zod.object({
@@ -187,7 +187,7 @@ export const UpdatePropertyListingBody = zod.object({
   "title": zod.string().min(1).optional(),
   "location": zod.string().min(1).optional(),
   "priceCents": zod.number().min(updatePropertyListingBodyPriceCentsMin).optional(),
-  "status": zod.string().optional()
+  "status": zod.enum(['active', 'rented', 'inactive']).optional()
 })
 
 export const UpdatePropertyListingResponse = zod.object({
@@ -381,7 +381,7 @@ export const updateConstructionProjectBodyBudgetCentsMin = 0;
 
 
 export const UpdateConstructionProjectBody = zod.object({
-  "status": zod.string().optional(),
+  "status": zod.enum(['planning', 'in_progress', 'completed', 'on_hold']).optional(),
   "budgetCents": zod.number().min(updateConstructionProjectBodyBudgetCentsMin).optional()
 })
 
@@ -429,7 +429,7 @@ export const UpdateDriverParams = zod.object({
 })
 
 export const UpdateDriverBody = zod.object({
-  "status": zod.string()
+  "status": zod.enum(['pending', 'approved', 'suspended'])
 })
 
 export const UpdateDriverResponse = zod.object({
@@ -484,7 +484,7 @@ export const UpdateRideParams = zod.object({
 })
 
 export const UpdateRideBody = zod.object({
-  "status": zod.string().optional(),
+  "status": zod.enum(['requested', 'accepted', 'in_progress', 'completed', 'cancelled']).optional(),
   "driverId": zod.number().nullish()
 })
 
