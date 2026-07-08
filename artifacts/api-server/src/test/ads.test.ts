@@ -362,6 +362,42 @@ describe("ads authorization", () => {
         expect(res.body.rejectionChain).toHaveLength(0);
       }
     });
+
+    it("unauthenticated GET /ads/:id on an active ad does not expose advertiserId", async () => {
+      const seller = await createMemberUser("get-ad-anon-adverid-seller");
+      const admin = await createAdminUser("get-ad-anon-adverid-admin");
+      const ad = await createAd(seller.agent);
+      await admin.agent.patch(`/api/ads/${ad.id}`).send({ status: "active" });
+
+      const { anonymousAgent } = await import("./helpers");
+      const res = await anonymousAgent().get(`/api/ads/${ad.id}`);
+      expect(res.status).toBe(200);
+      expect(res.body).not.toHaveProperty("advertiserId");
+    });
+
+    it("authenticated member GET /ads/:id on an active ad does not expose advertiserId", async () => {
+      const seller = await createMemberUser("get-ad-member-adverid-seller");
+      const viewer = await createMemberUser("get-ad-member-adverid-viewer");
+      const admin = await createAdminUser("get-ad-member-adverid-admin");
+      const ad = await createAd(seller.agent);
+      await admin.agent.patch(`/api/ads/${ad.id}`).send({ status: "active" });
+
+      const res = await viewer.agent.get(`/api/ads/${ad.id}`);
+      expect(res.status).toBe(200);
+      expect(res.body).not.toHaveProperty("advertiserId");
+    });
+
+    it("admin GET /ads/:id on an active ad does include advertiserId", async () => {
+      const seller = await createMemberUser("get-ad-admin-adverid-seller");
+      const admin = await createAdminUser("get-ad-admin-adverid-admin");
+      const ad = await createAd(seller.agent);
+      await admin.agent.patch(`/api/ads/${ad.id}`).send({ status: "active" });
+
+      const res = await admin.agent.get(`/api/ads/${ad.id}`);
+      expect(res.status).toBe(200);
+      expect(res.body).toHaveProperty("advertiserId");
+      expect(typeof res.body.advertiserId).toBe("number");
+    });
   });
 
   describe("GET /ads/:id status gate", () => {
