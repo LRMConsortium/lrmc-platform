@@ -28,16 +28,20 @@ import {
   ListAdsResponseItem,
   CreateAdBody,
   CreateAdResponse,
+  GetAdParams,
+  GetAdResponse,
   UpdateAdParams,
   UpdateAdBody,
   UpdateAdResponse,
   DeleteAdParams,
 } from "@workspace/api-zod";
 
-// Public ad schema: strips admin-only fields (moderation chain) from non-admin responses.
+// Public ad schemas: strip admin-only moderation fields from non-admin responses.
 // Add new admin-only fields here so they are never accidentally leaked.
 const ListAdsPublicResponseItem = ListAdsResponseItem.omit({ parentAdId: true });
 const ListAdsPublicResponse = ListAdsPublicResponseItem.array();
+// Single-ad public schema: omit parentAdId so non-admins cannot traverse the chain.
+const GetAdPublicResponse = GetAdResponse.omit({ parentAdId: true, rejectionChain: true });
 import { requireAuth } from "../middlewares/auth";
 import { isOwnerOrAdmin } from "../middlewares/authz";
 
@@ -316,6 +320,54 @@ router.get("/ads", async (req, res): Promise<void> => {
   } else {
     res.json(ListAdsPublicResponse.parse(rows));
   }
+});
+
+router.get("/ads/:id", async (req, res): Promise<void> => {
+  const params = GetAdParams.safeParse(req.params);
+  if (!params.success) {
+    res.status(400).json({ error: params.error.message });
+    return;
+  }
+
+  const [ad] = await db
+    .select()
+    .from(adsTable)
+    .where(eq(adsTable.id, params.data.id));
+
+  if (!ad) {
+    res.status(404).json({ error: "Ad not found" });
+    return;
+  }
+
+  const isAdmin = req.session?.role === "admin";
+
+  if (!isAdmin) {
+    // Non-admins: strip parentAdId and rejectionChain so the moderation chain
+    // cannot be traversed by making repeated GET /ads/:id calls.
+    res.json(GetAdPublicResponse.parse(ad));
+    return;
+  }
+
+  // Admins: walk the ancestor chain to build the full rejection history,
+  // newest ancestor first (immediate parent → grandparent → … → original).
+  const rejectionChain: Array<{ id: number; title: string; status: string; createdAt: Date }> = [];
+  let ancestorId: number | null = ad.parentAdId;
+  while (ancestorId !== null) {
+    const [ancestor] = await db
+      .select()
+      .from(adsTable)
+      .where(eq(adsTable.id, ancestorId));
+    if (!ancestor) break;
+    rejectionChain.push({
+      id: ancestor.id,
+      title: ancestor.title,
+      status: ancestor.status,
+      createdAt: ancestor.createdAt,
+    });
+    ancestorId = ancestor.parentAdId;
+  }
+
+  res.json(GetAdResponse.parse({ ...ad, rejectionChain }));
 });
 
 router.post("/ads", requireAuth, async (req, res): Promise<void> => {

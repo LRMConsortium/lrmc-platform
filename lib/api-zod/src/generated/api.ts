@@ -574,12 +574,12 @@ export const DeleteMarketplaceListingResponse = zod.void()
 
 
 export const ListDigitalProductsQueryParams = zod.object({
-  "status": zod.enum(["active", "archived"]).optional()
+  "status": zod.enum(['active', 'archived']).optional().describe('Filter by product status. Defaults to \"active\". Use \"archived\" to see archived products (sellers\/admins only).')
 })
 
 export const ListDigitalProductsResponseItem = zod.object({
   "id": zod.number(),
-  "sellerId": zod.number().nullable(),
+  "sellerId": zod.number().nullish(),
   "title": zod.string(),
   "description": zod.string(),
   "priceCents": zod.number(),
@@ -605,7 +605,7 @@ export const CreateDigitalProductBody = zod.object({
 
 export const CreateDigitalProductResponse = zod.object({
   "id": zod.number(),
-  "sellerId": zod.number().nullable(),
+  "sellerId": zod.number().nullish(),
   "title": zod.string(),
   "description": zod.string(),
   "priceCents": zod.number(),
@@ -619,17 +619,23 @@ export const UpdateDigitalProductParams = zod.object({
   "id": zod.coerce.number()
 })
 
+
+export const updateDigitalProductBodyPriceCentsMin = 0;
+
+
+
+
 export const UpdateDigitalProductBody = zod.object({
   "title": zod.string().min(1).optional(),
   "description": zod.string().optional(),
-  "priceCents": zod.number().min(0).optional(),
+  "priceCents": zod.number().min(updateDigitalProductBodyPriceCentsMin).optional(),
   "category": zod.string().min(1).optional(),
   "status": zod.string().optional()
 })
 
 export const UpdateDigitalProductResponse = zod.object({
   "id": zod.number(),
-  "sellerId": zod.number().nullable(),
+  "sellerId": zod.number().nullish(),
   "title": zod.string(),
   "description": zod.string(),
   "priceCents": zod.number(),
@@ -638,9 +644,12 @@ export const UpdateDigitalProductResponse = zod.object({
   "createdAt": zod.coerce.date()
 })
 
+
 export const DeleteDigitalProductParams = zod.object({
   "id": zod.coerce.number()
 })
+
+export const DeleteDigitalProductResponse = zod.void()
 
 
 export const PurchaseDigitalProductParams = zod.object({
@@ -661,7 +670,7 @@ export const ListAdsResponseItem = zod.object({
   "content": zod.string(),
   "placement": zod.string(),
   "status": zod.string(),
-  "parentAdId": zod.number().nullable().optional(),
+  "parentAdId": zod.number().nullish(),
   "createdAt": zod.coerce.date()
 })
 export const ListAdsResponse = zod.array(ListAdsResponseItem)
@@ -686,8 +695,30 @@ export const CreateAdResponse = zod.object({
   "content": zod.string(),
   "placement": zod.string(),
   "status": zod.string(),
-  "parentAdId": zod.number().nullable().optional(),
+  "parentAdId": zod.number().nullish(),
   "createdAt": zod.coerce.date()
+})
+
+
+export const GetAdParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const GetAdResponse = zod.object({
+  "id": zod.number(),
+  "advertiserId": zod.number(),
+  "title": zod.string(),
+  "content": zod.string(),
+  "placement": zod.string(),
+  "status": zod.string(),
+  "parentAdId": zod.number().nullish(),
+  "createdAt": zod.coerce.date(),
+  "rejectionChain": zod.array(zod.object({
+  "id": zod.number(),
+  "title": zod.string(),
+  "status": zod.string(),
+  "createdAt": zod.coerce.date()
+})).optional().describe('Full ancestor rejection chain, newest first. Admins only.')
 })
 
 
@@ -695,16 +726,17 @@ export const UpdateAdParams = zod.object({
   "id": zod.coerce.number()
 })
 
+
+
+
+
+
 export const UpdateAdBody = zod.object({
   "title": zod.string().min(1).optional(),
   "content": zod.string().min(1).optional(),
   "placement": zod.string().min(1).optional(),
   "status": zod.string().optional()
-})
-
-export const DeleteAdParams = zod.object({
-  "id": zod.coerce.number()
-})
+}).describe('Fields a seller can edit on their own pending ad')
 
 export const UpdateAdResponse = zod.object({
   "id": zod.number(),
@@ -713,9 +745,16 @@ export const UpdateAdResponse = zod.object({
   "content": zod.string(),
   "placement": zod.string(),
   "status": zod.string(),
-  "parentAdId": zod.number().nullable().optional(),
+  "parentAdId": zod.number().nullish(),
   "createdAt": zod.coerce.date()
 })
+
+
+export const DeleteAdParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const DeleteAdResponse = zod.void()
 
 
 export const ListYouthEmploymentRecordsResponseItem = zod.object({

@@ -21,8 +21,9 @@ import type {
 
 import type {
   Ad,
+  AdContentUpdate,
+  AdDetail,
   AdInput,
-  AdStatusUpdate,
   AdminDashboard,
   ConstructionContractor,
   ConstructionContractorInput,
@@ -32,6 +33,7 @@ import type {
   CurrencyRate,
   DigitalProduct,
   DigitalProductInput,
+  DigitalProductUpdate,
   Driver,
   DriverInput,
   DriverStatusUpdate,
@@ -47,6 +49,7 @@ import type {
   LandTransaction,
   LandTransactionInput,
   LiquiditySnapshot,
+  ListDigitalProductsParams,
   ListMembershipsParams,
   ListPropertyListingsParams,
   LoginInput,
@@ -2353,17 +2356,24 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       return useMutation(getDeleteMarketplaceListingMutationOptions(options));
     }
 
-export const getListDigitalProductsUrl = () => {
+export const getListDigitalProductsUrl = (params?: ListDigitalProductsParams,) => {
+  const normalizedParams = new URLSearchParams();
 
+  Object.entries(params || {}).forEach(([key, value]) => {
 
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
 
+  const stringifiedParams = normalizedParams.toString();
 
-  return `/api/digital-products`
+  return stringifiedParams.length > 0 ? `/api/digital-products?${stringifiedParams}` : `/api/digital-products`
 }
 
-export const listDigitalProducts = async ( options?: RequestInit): Promise<DigitalProduct[]> => {
+export const listDigitalProducts = async (params?: ListDigitalProductsParams, options?: RequestInit): Promise<DigitalProduct[]> => {
 
-  return customFetch<DigitalProduct[]>(getListDigitalProductsUrl(),
+  return customFetch<DigitalProduct[]>(getListDigitalProductsUrl(params),
   {
     ...options,
     method: 'GET'
@@ -2376,23 +2386,23 @@ export const listDigitalProducts = async ( options?: RequestInit): Promise<Digit
 
 
 
-export const getListDigitalProductsQueryKey = () => {
+export const getListDigitalProductsQueryKey = (params?: ListDigitalProductsParams,) => {
     return [
-    `/api/digital-products`
+    `/api/digital-products`, ...(params ? [params] : [])
     ] as const;
     }
 
 
-export const getListDigitalProductsQueryOptions = <TData = Awaited<ReturnType<typeof listDigitalProducts>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listDigitalProducts>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export const getListDigitalProductsQueryOptions = <TData = Awaited<ReturnType<typeof listDigitalProducts>>, TError = ErrorType<unknown>>(params?: ListDigitalProductsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listDigitalProducts>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getListDigitalProductsQueryKey();
+  const queryKey =  queryOptions?.queryKey ?? getListDigitalProductsQueryKey(params);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof listDigitalProducts>>> = ({ signal }) => listDigitalProducts({ signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listDigitalProducts>>> = ({ signal }) => listDigitalProducts(params, { signal, ...requestOptions });
 
 
 
@@ -2407,11 +2417,11 @@ export type ListDigitalProductsQueryError = ErrorType<unknown>
 
 
 export function useListDigitalProducts<TData = Awaited<ReturnType<typeof listDigitalProducts>>, TError = ErrorType<unknown>>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listDigitalProducts>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+ params?: ListDigitalProductsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listDigitalProducts>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
-  const queryOptions = getListDigitalProductsQueryOptions(options)
+  const queryOptions = getListDigitalProductsQueryOptions(params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
@@ -2489,6 +2499,137 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       return useMutation(getCreateDigitalProductMutationOptions(options));
     }
 
+export const getUpdateDigitalProductUrl = (id: number,) => {
+
+
+
+
+  return `/api/digital-products/${id}`
+}
+
+export const updateDigitalProduct = async (id: number,
+    digitalProductUpdate: DigitalProductUpdate, options?: RequestInit): Promise<DigitalProduct> => {
+
+  return customFetch<DigitalProduct>(getUpdateDigitalProductUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(digitalProductUpdate)
+  }
+);}
+
+
+
+
+
+export const getUpdateDigitalProductMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateDigitalProduct>>, TError,{id: number;data: BodyType<DigitalProductUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateDigitalProduct>>, TError,{id: number;data: BodyType<DigitalProductUpdate>}, TContext> => {
+
+const mutationKey = ['updateDigitalProduct'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateDigitalProduct>>, {id: number;data: BodyType<DigitalProductUpdate>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateDigitalProduct(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateDigitalProductMutationResult = NonNullable<Awaited<ReturnType<typeof updateDigitalProduct>>>
+    export type UpdateDigitalProductMutationBody = BodyType<DigitalProductUpdate>
+    export type UpdateDigitalProductMutationError = ErrorType<unknown>
+
+    export const useUpdateDigitalProduct = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateDigitalProduct>>, TError,{id: number;data: BodyType<DigitalProductUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateDigitalProduct>>,
+        TError,
+        {id: number;data: BodyType<DigitalProductUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateDigitalProductMutationOptions(options));
+    }
+
+export const getDeleteDigitalProductUrl = (id: number,) => {
+
+
+
+
+  return `/api/digital-products/${id}`
+}
+
+export const deleteDigitalProduct = async (id: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeleteDigitalProductUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getDeleteDigitalProductMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteDigitalProduct>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteDigitalProduct>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['deleteDigitalProduct'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteDigitalProduct>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteDigitalProduct(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteDigitalProductMutationResult = NonNullable<Awaited<ReturnType<typeof deleteDigitalProduct>>>
+
+    export type DeleteDigitalProductMutationError = ErrorType<unknown>
+
+    export const useDeleteDigitalProduct = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteDigitalProduct>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteDigitalProduct>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getDeleteDigitalProductMutationOptions(options));
+    }
+
 export const getPurchaseDigitalProductUrl = (id: number,) => {
 
 
@@ -2512,7 +2653,7 @@ export const purchaseDigitalProduct = async (id: number, options?: RequestInit):
 
 
 
-export const getPurchaseDigitalProductMutationOptions = <TError = ErrorType<unknown>,
+export const getPurchaseDigitalProductMutationOptions = <TError = ErrorType<void>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof purchaseDigitalProduct>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
 ): UseMutationOptions<Awaited<ReturnType<typeof purchaseDigitalProduct>>, TError,{id: number}, TContext> => {
 
@@ -2541,9 +2682,9 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type PurchaseDigitalProductMutationResult = NonNullable<Awaited<ReturnType<typeof purchaseDigitalProduct>>>
 
-    export type PurchaseDigitalProductMutationError = ErrorType<unknown>
+    export type PurchaseDigitalProductMutationError = ErrorType<void>
 
-    export const usePurchaseDigitalProduct = <TError = ErrorType<unknown>,
+    export const usePurchaseDigitalProduct = <TError = ErrorType<void>,
     TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof purchaseDigitalProduct>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof purchaseDigitalProduct>>,
@@ -2690,6 +2831,77 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       return useMutation(getCreateAdMutationOptions(options));
     }
 
+export const getGetAdUrl = (id: number,) => {
+
+
+
+
+  return `/api/ads/${id}`
+}
+
+export const getAd = async (id: number, options?: RequestInit): Promise<AdDetail> => {
+
+  return customFetch<AdDetail>(getGetAdUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetAdQueryKey = (id: number,) => {
+    return [
+    `/api/ads/${id}`
+    ] as const;
+    }
+
+
+export const getGetAdQueryOptions = <TData = Awaited<ReturnType<typeof getAd>>, TError = ErrorType<void>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAd>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAdQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAd>>> = ({ signal }) => getAd(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAd>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetAdQueryResult = NonNullable<Awaited<ReturnType<typeof getAd>>>
+export type GetAdQueryError = ErrorType<void>
+
+
+
+export function useGetAd<TData = Awaited<ReturnType<typeof getAd>>, TError = ErrorType<void>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAd>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetAdQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
 export const getUpdateAdUrl = (id: number,) => {
 
 
@@ -2699,14 +2911,14 @@ export const getUpdateAdUrl = (id: number,) => {
 }
 
 export const updateAd = async (id: number,
-    adStatusUpdate: AdStatusUpdate, options?: RequestInit): Promise<Ad> => {
+    adContentUpdate: AdContentUpdate, options?: RequestInit): Promise<Ad> => {
 
   return customFetch<Ad>(getUpdateAdUrl(id),
   {
     ...options,
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(adStatusUpdate)
+    body: JSON.stringify(adContentUpdate)
   }
 );}
 
@@ -2715,8 +2927,8 @@ export const updateAd = async (id: number,
 
 
 export const getUpdateAdMutationOptions = <TError = ErrorType<unknown>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateAd>>, TError,{id: number;data: BodyType<AdStatusUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof updateAd>>, TError,{id: number;data: BodyType<AdStatusUpdate>}, TContext> => {
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateAd>>, TError,{id: number;data: BodyType<AdContentUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateAd>>, TError,{id: number;data: BodyType<AdContentUpdate>}, TContext> => {
 
 const mutationKey = ['updateAd'];
 const {mutation: mutationOptions, request: requestOptions} = options ?
@@ -2728,7 +2940,7 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateAd>>, {id: number;data: BodyType<AdStatusUpdate>}> = (props) => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateAd>>, {id: number;data: BodyType<AdContentUpdate>}> = (props) => {
           const {id,data} = props ?? {};
 
           return  updateAd(id,data,requestOptions)
@@ -2742,18 +2954,83 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
   return  { mutationFn, ...mutationOptions }}
 
     export type UpdateAdMutationResult = NonNullable<Awaited<ReturnType<typeof updateAd>>>
-    export type UpdateAdMutationBody = BodyType<AdStatusUpdate>
+    export type UpdateAdMutationBody = BodyType<AdContentUpdate>
     export type UpdateAdMutationError = ErrorType<unknown>
 
     export const useUpdateAd = <TError = ErrorType<unknown>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateAd>>, TError,{id: number;data: BodyType<AdStatusUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateAd>>, TError,{id: number;data: BodyType<AdContentUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof updateAd>>,
         TError,
-        {id: number;data: BodyType<AdStatusUpdate>},
+        {id: number;data: BodyType<AdContentUpdate>},
         TContext
       > => {
       return useMutation(getUpdateAdMutationOptions(options));
+    }
+
+export const getDeleteAdUrl = (id: number,) => {
+
+
+
+
+  return `/api/ads/${id}`
+}
+
+export const deleteAd = async (id: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeleteAdUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getDeleteAdMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteAd>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteAd>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['deleteAd'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteAd>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteAd(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteAdMutationResult = NonNullable<Awaited<ReturnType<typeof deleteAd>>>
+
+    export type DeleteAdMutationError = ErrorType<unknown>
+
+    export const useDeleteAd = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteAd>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteAd>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getDeleteAdMutationOptions(options));
     }
 
 export const getListYouthEmploymentRecordsUrl = () => {

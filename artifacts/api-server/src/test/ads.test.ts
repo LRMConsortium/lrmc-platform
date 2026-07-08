@@ -275,6 +275,95 @@ describe("ads authorization", () => {
     expect(patchRes.body.parentAdId).toBe(original.id);
   });
 
+  describe("GET /ads/:id rejection chain visibility", () => {
+    async function buildTwoLevelChain(
+      seller: Awaited<ReturnType<typeof createMemberUser>>,
+      admin: Awaited<ReturnType<typeof createAdminUser>>,
+      suffix: string,
+    ) {
+      // original → rejected → first resubmission (pending)
+      const original = await createAd(seller.agent);
+      await admin.agent.patch(`/api/ads/${original.id}`).send({ status: "rejected" });
+      const resubRes = await seller.agent.post("/api/ads").send({
+        title: `Resubmit ${suffix}`,
+        content: "Second attempt.",
+        placement: "marketplace",
+        replacesAdId: original.id,
+      });
+      expect(resubRes.status).toBe(201);
+      return { original, resubmitted: resubRes.body as { id: number; parentAdId: number } };
+    }
+
+    it("returns 404 for a non-existent ad id", async () => {
+      const { anonymousAgent } = await import("./helpers");
+      const res = await anonymousAgent().get("/api/ads/999999");
+      expect(res.status).toBe(404);
+    });
+
+    it("admin sees rejectionChain with full ancestor history", async () => {
+      const seller = await createMemberUser("get-ad-admin-chain-seller");
+      const admin = await createAdminUser("get-ad-admin-chain-admin");
+      const { original, resubmitted } = await buildTwoLevelChain(seller, admin, "admin-chain");
+
+      const res = await admin.agent.get(`/api/ads/${resubmitted.id}`);
+      expect(res.status).toBe(200);
+      expect(res.body.id).toBe(resubmitted.id);
+      expect(Array.isArray(res.body.rejectionChain)).toBe(true);
+      expect(res.body.rejectionChain).toHaveLength(1);
+      expect(res.body.rejectionChain[0].id).toBe(original.id);
+      expect(res.body.rejectionChain[0].status).toBe("rejected");
+      expect(res.body.rejectionChain[0]).toHaveProperty("title");
+      expect(res.body.rejectionChain[0]).toHaveProperty("createdAt");
+    });
+
+    it("admin sees parentAdId on the ad itself", async () => {
+      const seller = await createMemberUser("get-ad-admin-parentid-seller");
+      const admin = await createAdminUser("get-ad-admin-parentid-admin");
+      const { original, resubmitted } = await buildTwoLevelChain(seller, admin, "admin-parentid");
+
+      const res = await admin.agent.get(`/api/ads/${resubmitted.id}`);
+      expect(res.status).toBe(200);
+      expect(res.body.parentAdId).toBe(original.id);
+    });
+
+    it("unauthenticated user does not see parentAdId or rejectionChain", async () => {
+      const seller = await createMemberUser("get-ad-anon-seller");
+      const admin = await createAdminUser("get-ad-anon-admin");
+      const { resubmitted } = await buildTwoLevelChain(seller, admin, "anon-get");
+
+      const { anonymousAgent } = await import("./helpers");
+      const res = await anonymousAgent().get(`/api/ads/${resubmitted.id}`);
+      expect(res.status).toBe(200);
+      expect(res.body).not.toHaveProperty("parentAdId");
+      expect(res.body).not.toHaveProperty("rejectionChain");
+    });
+
+    it("member user does not see parentAdId or rejectionChain", async () => {
+      const seller = await createMemberUser("get-ad-member-seller");
+      const viewer = await createMemberUser("get-ad-member-viewer");
+      const admin = await createAdminUser("get-ad-member-admin");
+      const { resubmitted } = await buildTwoLevelChain(seller, admin, "member-get");
+
+      const res = await viewer.agent.get(`/api/ads/${resubmitted.id}`);
+      expect(res.status).toBe(200);
+      expect(res.body).not.toHaveProperty("parentAdId");
+      expect(res.body).not.toHaveProperty("rejectionChain");
+    });
+
+    it("ad with no parent shows empty rejectionChain for admin", async () => {
+      const seller = await createMemberUser("get-ad-no-parent-seller");
+      const admin = await createAdminUser("get-ad-no-parent-admin");
+      const ad = await createAd(seller.agent);
+
+      const res = await admin.agent.get(`/api/ads/${ad.id}`);
+      expect(res.status).toBe(200);
+      // rejectionChain is optional; if present it must be empty
+      if (res.body.rejectionChain !== undefined) {
+        expect(res.body.rejectionChain).toHaveLength(0);
+      }
+    });
+  });
+
   describe("GET /ads admin-only field visibility", () => {
     async function createAdWithParent(
       seller: Awaited<ReturnType<typeof createMemberUser>>,

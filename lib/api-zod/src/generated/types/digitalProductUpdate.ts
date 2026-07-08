@@ -6,12 +6,13 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface AdInput {
+export interface DigitalProductUpdate {
   /** @minLength 1 */
-  title: string;
+  title?: string;
+  description?: string;
+  /** @minimum 0 */
+  priceCents?: number;
   /** @minLength 1 */
-  content: string;
-  /** @minLength 1 */
-  placement: string;
-  replacesAdId?: number;
+  category?: string;
+  status?: string;
 }

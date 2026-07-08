@@ -7,8 +7,11 @@
  */
 
 export * from './ad';
+export * from './adContentUpdate';
+export * from './adDetail';
 export * from './adInput';
 export * from './adminDashboard';
+export * from './adRejectionChainItem';
 export * from './adStatusUpdate';
 export * from './constructionContractor';
 export * from './constructionContractorInput';
@@ -18,6 +21,7 @@ export * from './constructionProjectUpdate';
 export * from './currencyRate';
 export * from './digitalProduct';
 export * from './digitalProductInput';
+export * from './digitalProductUpdate';
 export * from './driver';
 export * from './driverInput';
 export * from './driverStatusUpdate';
@@ -33,6 +37,8 @@ export * from './landListingUpdate';
 export * from './landTransaction';
 export * from './landTransactionInput';
 export * from './liquiditySnapshot';
+export * from './listDigitalProductsParams';
+export * from './listDigitalProductsStatus';
 export * from './listMembershipsParams';
 export * from './listPropertyListingsParams';
 export * from './loginInput';

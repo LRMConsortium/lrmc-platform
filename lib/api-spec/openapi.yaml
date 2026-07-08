@@ -695,6 +695,24 @@ paths:
               schema:
                 $ref: "#/components/schemas/Ad"
   /ads/{id}:
+    get:
+      operationId: getAd
+      tags: [marketplace]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Ad with optional rejection chain (admins only)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdDetail"
+        "404":
+          description: Ad not found
     patch:
       operationId: updateAd
       tags: [marketplace]
@@ -1398,6 +1416,31 @@ components:
         status: { type: string }
         parentAdId: { type: integer, nullable: true }
         createdAt: { type: string, format: date-time }
+    AdRejectionChainItem:
+      type: object
+      required: [id, status, title, createdAt]
+      properties:
+        id: { type: integer }
+        title: { type: string }
+        status: { type: string }
+        createdAt: { type: string, format: date-time }
+    AdDetail:
+      type: object
+      required: [id, advertiserId, title, content, placement, status, createdAt]
+      properties:
+        id: { type: integer }
+        advertiserId: { type: integer }
+        title: { type: string }
+        content: { type: string }
+        placement: { type: string }
+        status: { type: string }
+        parentAdId: { type: integer, nullable: true }
+        createdAt: { type: string, format: date-time }
+        rejectionChain:
+          type: array
+          description: Full ancestor rejection chain, newest first. Admins only.
+          items:
+            $ref: "#/components/schemas/AdRejectionChainItem"
     AdInput:
       type: object
       required: [title, content, placement]

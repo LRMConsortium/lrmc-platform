@@ -6,12 +6,9 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface AdInput {
-  /** @minLength 1 */
+export interface AdRejectionChainItem {
+  id: number;
   title: string;
-  /** @minLength 1 */
-  content: string;
-  /** @minLength 1 */
-  placement: string;
-  replacesAdId?: number;
+  status: string;
+  createdAt: Date;
 }

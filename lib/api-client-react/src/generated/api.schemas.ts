@@ -249,10 +249,13 @@ export interface MarketplaceListingUpdate {
 
 export interface DigitalProduct {
   id: number;
+  /** @nullable */
+  sellerId?: number | null;
   title: string;
   description: string;
   priceCents: number;
   category: string;
+  status: string;
   createdAt: string;
 }
 
@@ -264,6 +267,17 @@ export interface DigitalProductInput {
   priceCents: number;
   /** @minLength 1 */
   category: string;
+}
+
+export interface DigitalProductUpdate {
+  /** @minLength 1 */
+  title?: string;
+  description?: string;
+  /** @minimum 0 */
+  priceCents?: number;
+  /** @minLength 1 */
+  category?: string;
+  status?: string;
 }
 
 export interface PurchaseReceipt {
@@ -279,7 +293,28 @@ export interface Ad {
   content: string;
   placement: string;
   status: string;
+  parentAdId?: number | null;
   createdAt: string;
+}
+
+export interface AdRejectionChainItem {
+  id: number;
+  title: string;
+  status: string;
+  createdAt: string;
+}
+
+export interface AdDetail {
+  id: number;
+  advertiserId: number;
+  title: string;
+  content: string;
+  placement: string;
+  status: string;
+  parentAdId?: number | null;
+  createdAt: string;
+  /** Full ancestor rejection chain, newest first. Admins only. */
+  rejectionChain?: AdRejectionChainItem[];
 }
 
 export interface AdInput {
@@ -289,10 +324,24 @@ export interface AdInput {
   content: string;
   /** @minLength 1 */
   placement: string;
+  replacesAdId?: number;
 }
 
 export interface AdStatusUpdate {
   status: string;
+}
+
+/**
+ * Fields a seller can edit on their own pending ad
+ */
+export interface AdContentUpdate {
+  /** @minLength 1 */
+  title?: string;
+  /** @minLength 1 */
+  content?: string;
+  /** @minLength 1 */
+  placement?: string;
+  status?: string;
 }
 
 export interface YouthEmploymentRecord {
@@ -486,4 +535,19 @@ status?: string;
 export type ListPropertyListingsParams = {
 category?: string;
 };
+
+export type ListDigitalProductsParams = {
+/**
+ * Filter by product status. Defaults to "active". Use "archived" to see archived products (sellers/admins only).
+ */
+status?: ListDigitalProductsStatus;
+};
+
+export type ListDigitalProductsStatus = typeof ListDigitalProductsStatus[keyof typeof ListDigitalProductsStatus];
+
+
+export const ListDigitalProductsStatus = {
+  active: 'active',
+  archived: 'archived',
+} as const;
 

@@ -6,12 +6,15 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface AdInput {
+/**
+ * Fields a seller can edit on their own pending ad
+ */
+export interface AdContentUpdate {
   /** @minLength 1 */
-  title: string;
+  title?: string;
   /** @minLength 1 */
-  content: string;
+  content?: string;
   /** @minLength 1 */
-  placement: string;
-  replacesAdId?: number;
+  placement?: string;
+  status?: string;
 }

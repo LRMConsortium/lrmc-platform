@@ -5,8 +5,9 @@
  * LRMC / Ususu institution API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { AdRejectionChainItem } from './adRejectionChainItem';
 
-export interface Ad {
+export interface AdDetail {
   id: number;
   advertiserId: number;
   title: string;
@@ -15,4 +16,6 @@ export interface Ad {
   status: string;
   parentAdId?: number | null;
   createdAt: Date;
+  /** Full ancestor rejection chain, newest first. Admins only. */
+  rejectionChain?: AdRejectionChainItem[];
 }

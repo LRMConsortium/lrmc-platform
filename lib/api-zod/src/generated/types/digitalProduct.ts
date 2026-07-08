@@ -8,9 +8,12 @@
 
 export interface DigitalProduct {
   id: number;
+  /** @nullable */
+  sellerId?: number | null;
   title: string;
   description: string;
   priceCents: number;
   category: string;
+  status: string;
   createdAt: Date;
 }
