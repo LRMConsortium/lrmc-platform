@@ -860,6 +860,45 @@ describe("ads authorization", () => {
     expect(res.body.advertiserId).not.toBe(victim.id);
   });
 
+  describe("owner GET-by-ID vs listing contract", () => {
+    it("owner can fetch their own pending ad by ID but it does not appear in GET /ads", async () => {
+      const seller = await createMemberUser("ad-owner-id-vs-list-pending-seller");
+      const ad = await createAd(seller.agent);
+
+      // Owner can still fetch the pending ad by ID
+      const byId = await seller.agent.get(`/api/ads/${ad.id}`);
+      expect(byId.status).toBe(200);
+      expect(byId.body.id).toBe(ad.id);
+      expect(byId.body.status).toBe("pending");
+
+      // The same pending ad must be absent from the listing, even for the owner
+      const listing = await seller.agent.get("/api/ads");
+      expect(listing.status).toBe(200);
+      const ids = (listing.body as { id: number }[]).map((a) => a.id);
+      expect(ids).not.toContain(ad.id);
+    });
+
+    it("owner can fetch their own rejected ad by ID but it does not appear in GET /ads", async () => {
+      const seller = await createMemberUser("ad-owner-id-vs-list-rejected-seller");
+      const admin = await createAdminUser("ad-owner-id-vs-list-rejected-admin");
+      const ad = await createAd(seller.agent);
+
+      await admin.agent.patch(`/api/ads/${ad.id}`).send({ status: "rejected" });
+
+      // Owner can still fetch the rejected ad by ID
+      const byId = await seller.agent.get(`/api/ads/${ad.id}`);
+      expect(byId.status).toBe(200);
+      expect(byId.body.id).toBe(ad.id);
+      expect(byId.body.status).toBe("rejected");
+
+      // The same rejected ad must be absent from the listing, even for the owner
+      const listing = await seller.agent.get("/api/ads");
+      expect(listing.status).toBe(200);
+      const ids = (listing.body as { id: number }[]).map((a) => a.id);
+      expect(ids).not.toContain(ad.id);
+    });
+  });
+
   describe("rejectionNote", () => {
     it("admin can set rejectionNote when rejecting an ad", async () => {
       const seller = await createMemberUser("rn-admin-set-seller");
