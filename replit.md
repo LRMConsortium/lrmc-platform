@@ -5,6 +5,7 @@ _Replace the heading above with the project's name, and this line with one sente
 ## Run & Operate
 
 - `pnpm --filter @workspace/api-server run dev` — run the API server (port 5000)
+- `pnpm --filter @workspace/api-server run test` — run the authorization/regression test suite (supertest against the real Express app, hits the dev database)
 - `pnpm run typecheck` — full typecheck across all packages
 - `pnpm run build` — typecheck + build all packages
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
@@ -38,7 +39,7 @@ _Populate as you build — explicit user instructions worth remembering across s
 
 ## Gotchas
 
-_Populate as you build — sharp edges, "always run X before Y" rules._
+- `artifacts/api-server` has an automated authorization test suite (`pnpm --filter @workspace/api-server run test`, vitest + supertest) covering ownership/admin/scoping checks for property-listings, land, mobility, construction, marketplace, and youth routes. It runs against the real dev `DATABASE_URL` (no separate test DB) and creates uniquely-emailed throwaway users per run — always run it after touching `isOwnerOrAdmin` usage or route auth checks to catch regressions.
 
 ## Pointers
 
