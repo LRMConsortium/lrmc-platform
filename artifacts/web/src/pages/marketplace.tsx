@@ -9,8 +9,9 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { formatMoney, formatDate } from "@/lib/utils"
-import { Store, Download, Plus } from "lucide-react"
+import { formatMoney, formatUSD, formatDate } from "@/lib/utils"
+import { Store, Plus } from "lucide-react"
+import { DigitalProductCheckoutDialog } from "@/components/DigitalProductCheckoutDialog"
 import { useState } from "react"
 import { useQueryClient } from "@tanstack/react-query"
 import { useToast } from "@/hooks/use-toast"
@@ -108,10 +109,10 @@ function DigitalProductsList() {
                 <Badge className="mb-4">{p.category}</Badge>
                 <h3 className="font-serif font-bold text-xl mb-2">{p.title}</h3>
                 <p className="text-sm text-muted-foreground mb-6 line-clamp-3">{p.description}</p>
-                <div className="text-2xl font-bold">{formatMoney(p.priceCents)}</div>
+                <div className="text-2xl font-bold">{formatUSD(p.priceCents)}</div>
               </CardContent>
               <CardFooter className="p-6 pt-0 bg-muted/10 border-t mt-auto">
-                <Button className="w-full gap-2"><Download className="w-4 h-4"/> Purchase & Download</Button>
+                <DigitalProductCheckoutDialog product={p} />
               </CardFooter>
             </Card>
           ))}
@@ -128,6 +129,7 @@ function AddDigitalProductDialog() {
   const [description, setDescription] = useState("")
   const [price, setPrice] = useState("")
   const [category, setCategory] = useState(DIGITAL_PRODUCT_CATEGORIES[0].value)
+  const [fileUrl, setFileUrl] = useState("")
   const queryClient = useQueryClient()
   const { toast } = useToast()
 
@@ -135,12 +137,13 @@ function AddDigitalProductDialog() {
     mutation: {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: getListDigitalProductsQueryKey() })
-        toast({ title: "Digital product added", description: `"${title}" is now live in the store.` })
+        toast({ title: "Digital product added", description: `"${title}" is now live in the store, open to guests and members.` })
         setOpen(false)
         setTitle("")
         setDescription("")
         setPrice("")
         setCategory(DIGITAL_PRODUCT_CATEGORIES[0].value)
+        setFileUrl("")
       },
       onError: () => {
         toast({ title: "Couldn't add product", description: "Please check the details and try again.", variant: "destructive" })
@@ -165,7 +168,7 @@ function AddDigitalProductDialog() {
           onSubmit={(e) => {
             e.preventDefault()
             if (!canSubmit) return
-            createProduct.mutate({ data: { title, description, priceCents, category } })
+            createProduct.mutate({ data: { title, description, priceCents, category, fileUrl: fileUrl.trim() || undefined } })
           }}
         >
           <div className="space-y-2">
@@ -178,7 +181,7 @@ function AddDigitalProductDialog() {
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="dp-price">Price (Dalasi)</Label>
+              <Label htmlFor="dp-price">Price (USD)</Label>
               <Input id="dp-price" type="number" min="1" step="1" value={price} onChange={(e) => setPrice(e.target.value)} required />
             </div>
             <div className="space-y-2">
@@ -192,6 +195,11 @@ function AddDigitalProductDialog() {
                 </SelectContent>
               </Select>
             </div>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="dp-file-url">Download link (PDF)</Label>
+            <Input id="dp-file-url" type="url" value={fileUrl} onChange={(e) => setFileUrl(e.target.value)} placeholder="https://... link to the hosted file" />
+            <p className="text-xs text-muted-foreground">Emailed to buyers automatically once payment succeeds. Host the file yourself (e.g. object storage, Drive) and paste the link here.</p>
           </div>
           <DialogFooter>
             <Button type="submit" disabled={!canSubmit || createProduct.isPending} className="w-full">

@@ -61,6 +61,30 @@ This link expires in 24 hours. If you did not create this account, you can ignor
   };
 }
 
+export function digitalProductDeliveryEmailContent(
+  productTitle: string,
+  fileUrl: string | null,
+): Pick<SendEmailInput, "subject" | "html" | "text"> {
+  const downloadSection = fileUrl
+    ? `<p><a href="${fileUrl}">Download "${productTitle}"</a></p>`
+    : `<p>Our team will follow up shortly with your download link for "${productTitle}". If you don't hear from us within one business day, contact office@africalrmc.com.</p>`;
+  const downloadSectionText = fileUrl
+    ? `Download "${productTitle}": ${fileUrl}`
+    : `Our team will follow up shortly with your download link for "${productTitle}". If you don't hear from us within one business day, contact office@africalrmc.com.`;
+
+  return {
+    subject: `Your LRMC purchase: ${productTitle}`,
+    html: `<p>Thank you for your purchase from the LRMC Consortium digital store.</p>
+${downloadSection}
+<p>Keep this email for your records.</p>`,
+    text: `Thank you for your purchase from the LRMC Consortium digital store.
+
+${downloadSectionText}
+
+Keep this email for your records.`,
+  };
+}
+
 export function passwordResetEmailContent(link: string): Pick<
   SendEmailInput,
   "subject" | "html" | "text"

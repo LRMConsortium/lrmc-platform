@@ -360,6 +360,11 @@ export interface DigitalProductInput {
   priceCents: number;
   /** @minLength 1 */
   category: string;
+  /**
+     * Link to the hosted deliverable (e.g. a PDF) emailed to buyers after payment.
+     * @minLength 1
+     */
+  fileUrl?: string;
 }
 
 export type DigitalProductUpdateStatus = typeof DigitalProductUpdateStatus[keyof typeof DigitalProductUpdateStatus];
@@ -379,12 +384,24 @@ export interface DigitalProductUpdate {
   /** @minLength 1 */
   category?: string;
   status?: DigitalProductUpdateStatus;
+  /**
+     * Link to the hosted deliverable (e.g. a PDF) emailed to buyers after payment.
+     * @minLength 1
+     */
+  fileUrl?: string;
 }
 
-export interface PurchaseReceipt {
-  productId: number;
-  amountCents: number;
-  message: string;
+export interface DigitalProductCheckoutInput {
+  /**
+     * Address the receipt and download link are sent to.
+     * @minLength 3
+     */
+  buyerEmail: string;
+}
+
+export interface DigitalProductCheckoutSession {
+  /** Stripe-hosted checkout URL to redirect the buyer to. */
+  checkoutUrl: string;
 }
 
 export interface Ad {

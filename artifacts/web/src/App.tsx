@@ -11,6 +11,9 @@ import Services from '@/pages/public/services';
 import HowItWorks from '@/pages/public/how-it-works';
 import Contact from '@/pages/public/contact';
 import Ususu from '@/pages/public/ususu';
+import Store from '@/pages/public/store';
+import StoreSuccess from '@/pages/public/store-success';
+import StoreCancel from '@/pages/public/store-cancel';
 import Login from '@/pages/login';
 import Register from '@/pages/register';
 import VerifyEmail from '@/pages/verify-email';
@@ -73,6 +76,9 @@ function Router() {
       <Route path="/how-it-works" component={HowItWorks} />
       <Route path="/contact" component={Contact} />
       <Route path="/ususu" component={Ususu} />
+      <Route path="/store" component={Store} />
+      <Route path="/store/success" component={StoreSuccess} />
+      <Route path="/store/cancel" component={StoreCancel} />
       <Route path="/dashboard" component={() => <ProtectedRoute component={Dashboard} />} />
       <Route path="/memberships" component={() => <ProtectedRoute component={Memberships} />} />
       <Route path="/properties" component={() => <ProtectedRoute component={Properties} />} />

@@ -32,6 +32,8 @@ import type {
   ConstructionProjectUpdate,
   CurrencyRate,
   DigitalProduct,
+  DigitalProductCheckoutInput,
+  DigitalProductCheckoutSession,
   DigitalProductInput,
   DigitalProductUpdate,
   Driver,
@@ -68,7 +70,6 @@ import type {
   ProspectLead,
   ProspectLeadInput,
   ProspectLeadUpdate,
-  PurchaseReceipt,
   RegisterInput,
   ResendVerificationInput,
   ResetPasswordInput,
@@ -2895,22 +2896,26 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       return useMutation(getDeleteDigitalProductMutationOptions(options));
     }
 
-export const getPurchaseDigitalProductUrl = (id: number,) => {
+export const getCheckoutDigitalProductUrl = (id: number,) => {
 
 
 
 
-  return `/api/digital-products/${id}/purchase`
+  return `/api/digital-products/${id}/checkout`
 }
 
-export const purchaseDigitalProduct = async (id: number, options?: RequestInit): Promise<PurchaseReceipt> => {
+/**
+ * Creates a real Stripe Checkout session for the product (open to guests and members alike). Members get an automatic 10% discount.
+ */
+export const checkoutDigitalProduct = async (id: number,
+    digitalProductCheckoutInput: DigitalProductCheckoutInput, options?: RequestInit): Promise<DigitalProductCheckoutSession> => {
 
-  return customFetch<PurchaseReceipt>(getPurchaseDigitalProductUrl(id),
+  return customFetch<DigitalProductCheckoutSession>(getCheckoutDigitalProductUrl(id),
   {
     ...options,
-    method: 'POST'
-
-
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(digitalProductCheckoutInput)
   }
 );}
 
@@ -2918,11 +2923,11 @@ export const purchaseDigitalProduct = async (id: number, options?: RequestInit):
 
 
 
-export const getPurchaseDigitalProductMutationOptions = <TError = ErrorType<void>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof purchaseDigitalProduct>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof purchaseDigitalProduct>>, TError,{id: number}, TContext> => {
+export const getCheckoutDigitalProductMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof checkoutDigitalProduct>>, TError,{id: number;data: BodyType<DigitalProductCheckoutInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof checkoutDigitalProduct>>, TError,{id: number;data: BodyType<DigitalProductCheckoutInput>}, TContext> => {
 
-const mutationKey = ['purchaseDigitalProduct'];
+const mutationKey = ['checkoutDigitalProduct'];
 const {mutation: mutationOptions, request: requestOptions} = options ?
       options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
       options
@@ -2932,10 +2937,10 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof purchaseDigitalProduct>>, {id: number}> = (props) => {
-          const {id} = props ?? {};
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof checkoutDigitalProduct>>, {id: number;data: BodyType<DigitalProductCheckoutInput>}> = (props) => {
+          const {id,data} = props ?? {};
 
-          return  purchaseDigitalProduct(id,requestOptions)
+          return  checkoutDigitalProduct(id,data,requestOptions)
         }
 
 
@@ -2945,19 +2950,19 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
   return  { mutationFn, ...mutationOptions }}
 
-    export type PurchaseDigitalProductMutationResult = NonNullable<Awaited<ReturnType<typeof purchaseDigitalProduct>>>
+    export type CheckoutDigitalProductMutationResult = NonNullable<Awaited<ReturnType<typeof checkoutDigitalProduct>>>
+    export type CheckoutDigitalProductMutationBody = BodyType<DigitalProductCheckoutInput>
+    export type CheckoutDigitalProductMutationError = ErrorType<void>
 
-    export type PurchaseDigitalProductMutationError = ErrorType<void>
-
-    export const usePurchaseDigitalProduct = <TError = ErrorType<void>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof purchaseDigitalProduct>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+    export const useCheckoutDigitalProduct = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof checkoutDigitalProduct>>, TError,{id: number;data: BodyType<DigitalProductCheckoutInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
-        Awaited<ReturnType<typeof purchaseDigitalProduct>>,
+        Awaited<ReturnType<typeof checkoutDigitalProduct>>,
         TError,
-        {id: number},
+        {id: number;data: BodyType<DigitalProductCheckoutInput>},
         TContext
       > => {
-      return useMutation(getPurchaseDigitalProductMutationOptions(options));
+      return useMutation(getCheckoutDigitalProductMutationOptions(options));
     }
 
 export const getListAdsUrl = () => {

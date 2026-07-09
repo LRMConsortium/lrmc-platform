@@ -6,8 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface PurchaseReceipt {
-  productId: number;
-  amountCents: number;
-  message: string;
+export interface DigitalProductCheckoutSession {
+  /** Stripe-hosted checkout URL to redirect the buyer to. */
+  checkoutUrl: string;
 }

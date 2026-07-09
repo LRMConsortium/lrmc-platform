@@ -14,4 +14,9 @@ export interface DigitalProductInput {
   priceCents: number;
   /** @minLength 1 */
   category: string;
+  /**
+     * Link to the hosted deliverable (e.g. a PDF) emailed to buyers after payment.
+     * @minLength 1
+     */
+  fileUrl?: string;
 }

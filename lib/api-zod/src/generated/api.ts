@@ -644,11 +644,13 @@ export const ListDigitalProductsResponse = zod.array(ListDigitalProductsResponse
 
 
 
+
 export const CreateDigitalProductBody = zod.object({
   "title": zod.string().min(1),
   "description": zod.string(),
   "priceCents": zod.number().int().min(1),
-  "category": zod.string().min(1)
+  "category": zod.string().min(1),
+  "fileUrl": zod.string().min(1).optional().describe('Link to the hosted deliverable (e.g. a PDF) emailed to buyers after payment.')
 })
 
 export const CreateDigitalProductResponse = zod.object({
@@ -672,12 +674,14 @@ export const UpdateDigitalProductParams = zod.object({
 
 
 
+
 export const UpdateDigitalProductBody = zod.object({
   "title": zod.string().min(1).optional(),
   "description": zod.string().optional(),
   "priceCents": zod.number().int().min(1).optional(),
   "category": zod.string().min(1).optional(),
-  "status": zod.enum(['active', 'archived']).optional()
+  "status": zod.enum(['active', 'archived']).optional(),
+  "fileUrl": zod.string().min(1).optional().describe('Link to the hosted deliverable (e.g. a PDF) emailed to buyers after payment.')
 })
 
 export const UpdateDigitalProductResponse = zod.object({
@@ -699,14 +703,23 @@ export const DeleteDigitalProductParams = zod.object({
 export const DeleteDigitalProductResponse = zod.void()
 
 
-export const PurchaseDigitalProductParams = zod.object({
+/**
+ * Creates a real Stripe Checkout session for the product (open to guests and members alike). Members get an automatic 10% discount.
+ */
+export const CheckoutDigitalProductParams = zod.object({
   "id": zod.coerce.number().int()
 })
 
-export const PurchaseDigitalProductResponse = zod.object({
-  "productId": zod.number().int(),
-  "amountCents": zod.number().int(),
-  "message": zod.string()
+export const checkoutDigitalProductBodyBuyerEmailMin = 3;
+
+
+
+export const CheckoutDigitalProductBody = zod.object({
+  "buyerEmail": zod.string().min(checkoutDigitalProductBodyBuyerEmailMin).describe('Address the receipt and download link are sent to.')
+})
+
+export const CheckoutDigitalProductResponse = zod.object({
+  "checkoutUrl": zod.string().describe('Stripe-hosted checkout URL to redirect the buyer to.')
 })
 
 

@@ -4,6 +4,7 @@ import {
   db,
   marketplaceListingsTable,
   digitalProductsTable,
+  digitalProductPurchasesTable,
   adsTable,
 } from "@workspace/db";
 import {
@@ -22,8 +23,9 @@ import {
   UpdateDigitalProductBody,
   UpdateDigitalProductResponse,
   DeleteDigitalProductParams,
-  PurchaseDigitalProductParams,
-  PurchaseDigitalProductResponse,
+  CheckoutDigitalProductParams,
+  CheckoutDigitalProductBody,
+  CheckoutDigitalProductResponse,
   ListAdsResponse,
   ListAdsResponseItem,
   CreateAdBody,
@@ -35,6 +37,14 @@ import {
   UpdateAdResponse,
   DeleteAdParams,
 } from "@workspace/api-zod";
+import {
+  createDigitalProductStripeCatalog,
+  getOrCreateMemberDiscountCoupon,
+  updateDigitalProductStripeMetadata,
+  updateDigitalProductStripePrice,
+} from "../lib/digitalProductStripeSync";
+import { getUncachableStripeClient } from "../lib/stripeClient";
+import { getWebBaseUrl } from "../lib/urls";
 
 // Public ad schemas: strip admin-only moderation fields from non-admin responses.
 // Add new admin-only fields here so they are never accidentally leaked.
@@ -190,9 +200,22 @@ router.post(
       return;
     }
 
+    // Create the real Stripe catalog objects first so we never persist a
+    // product that can't actually be checked out.
+    const { stripeProductId, stripePriceId } = await createDigitalProductStripeCatalog({
+      title: parsed.data.title,
+      description: parsed.data.description,
+      priceCents: parsed.data.priceCents,
+    });
+
     const [product] = await db
       .insert(digitalProductsTable)
-      .values({ ...parsed.data, sellerId: req.session.userId! })
+      .values({
+        ...parsed.data,
+        sellerId: req.session.userId!,
+        stripeProductId,
+        stripePriceId,
+      })
       .returning();
 
     res.status(201).json(CreateDigitalProductResponse.parse(product));
@@ -232,9 +255,30 @@ router.patch(
         return { status: 403 as const, body: { error: "Forbidden" } };
       }
 
+      let stripePriceId = existing.stripePriceId;
+      if (
+        parsed.data.priceCents !== undefined &&
+        parsed.data.priceCents !== existing.priceCents &&
+        existing.stripeProductId
+      ) {
+        const updated = await updateDigitalProductStripePrice(
+          existing.stripeProductId,
+          existing.stripePriceId,
+          parsed.data.priceCents,
+        );
+        stripePriceId = updated.stripePriceId;
+      }
+
+      if ((parsed.data.title || parsed.data.description) && existing.stripeProductId) {
+        await updateDigitalProductStripeMetadata(existing.stripeProductId, {
+          title: parsed.data.title,
+          description: parsed.data.description,
+        });
+      }
+
       const [product] = await tx
         .update(digitalProductsTable)
-        .set(parsed.data)
+        .set({ ...parsed.data, stripePriceId })
         .where(eq(digitalProductsTable.id, params.data.id))
         .returning();
 
@@ -283,52 +327,85 @@ router.delete(
 );
 
 router.post(
-  "/digital-products/:id/purchase",
-  requireAuth,
+  "/digital-products/:id/checkout",
+  // Intentionally public: guests (no account) must be able to buy digital
+  // products, not just members. Members get a discount below via session.
   async (req, res): Promise<void> => {
-    const params = PurchaseDigitalProductParams.safeParse(req.params);
+    const params = CheckoutDigitalProductParams.safeParse(req.params);
     if (!params.success) {
       res.status(400).json({ error: params.error.message });
       return;
     }
 
-    const result = await db.transaction(async (tx) => {
-      // Lock the product row for the duration of the transaction so a
-      // concurrent PATCH updating priceCents must wait until this purchase
-      // commits (or is rolled back), preventing a price change from being
-      // applied between our read and the purchase being finalized.
-      const [product] = await tx
-        .select()
-        .from(digitalProductsTable)
-        .where(eq(digitalProductsTable.id, params.data.id))
-        .for("update");
+    const parsed = CheckoutDigitalProductBody.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.message });
+      return;
+    }
 
-      if (!product) {
-        return { status: 404 as const, body: { error: "Digital product not found" } };
-      }
+    const [product] = await db
+      .select()
+      .from(digitalProductsTable)
+      .where(eq(digitalProductsTable.id, params.data.id));
 
-      // Only "active" products are visible to buyers in the default listing.
-      // Reject purchase of any non-active product so the purchase gate always
-      // mirrors the visibility rules — regardless of how many statuses are added
-      // in the future.
-      if (product.status !== "active") {
-        return {
-          status: 410 as const,
-          body: { error: "This product is no longer available" },
-        };
-      }
+    // Only "active" products are visible to buyers in the default listing.
+    // Treat "not found" and "exists but not active" identically (both 404)
+    // so this public endpoint can't be used to probe which product IDs
+    // exist by comparing status codes.
+    if (!product || product.status !== "active") {
+      res.status(404).json({ error: "Digital product not found" });
+      return;
+    }
 
-      return {
-        status: 200 as const,
-        body: PurchaseDigitalProductResponse.parse({
-          productId: product.id,
-          amountCents: product.priceCents,
-          message: `Purchase of "${product.title}" confirmed.`,
-        }),
-      };
+    if (!product.stripePriceId) {
+      res.status(409).json({ error: "This product isn't ready for purchase yet" });
+      return;
+    }
+
+    const isMember = !!req.session.userId;
+    const stripe = await getUncachableStripeClient();
+    const baseUrl = getWebBaseUrl();
+
+    const session = await stripe.checkout.sessions.create({
+      mode: "payment",
+      customer_email: parsed.data.buyerEmail,
+      line_items: [{ price: product.stripePriceId, quantity: 1 }],
+      discounts: isMember
+        ? [{ coupon: await getOrCreateMemberDiscountCoupon() }]
+        : undefined,
+      success_url: `${baseUrl}/store/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${baseUrl}/store/cancel`,
+      metadata: {
+        digitalProductId: String(product.id),
+        buyerEmail: parsed.data.buyerEmail,
+      },
     });
 
-    res.status(result.status).json(result.body);
+    try {
+      await db.insert(digitalProductPurchasesTable).values({
+        productId: product.id,
+        buyerId: req.session.userId ?? null,
+        buyerEmail: parsed.data.buyerEmail,
+        amountCents: product.priceCents,
+        memberDiscountApplied: isMember,
+        stripeCheckoutSessionId: session.id,
+        status: "pending",
+      });
+    } catch (err) {
+      // The order record failed to persist -- if the buyer paid anyway, the
+      // webhook would have no purchase row to fulfill against. Expire the
+      // session so the checkout link can't be used, rather than leaving a
+      // charge with no fulfillment path.
+      await stripe.checkout.sessions.expire(session.id).catch(() => {});
+      throw err;
+    }
+
+    if (!session.url) {
+      res.status(502).json({ error: "Stripe did not return a checkout URL" });
+      return;
+    }
+
+    res.json(CheckoutDigitalProductResponse.parse({ checkoutUrl: session.url }));
   },
 );
 

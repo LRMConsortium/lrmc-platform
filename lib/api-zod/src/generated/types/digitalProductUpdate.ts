@@ -16,4 +16,9 @@ export interface DigitalProductUpdate {
   /** @minLength 1 */
   category?: string;
   status?: DigitalProductUpdateStatus;
+  /**
+     * Link to the hosted deliverable (e.g. a PDF) emailed to buyers after payment.
+     * @minLength 1
+     */
+  fileUrl?: string;
 }

@@ -2,3 +2,5 @@
 - [OpenAPI email format breaks zod codegen](openapi-zod-codegen-email-format.md) — avoid `format: email` in OpenAPI specs; orval emits zod v4 `z.email()` which breaks pinned zod v3.
 - [pnpm workspace: root-level package install for nested packages](pnpm-nested-package-install.md) — installLanguagePackages can fail with ERR_PNPM_ADDING_TO_ROOT for deps of a workspace member; cd into that package's dir instead.
 - [Authz test suite gotchas](authz-test-schema-gotchas.md) — api-server authz tests hit the real dev DB (no test DB); orval Update*Body schemas silently drop unknown fields, causing 500s that look like authz bugs.
+- [stripe-replit-sync bundling breaks migrations](stripe-esbuild-migrations-bundling.md) — esbuild must externalize `stripe-replit-sync` or its `__dirname`-relative migrations silently no-op.
+- [stripe-replit-sync managed webhook secret location](stripe-webhook-secret-location.md) — managed webhook secret lives in `stripe._managed_webhooks`, not the connection settings API.
