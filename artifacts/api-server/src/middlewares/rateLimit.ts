@@ -36,3 +36,19 @@ export const emailActionRateLimiter = rateLimit({
     error: "Too many requests. Please try again later.",
   },
 });
+
+// Verify-email / reset-password: these take an opaque token directly in the
+// body (no email to key on), so a script could otherwise brute-force valid
+// tokens by guessing. Key on IP only; a generous limit still allows a
+// legitimate user a few retries (e.g. pasting a stale link) without being
+// blocked.
+export const tokenActionRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req: Request) => ipKeyGenerator(req.ip ?? ""),
+  message: {
+    error: "Too many requests. Please try again later.",
+  },
+});

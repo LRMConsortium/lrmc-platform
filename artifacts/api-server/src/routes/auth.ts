@@ -21,6 +21,7 @@ import { requireAuth } from "../middlewares/auth";
 import {
   loginRateLimiter,
   emailActionRateLimiter,
+  tokenActionRateLimiter,
 } from "../middlewares/rateLimit";
 import { generateRawToken, hashToken, expiryFor } from "../lib/tokens";
 import {
@@ -175,7 +176,7 @@ router.get("/auth/me", requireAuth, async (req, res): Promise<void> => {
   res.json(GetCurrentUserResponse.parse(serializeUser(user)));
 });
 
-router.post("/auth/verify-email", async (req, res): Promise<void> => {
+router.post("/auth/verify-email", tokenActionRateLimiter, async (req, res): Promise<void> => {
   const parsed = VerifyEmailBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
@@ -272,7 +273,7 @@ router.post(
   },
 );
 
-router.post("/auth/reset-password", async (req, res): Promise<void> => {
+router.post("/auth/reset-password", tokenActionRateLimiter, async (req, res): Promise<void> => {
   const parsed = ResetPasswordBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
