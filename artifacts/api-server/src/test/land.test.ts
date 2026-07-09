@@ -94,6 +94,17 @@ describe("land-listings zero-price validation", () => {
     });
     expect(res.status).toBe(201);
   });
+
+  it("rejects priceCents: 0 on PATCH with 400", async () => {
+    const seller = await createMemberUser("seller-zero-patch");
+    const listingId = await createLandListing(seller.agent);
+
+    const res = await seller.agent
+      .patch(`/api/land-listings/${listingId}`)
+      .send({ priceCents: 0 });
+
+    expect(res.status).toBe(400);
+  });
 });
 
 describe("land-transactions scoping", () => {

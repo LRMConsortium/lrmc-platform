@@ -103,6 +103,17 @@ describe("property-listings zero-price validation", () => {
     });
     expect(res.status).toBe(201);
   });
+
+  it("rejects priceCents: 0 on PATCH with 400", async () => {
+    const owner = await createMemberUser("owner-zero-patch");
+    const listingId = await createListing(owner.agent);
+
+    const res = await owner.agent
+      .patch(`/api/property-listings/${listingId}`)
+      .send({ priceCents: 0 });
+
+    expect(res.status).toBe(400);
+  });
 });
 
 describe("property-listings status validation", () => {
