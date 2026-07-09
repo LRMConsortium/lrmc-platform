@@ -12,6 +12,17 @@ async function createListing(agent: Awaited<ReturnType<typeof createMemberUser>>
   return res.body.id as number;
 }
 
+async function createDigitalProduct(agent: Awaited<ReturnType<typeof createMemberUser>>["agent"]) {
+  const res = await agent.post("/api/digital-products").send({
+    title: "Authz Test Digital Product",
+    description: "A test digital product used to exercise authorization checks.",
+    priceCents: 5000,
+    category: "misc",
+  });
+  expect(res.status).toBe(201);
+  return res.body as { id: number; sellerId: number };
+}
+
 describe("marketplace-listings authorization", () => {
   it("rejects a non-seller PATCH with 403", async () => {
     const seller = await createMemberUser("seller");
@@ -88,5 +99,20 @@ describe("marketplace-listings authorization", () => {
 
     expect(res.status).toBe(200);
     expect(res.body.status).toBe("sold");
+  });
+
+  it("does not let an admin reassign a digital product's seller via PATCH", async () => {
+    const seller = await createMemberUser("dpseller");
+    const otherUser = await createMemberUser("dpother");
+    const admin = await createAdminUser("dpadmin");
+    const product = await createDigitalProduct(seller.agent);
+
+    const res = await admin.agent
+      .patch(`/api/digital-products/${product.id}`)
+      .send({ title: "Updated by admin", sellerId: otherUser.id });
+
+    expect(res.status).toBe(200);
+    expect(res.body.sellerId).toBe(product.sellerId);
+    expect(res.body.sellerId).not.toBe(otherUser.id);
   });
 });
