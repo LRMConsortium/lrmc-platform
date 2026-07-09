@@ -154,8 +154,8 @@ export default function Home() {
               <div className="grid grid-cols-2 gap-6">
                 <div>
                   <ShieldCheck className="w-8 h-8 text-accent mb-3" />
-                  <div className="text-lg font-bold mb-1">Dual-Currency Backed</div>
-                  <div className="text-sm text-primary-foreground/70">GMD & USD reserves supporting every settlement.</div>
+                  <div className="text-lg font-bold mb-1">Financially Regulated</div>
+                  <div className="text-sm text-primary-foreground/70">Every settlement is backed and independently audited.</div>
                 </div>
                 <div>
                   <Building2 className="w-8 h-8 text-accent mb-3" />
@@ -164,9 +164,9 @@ export default function Home() {
                 </div>
                 <div className="col-span-2 pt-6 border-t border-white/10">
                   <TrendingUp className="w-8 h-8 text-accent mb-4" />
-                  <h4 className="text-xl font-bold mb-2">Institutional Liquidity</h4>
+                  <h4 className="text-xl font-bold mb-2">Built for Stability</h4>
                   <p className="text-primary-foreground/70">
-                    Our reserve system ensures market stability for large-scale land brokering and construction financing. Detailed treasury figures are available to authorized members and staff.
+                    Our financial infrastructure is built to ensure stability for large-scale land brokering and construction financing. Full treasury details are available to authorized members and staff.
                   </p>
                 </div>
               </div>
