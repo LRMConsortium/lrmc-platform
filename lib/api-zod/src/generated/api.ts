@@ -402,7 +402,6 @@ export const ListConstructionProjectsResponse = zod.array(ListConstructionProjec
 
 
 
-export const createConstructionProjectBodyBudgetCentsMin = 0;
 
 
 
@@ -410,7 +409,7 @@ export const CreateConstructionProjectBody = zod.object({
   "contractorId": zod.number().int(),
   "title": zod.string().min(1),
   "location": zod.string().min(1),
-  "budgetCents": zod.number().int().min(createConstructionProjectBodyBudgetCentsMin)
+  "budgetCents": zod.number().int().min(1)
 })
 
 export const CreateConstructionProjectResponse = zod.object({
@@ -428,13 +427,12 @@ export const UpdateConstructionProjectParams = zod.object({
   "id": zod.coerce.number().int()
 })
 
-export const updateConstructionProjectBodyBudgetCentsMin = 0;
 
 
 
 export const UpdateConstructionProjectBody = zod.object({
   "status": zod.enum(['planning', 'in_progress', 'completed', 'on_hold']).optional(),
-  "budgetCents": zod.number().int().min(updateConstructionProjectBodyBudgetCentsMin).optional()
+  "budgetCents": zod.number().int().min(1).optional()
 })
 
 export const UpdateConstructionProjectResponse = zod.object({

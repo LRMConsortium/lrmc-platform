@@ -12,6 +12,6 @@ export interface ConstructionProjectInput {
   title: string;
   /** @minLength 1 */
   location: string;
-  /** @minimum 0 */
+  /** @minimum 1 */
   budgetCents: number;
 }

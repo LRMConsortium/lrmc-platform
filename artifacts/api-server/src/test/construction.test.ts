@@ -90,3 +90,31 @@ describe("construction-projects status validation", () => {
     expect(res.body.status).toBe("completed");
   });
 });
+
+describe("construction-projects budget validation", () => {
+  it("rejects creating a project with a zero budgetCents with 400", async () => {
+    const owner = await createMemberUser("contractor-owner");
+    const contractorId = await createContractor(owner.agent);
+
+    const res = await owner.agent.post("/api/construction-projects").send({
+      contractorId,
+      title: "Free Project",
+      location: "Bijilo",
+      budgetCents: 0,
+    });
+
+    expect(res.status).toBe(400);
+  });
+
+  it("rejects updating a project's budgetCents to zero with 400", async () => {
+    const owner = await createMemberUser("contractor-owner");
+    const contractorId = await createContractor(owner.agent);
+    const projectId = await createProject(owner.agent, contractorId);
+
+    const res = await owner.agent
+      .patch(`/api/construction-projects/${projectId}`)
+      .send({ budgetCents: 0 });
+
+    expect(res.status).toBe(400);
+  });
+});

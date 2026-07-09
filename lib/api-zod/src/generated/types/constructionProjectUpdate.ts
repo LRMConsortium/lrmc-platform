@@ -9,6 +9,6 @@ import type { ConstructionProjectUpdateStatus } from './constructionProjectUpdat
 
 export interface ConstructionProjectUpdate {
   status?: ConstructionProjectUpdateStatus;
-  /** @minimum 0 */
+  /** @minimum 1 */
   budgetCents?: number;
 }

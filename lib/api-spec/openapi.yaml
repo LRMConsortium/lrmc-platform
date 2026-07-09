@@ -1387,12 +1387,12 @@ components:
         contractorId: { type: integer }
         title: { type: string, minLength: 1 }
         location: { type: string, minLength: 1 }
-        budgetCents: { type: integer, minimum: 0 }
+        budgetCents: { type: integer, minimum: 1 }
     ConstructionProjectUpdate:
       type: object
       properties:
         status: { type: string, enum: [planning, in_progress, completed, on_hold] }
-        budgetCents: { type: integer, minimum: 0 }
+        budgetCents: { type: integer, minimum: 1 }
 
     # ---------- MOBILITY ----------
     Driver:
