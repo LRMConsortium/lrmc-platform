@@ -1,5 +1,11 @@
 import { describe, it, expect } from "vitest";
+import { db, digitalProductsTable } from "@workspace/db";
+import { eq } from "drizzle-orm";
 import { createMemberUser, createAdminUser, anonymousAgent } from "./helpers";
+
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
 async function createDigitalProduct(agent: Awaited<ReturnType<typeof createMemberUser>>["agent"]) {
   const res = await agent.post("/api/digital-products").send({
@@ -549,5 +555,89 @@ describe("digital-products receipt price immutability", () => {
     // The buyer's receipt still shows what they actually paid — 999, not 1999
     expect(receipt.amountCents).toBe(999);
     expect(receipt.amountCents).not.toBe(patchRes.body.priceCents);
+  });
+});
+
+describe("digital-products concurrent price edit vs. locked purchase", () => {
+  it("blocks a concurrent PATCH until an in-flight purchase's row lock is released, and applies the PATCH only after", async () => {
+    const seller = await createMemberUser("dp-concurrency-seller");
+    const product = await createDigitalProduct(seller.agent);
+
+    let heldLockReleasedAt = 0;
+
+    // Simulate an in-flight purchase: lock the product row with SELECT ... FOR UPDATE
+    // (the same primitive the real purchase handler uses) and hold the transaction
+    // open for a while before committing, mimicking a purchase that is mid-flight.
+    const simulatedPurchase = db.transaction(async (tx) => {
+      await tx
+        .select()
+        .from(digitalProductsTable)
+        .where(eq(digitalProductsTable.id, product.id))
+        .for("update");
+
+      await delay(500);
+      heldLockReleasedAt = Date.now();
+      // No-op update to mimic the purchase transaction doing its work before commit.
+    });
+
+    // Fire the real PATCH endpoint concurrently while the row is locked. Because
+    // the PATCH handler also takes a `SELECT ... FOR UPDATE` lock in its own
+    // transaction, Postgres must serialize it behind the held lock rather than
+    // letting it interleave with the in-flight purchase.
+    const patchStartedAt = Date.now();
+    const patchPromise = seller.agent
+      .patch(`/api/digital-products/${product.id}`)
+      .send({ priceCents: 4242 });
+
+    const [, patchRes] = await Promise.all([simulatedPurchase, patchPromise]);
+    const patchCompletedAt = Date.now();
+
+    expect(patchRes.status).toBe(200);
+    expect(patchRes.body.priceCents).toBe(4242);
+
+    // The PATCH must not have completed before the held lock was released —
+    // proof that it was blocked/serialized rather than racing past the lock.
+    expect(patchCompletedAt).toBeGreaterThanOrEqual(heldLockReleasedAt);
+    expect(patchCompletedAt - patchStartedAt).toBeGreaterThanOrEqual(450);
+  });
+
+  it("blocks a concurrent purchase until an in-flight price edit's row lock is released, and charges the post-edit price", async () => {
+    const seller = await createMemberUser("dp-concurrency-purchase-seller");
+    const buyer = await createMemberUser("dp-concurrency-purchase-buyer");
+    const product = await createDigitalProduct(seller.agent); // priceCents: 999
+
+    let heldLockReleasedAt = 0;
+
+    // Simulate an in-flight PATCH: lock the row, hold it, then update the price —
+    // mirroring the real PATCH handler's SELECT ... FOR UPDATE + UPDATE sequence.
+    const simulatedPriceEdit = db.transaction(async (tx) => {
+      await tx
+        .select()
+        .from(digitalProductsTable)
+        .where(eq(digitalProductsTable.id, product.id))
+        .for("update");
+
+      await delay(500);
+
+      await tx
+        .update(digitalProductsTable)
+        .set({ priceCents: 7777 })
+        .where(eq(digitalProductsTable.id, product.id));
+
+      heldLockReleasedAt = Date.now();
+    });
+
+    const purchaseStartedAt = Date.now();
+    const purchasePromise = buyer.agent.post(`/api/digital-products/${product.id}/purchase`);
+
+    const [, purchaseRes] = await Promise.all([simulatedPriceEdit, purchasePromise]);
+    const purchaseCompletedAt = Date.now();
+
+    expect(purchaseRes.status).toBe(200);
+    // The purchase must have been blocked until the price-edit transaction
+    // committed, so it reads (and charges) the new price rather than a stale one.
+    expect(purchaseCompletedAt).toBeGreaterThanOrEqual(heldLockReleasedAt);
+    expect(purchaseCompletedAt - purchaseStartedAt).toBeGreaterThanOrEqual(450);
+    expect(purchaseRes.body.amountCents).toBe(7777);
   });
 });
