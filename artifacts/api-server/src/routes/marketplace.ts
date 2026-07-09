@@ -215,28 +215,36 @@ router.patch(
       return;
     }
 
-    const [existing] = await db
-      .select()
-      .from(digitalProductsTable)
-      .where(eq(digitalProductsTable.id, params.data.id));
+    const result = await db.transaction(async (tx) => {
+      // Lock the product row so this update can't interleave with a
+      // concurrent purchase's read-then-charge sequence.
+      const [existing] = await tx
+        .select()
+        .from(digitalProductsTable)
+        .where(eq(digitalProductsTable.id, params.data.id))
+        .for("update");
 
-    if (!existing) {
-      res.status(404).json({ error: "Digital product not found" });
-      return;
-    }
+      if (!existing) {
+        return { status: 404 as const, body: { error: "Digital product not found" } };
+      }
 
-    if (!isOwnerOrAdmin(req, existing.sellerId)) {
-      res.status(403).json({ error: "Forbidden" });
-      return;
-    }
+      if (!isOwnerOrAdmin(req, existing.sellerId)) {
+        return { status: 403 as const, body: { error: "Forbidden" } };
+      }
 
-    const [product] = await db
-      .update(digitalProductsTable)
-      .set(parsed.data)
-      .where(eq(digitalProductsTable.id, params.data.id))
-      .returning();
+      const [product] = await tx
+        .update(digitalProductsTable)
+        .set(parsed.data)
+        .where(eq(digitalProductsTable.id, params.data.id))
+        .returning();
 
-    res.json(UpdateDigitalProductResponse.parse(product));
+      return {
+        status: 200 as const,
+        body: UpdateDigitalProductResponse.parse(product),
+      };
+    });
+
+    res.status(result.status).json(result.body);
   },
 );
 
@@ -284,32 +292,43 @@ router.post(
       return;
     }
 
-    const [product] = await db
-      .select()
-      .from(digitalProductsTable)
-      .where(eq(digitalProductsTable.id, params.data.id));
+    const result = await db.transaction(async (tx) => {
+      // Lock the product row for the duration of the transaction so a
+      // concurrent PATCH updating priceCents must wait until this purchase
+      // commits (or is rolled back), preventing a price change from being
+      // applied between our read and the purchase being finalized.
+      const [product] = await tx
+        .select()
+        .from(digitalProductsTable)
+        .where(eq(digitalProductsTable.id, params.data.id))
+        .for("update");
 
-    if (!product) {
-      res.status(404).json({ error: "Digital product not found" });
-      return;
-    }
+      if (!product) {
+        return { status: 404 as const, body: { error: "Digital product not found" } };
+      }
 
-    // Only "active" products are visible to buyers in the default listing.
-    // Reject purchase of any non-active product so the purchase gate always
-    // mirrors the visibility rules — regardless of how many statuses are added
-    // in the future.
-    if (product.status !== "active") {
-      res.status(410).json({ error: "This product is no longer available" });
-      return;
-    }
+      // Only "active" products are visible to buyers in the default listing.
+      // Reject purchase of any non-active product so the purchase gate always
+      // mirrors the visibility rules — regardless of how many statuses are added
+      // in the future.
+      if (product.status !== "active") {
+        return {
+          status: 410 as const,
+          body: { error: "This product is no longer available" },
+        };
+      }
 
-    res.json(
-      PurchaseDigitalProductResponse.parse({
-        productId: product.id,
-        amountCents: product.priceCents,
-        message: `Purchase of "${product.title}" confirmed.`,
-      }),
-    );
+      return {
+        status: 200 as const,
+        body: PurchaseDigitalProductResponse.parse({
+          productId: product.id,
+          amountCents: product.priceCents,
+          message: `Purchase of "${product.title}" confirmed.`,
+        }),
+      };
+    });
+
+    res.status(result.status).json(result.body);
   },
 );
 
