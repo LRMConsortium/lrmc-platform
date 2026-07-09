@@ -30,6 +30,7 @@ async function main() {
   console.log("Seeding LRMC / Ususu demo data...");
 
   const passwordHash = await bcrypt.hash("Password123!", 10);
+  const emailVerifiedAt = new Date();
 
   const [admin, fatou, lamin, awa, ousman, binta] = await db
     .insert(usersTable)
@@ -40,6 +41,7 @@ async function main() {
         fullName: "Isatou Jallow",
         phone: "+220 220 1001",
         role: "admin",
+        emailVerifiedAt,
       },
       {
         email: "fatou.ceesay@lrmc.gm",
@@ -47,6 +49,7 @@ async function main() {
         fullName: "Fatou Ceesay",
         phone: "+220 220 1002",
         role: "member",
+        emailVerifiedAt,
       },
       {
         email: "lamin.jatta@lrmc.gm",
@@ -54,6 +57,7 @@ async function main() {
         fullName: "Lamin Jatta",
         phone: "+220 220 1003",
         role: "member",
+        emailVerifiedAt,
       },
       {
         email: "awa.sanneh@lrmc.gm",
@@ -61,6 +65,7 @@ async function main() {
         fullName: "Awa Sanneh",
         phone: "+220 220 1004",
         role: "member",
+        emailVerifiedAt,
       },
       {
         email: "ousman.touray@lrmc.gm",
@@ -68,6 +73,7 @@ async function main() {
         fullName: "Ousman Touray",
         phone: "+220 220 1005",
         role: "member",
+        emailVerifiedAt,
       },
       {
         email: "binta.njie@lrmc.gm",
@@ -75,6 +81,7 @@ async function main() {
         fullName: "Binta Njie",
         phone: "+220 220 1006",
         role: "member",
+        emailVerifiedAt,
       },
     ])
     .returning();

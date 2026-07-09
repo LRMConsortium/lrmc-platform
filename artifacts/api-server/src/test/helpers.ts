@@ -23,9 +23,9 @@ export interface TestUser {
 export async function createMemberUser(prefix = "member"): Promise<TestUser> {
   const email = uniqueEmail(prefix);
   const password = "Test-Password-123!";
-  const agent = request.agent(app);
 
-  const res = await agent.post("/api/auth/register").send({
+  const registerAgent = request.agent(app);
+  const res = await registerAgent.post("/api/auth/register").send({
     email,
     password,
     fullName: `Test User ${email}`,
@@ -34,6 +34,20 @@ export async function createMemberUser(prefix = "member"): Promise<TestUser> {
 
   if (res.status !== 201) {
     throw new Error(`Failed to register test user: ${res.status} ${JSON.stringify(res.body)}`);
+  }
+
+  // Registration leaves the account unverified (by design, see email
+  // verification flow); mark it verified directly in the DB since tests run
+  // against the real dev DB and have no way to click an emailed link.
+  await db
+    .update(usersTable)
+    .set({ emailVerifiedAt: new Date() })
+    .where(eq(usersTable.id, res.body.id));
+
+  const agent = request.agent(app);
+  const loginRes = await agent.post("/api/auth/login").send({ email, password });
+  if (loginRes.status !== 200) {
+    throw new Error(`Failed to log in test user: ${loginRes.status} ${JSON.stringify(loginRes.body)}`);
   }
 
   return { id: res.body.id, email, password, agent };
@@ -60,7 +74,7 @@ export async function createAdminUser(prefix = "admin"): Promise<TestUser> {
 
   await db
     .update(usersTable)
-    .set({ role: "admin" })
+    .set({ role: "admin", emailVerifiedAt: new Date() })
     .where(eq(usersTable.id, registerRes.body.id));
 
   // Log in again with a fresh agent so the session reflects the admin role

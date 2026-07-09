@@ -15,10 +15,11 @@ import {
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { useLogin, useGetCurrentUser } from "@workspace/api-client-react"
+import { useLogin, useGetCurrentUser, useResendVerification } from "@workspace/api-client-react"
 import { useQueryClient } from "@tanstack/react-query"
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { useToast } from "@/hooks/use-toast"
+import { ApiError } from "@workspace/api-client-react"
 
 const loginSchema = z.object({
   email: z.string().email(),
@@ -29,8 +30,10 @@ export default function Login() {
   const [, setLocation] = useLocation()
   const { data: user, isLoading: userLoading } = useGetCurrentUser()
   const login = useLogin()
+  const resendVerification = useResendVerification()
   const queryClient = useQueryClient()
   const { toast } = useToast()
+  const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null)
 
   const form = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
@@ -47,16 +50,46 @@ export default function Login() {
   }, [user, userLoading, setLocation])
 
   function onSubmit(values: z.infer<typeof loginSchema>) {
+    setUnverifiedEmail(null)
     login.mutate({ data: values }, {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] })
         setLocation("/dashboard")
       },
       onError: (err) => {
+        const data = err instanceof ApiError ? (err.data as { code?: string } | null) : null
+        if (data?.code === "email_not_verified") {
+          setUnverifiedEmail(values.email)
+          toast({
+            title: "Email not verified",
+            description: "Please confirm your email before signing in.",
+            variant: "destructive"
+          })
+          return
+        }
         toast({
           title: "Login failed",
           description: "Please check your credentials and try again.",
           variant: "destructive"
+        })
+      }
+    })
+  }
+
+  function onResend() {
+    if (!unverifiedEmail) return
+    resendVerification.mutate({ data: { email: unverifiedEmail } }, {
+      onSuccess: () => {
+        toast({
+          title: "Verification email sent",
+          description: "Check your inbox for a new confirmation link.",
+        })
+      },
+      onError: () => {
+        toast({
+          title: "Something went wrong",
+          description: "We couldn't send that email. Please try again.",
+          variant: "destructive",
         })
       }
     })
@@ -111,9 +144,30 @@ export default function Login() {
                     </FormItem>
                   )}
                 />
+                <div className="text-right -mt-2">
+                  <Link href="/forgot-password" className="text-sm text-primary hover:underline">
+                    Forgot password?
+                  </Link>
+                </div>
                 <Button type="submit" className="w-full h-11 text-base mt-2" disabled={login.isPending}>
                   {login.isPending ? "Authenticating..." : "Sign in to Portal"}
                 </Button>
+                {unverifiedEmail && (
+                  <div className="rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-center space-y-2">
+                    <p className="text-muted-foreground">
+                      Your email isn't verified yet.
+                    </p>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={onResend}
+                      disabled={resendVerification.isPending}
+                    >
+                      {resendVerification.isPending ? "Sending..." : "Resend verification email"}
+                    </Button>
+                  </div>
+                )}
               </form>
             </Form>
             <div className="mt-6 text-center text-sm">

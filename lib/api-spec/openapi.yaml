@@ -94,6 +94,78 @@ paths:
                 $ref: "#/components/schemas/User"
         "401":
           description: Not authenticated
+  /auth/verify-email:
+    post:
+      operationId: verifyEmail
+      tags: [auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VerifyEmailInput"
+      responses:
+        "200":
+          description: Email verified
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+        "400":
+          description: Invalid, expired, or used token
+  /auth/resend-verification:
+    post:
+      operationId: resendVerification
+      tags: [auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ResendVerificationInput"
+      responses:
+        "200":
+          description: If the account exists and is unverified, a new email was sent
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+  /auth/forgot-password:
+    post:
+      operationId: forgotPassword
+      tags: [auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ForgotPasswordInput"
+      responses:
+        "200":
+          description: If the account exists, a reset email was sent
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+  /auth/reset-password:
+    post:
+      operationId: resetPassword
+      tags: [auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ResetPasswordInput"
+      responses:
+        "200":
+          description: Password updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+        "400":
+          description: Invalid, expired, or used token
 
   # ---------------- MEMBERSHIPS ----------------
   /memberships:
@@ -1134,13 +1206,14 @@ components:
     # ---------- AUTH ----------
     User:
       type: object
-      required: [id, email, fullName, phone, role, createdAt]
+      required: [id, email, fullName, phone, role, emailVerified, createdAt]
       properties:
         id: { type: integer }
         email: { type: string }
         fullName: { type: string }
         phone: { type: string }
         role: { type: string }
+        emailVerified: { type: boolean }
         createdAt: { type: string, format: date-time }
     RegisterInput:
       type: object
@@ -1156,6 +1229,32 @@ components:
       properties:
         email: { type: string, minLength: 3 }
         password: { type: string }
+    VerifyEmailInput:
+      type: object
+      required: [token]
+      properties:
+        token: { type: string, minLength: 1 }
+    ResendVerificationInput:
+      type: object
+      required: [email]
+      properties:
+        email: { type: string, minLength: 3 }
+    ForgotPasswordInput:
+      type: object
+      required: [email]
+      properties:
+        email: { type: string, minLength: 3 }
+    ResetPasswordInput:
+      type: object
+      required: [token, password]
+      properties:
+        token: { type: string, minLength: 1 }
+        password: { type: string, minLength: 6 }
+    MessageResponse:
+      type: object
+      required: [message]
+      properties:
+        message: { type: string }
 
     # ---------- MEMBERSHIPS ----------
     Membership:

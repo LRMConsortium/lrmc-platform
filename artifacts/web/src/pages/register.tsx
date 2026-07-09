@@ -16,9 +16,10 @@ import {
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { useRegister, useGetCurrentUser } from "@workspace/api-client-react"
-import { useQueryClient } from "@tanstack/react-query"
+import { useState } from "react"
 import { useEffect } from "react"
 import { useToast } from "@/hooks/use-toast"
+import { Mail } from "lucide-react"
 
 const registerSchema = z.object({
   fullName: z.string().min(2, "Full name is required"),
@@ -31,8 +32,8 @@ export default function Register() {
   const [, setLocation] = useLocation()
   const { data: user, isLoading: userLoading } = useGetCurrentUser()
   const register = useRegister()
-  const queryClient = useQueryClient()
   const { toast } = useToast()
+  const [submittedEmail, setSubmittedEmail] = useState<string | null>(null)
 
   const form = useForm<z.infer<typeof registerSchema>>({
     resolver: zodResolver(registerSchema),
@@ -53,8 +54,7 @@ export default function Register() {
   function onSubmit(values: z.infer<typeof registerSchema>) {
     register.mutate({ data: values }, {
       onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: ["/api/auth/me"] })
-        setLocation("/dashboard")
+        setSubmittedEmail(values.email)
       },
       onError: () => {
         toast({
@@ -67,6 +67,36 @@ export default function Register() {
   }
 
   if (userLoading) return null
+
+  if (submittedEmail) {
+    return (
+      <div className="min-h-[100dvh] flex items-center justify-center bg-muted/30 p-4">
+        <div className="w-full max-w-md animate-in fade-in slide-in-from-bottom-8 duration-700">
+          <Card className="border-t-4 border-t-primary shadow-xl text-center">
+            <CardHeader className="space-y-3 pb-2">
+              <div className="mx-auto bg-primary/10 p-4 rounded-full w-fit">
+                <Mail className="h-8 w-8 text-primary" />
+              </div>
+              <CardTitle className="text-2xl font-serif">Check your inbox</CardTitle>
+              <CardDescription>
+                We sent a confirmation link to <span className="font-medium text-foreground">{submittedEmail}</span>.
+                Click it to activate your account before signing in.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="text-sm text-muted-foreground">
+                Didn't get it? You can request a new link from the{" "}
+                <Link href="/login" className="text-primary hover:underline font-semibold">
+                  sign in page
+                </Link>
+                .
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-[100dvh] flex items-center justify-center bg-muted/30 p-4 py-12">

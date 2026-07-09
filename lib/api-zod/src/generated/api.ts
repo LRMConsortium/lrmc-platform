@@ -38,6 +38,7 @@ export const RegisterResponse = zod.object({
   "fullName": zod.string(),
   "phone": zod.string(),
   "role": zod.string(),
+  "emailVerified": zod.boolean(),
   "createdAt": zod.coerce.date()
 })
 
@@ -57,6 +58,7 @@ export const LoginResponse = zod.object({
   "fullName": zod.string(),
   "phone": zod.string(),
   "role": zod.string(),
+  "emailVerified": zod.boolean(),
   "createdAt": zod.coerce.date()
 })
 
@@ -70,7 +72,61 @@ export const GetCurrentUserResponse = zod.object({
   "fullName": zod.string(),
   "phone": zod.string(),
   "role": zod.string(),
+  "emailVerified": zod.boolean(),
   "createdAt": zod.coerce.date()
+})
+
+
+
+
+
+export const VerifyEmailBody = zod.object({
+  "token": zod.string().min(1)
+})
+
+export const VerifyEmailResponse = zod.object({
+  "message": zod.string()
+})
+
+
+export const resendVerificationBodyEmailMin = 3;
+
+
+
+export const ResendVerificationBody = zod.object({
+  "email": zod.string().min(resendVerificationBodyEmailMin)
+})
+
+export const ResendVerificationResponse = zod.object({
+  "message": zod.string()
+})
+
+
+export const forgotPasswordBodyEmailMin = 3;
+
+
+
+export const ForgotPasswordBody = zod.object({
+  "email": zod.string().min(forgotPasswordBodyEmailMin)
+})
+
+export const ForgotPasswordResponse = zod.object({
+  "message": zod.string()
+})
+
+
+
+export const resetPasswordBodyPasswordMin = 6;
+
+
+
+export const ResetPasswordBody = zod.object({
+  "token": zod.string().min(1),
+  "password": zod.string().min(resetPasswordBodyPasswordMin)
+})
+
+export const ResetPasswordResponse = zod.object({
+  "message": zod.string()
 })
 
 

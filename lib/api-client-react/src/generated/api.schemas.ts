@@ -15,6 +15,7 @@ export interface User {
   fullName: string;
   phone: string;
   role: string;
+  emailVerified: boolean;
   createdAt: string;
 }
 
@@ -33,6 +34,32 @@ export interface LoginInput {
   /** @minLength 3 */
   email: string;
   password: string;
+}
+
+export interface VerifyEmailInput {
+  /** @minLength 1 */
+  token: string;
+}
+
+export interface ResendVerificationInput {
+  /** @minLength 3 */
+  email: string;
+}
+
+export interface ForgotPasswordInput {
+  /** @minLength 3 */
+  email: string;
+}
+
+export interface ResetPasswordInput {
+  /** @minLength 1 */
+  token: string;
+  /** @minLength 6 */
+  password: string;
+}
+
+export interface MessageResponse {
+  message: string;
 }
 
 export interface Membership {

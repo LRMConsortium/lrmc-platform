@@ -7,6 +7,9 @@ import { useGetCurrentUser } from '@workspace/api-client-react';
 
 import Login from '@/pages/login';
 import Register from '@/pages/register';
+import VerifyEmail from '@/pages/verify-email';
+import ForgotPassword from '@/pages/forgot-password';
+import ResetPassword from '@/pages/reset-password';
 import Dashboard from '@/pages/dashboard';
 import Memberships from '@/pages/memberships';
 import Properties from '@/pages/properties';
@@ -53,6 +56,9 @@ function Router() {
     <Switch>
       <Route path="/login" component={Login} />
       <Route path="/register" component={Register} />
+      <Route path="/verify-email" component={VerifyEmail} />
+      <Route path="/forgot-password" component={ForgotPassword} />
+      <Route path="/reset-password" component={ResetPassword} />
       
       <Route path="/" component={() => <Redirect href="/dashboard" />} />
       <Route path="/dashboard" component={() => <ProtectedRoute component={Dashboard} />} />
