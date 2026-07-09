@@ -38,7 +38,8 @@ router.post("/land-listings", requireAuth, async (req, res): Promise<void> => {
 });
 
 router.patch("/land-listings/:id", requireAuth, async (req, res): Promise<void> => {
-  if (req.user!.role !== "admin") {
+  const isAdmin = req.user!.role === "admin";
+  if (!isAdmin) {
     const [existing] = await db.select().from(landListingsTable).where(eq(landListingsTable.id, Number(req.params.id)));
     if (!existing || existing.sellerId !== req.user!.id) {
       res.status(403).json({ error: "Forbidden" });
@@ -49,6 +50,12 @@ router.patch("/land-listings/:id", requireAuth, async (req, res): Promise<void> 
   const body = UpdateLandListingBody.safeParse(req.body);
   if (!params.success || !body.success) {
     res.status(400).json({ error: (params.error ?? body.error)!.message });
+    return;
+  }
+  // Only admins may change listing status (e.g. approve) — owners can edit their own listing
+  // details but must not be able to self-approve.
+  if (!isAdmin && body.data.status !== undefined) {
+    res.status(403).json({ error: "Only admins can change listing status" });
     return;
   }
   const [row] = await db
