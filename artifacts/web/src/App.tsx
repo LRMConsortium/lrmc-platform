@@ -2,7 +2,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import NotFound from '@/pages/not-found';
-import { Route, Switch, Router as WouterRouter } from 'wouter';
+import { Route, Switch, Router as WouterRouter, useLocation } from 'wouter';
+import { useEffect } from 'react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import Home from '@/pages/home';
 import { MemberDashboardPage } from '@/pages/member/dashboard';
@@ -63,7 +64,18 @@ function DashboardRouter() {
   return <MemberDashboardPage />;
 }
 
+// Domains that should land directly on the Ususu section instead of the LRMC home page.
+const USUSU_HOSTNAMES = ["africaususu.com", "www.africaususu.com"];
+
 function Router() {
+  const [, navigate] = useLocation();
+
+  useEffect(() => {
+    if (USUSU_HOSTNAMES.includes(window.location.hostname) && window.location.pathname === "/") {
+      navigate("/ususu");
+    }
+  }, [navigate]);
+
   return (
     <Switch>
       <Route path="/" component={Home} />
