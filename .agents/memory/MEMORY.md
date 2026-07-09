@@ -1,0 +1,2 @@
+- [Orval codegen gotchas](orval-codegen-gotchas.md) — zod v3 email/uri incompatibility, and list-vs-singular hook naming trap.
+- [Server-side authz for multi-persona apps](server-side-authz-multipersona.md) — client-side role hiding is not security; every route needs explicit requireAuth/requireAdmin.

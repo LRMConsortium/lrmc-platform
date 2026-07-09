@@ -1,8 +1,42 @@
 import { Router, type IRouter } from "express";
 import healthRouter from "./health";
+import authRouter from "./auth";
+import membershipsRouter from "./memberships";
+import assetsRouter from "./assets";
+import landRouter from "./land";
+import constructionRouter from "./construction";
+import ususuRouter from "./ususu";
+import paymentsRouter from "./payments";
+import adsRouter from "./ads";
+import marketplaceRouter from "./marketplace";
+import ecommerceRouter from "./ecommerce";
+import youthRouter from "./youth";
+import prospectingRouter from "./prospecting";
+import intranetRouter from "./intranet";
+import treasuryRouter from "./treasury";
+import riskRouter from "./risk";
+import settlementRouter from "./settlement";
+import dashboardRouter from "./dashboard";
 
 const router: IRouter = Router();
 
 router.use(healthRouter);
+router.use(authRouter);
+router.use(membershipsRouter);
+router.use(assetsRouter);
+router.use(landRouter);
+router.use(constructionRouter);
+router.use(ususuRouter);
+router.use(paymentsRouter);
+router.use(adsRouter);
+router.use(marketplaceRouter);
+router.use(ecommerceRouter);
+router.use(youthRouter);
+router.use(prospectingRouter);
+router.use(intranetRouter);
+router.use(treasuryRouter);
+router.use(riskRouter);
+router.use(settlementRouter);
+router.use(dashboardRouter);
 
 export default router;
