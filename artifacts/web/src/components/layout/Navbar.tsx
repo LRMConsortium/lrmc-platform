@@ -47,7 +47,7 @@ export function Navbar() {
                   </Button>
                 </>
               ) : (
-                <Button onClick={login} className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2 rounded-full px-6">
+                <Button onClick={() => login()} className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2 rounded-full px-6">
                   Access Portal
                   <ArrowRight className="w-4 h-4" />
                 </Button>

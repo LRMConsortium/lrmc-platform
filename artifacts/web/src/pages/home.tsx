@@ -38,11 +38,16 @@ export default function Home() {
               LRMC connects mobility, real estate, construction, and commerce through a secure, unified Pan-African infrastructure.
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
-              <Button onClick={login} size="lg" className="bg-primary hover:bg-primary/90 text-white rounded-full px-8 h-14 text-lg w-full sm:w-auto">
+              <Button onClick={() => login()} size="lg" className="bg-primary hover:bg-primary/90 text-white rounded-full px-8 h-14 text-lg w-full sm:w-auto">
                 Access Member Portal
                 <ArrowRight className="w-5 h-5 ml-2" />
               </Button>
-              <Button variant="outline" size="lg" className="rounded-full px-8 h-14 text-lg w-full sm:w-auto border-2">
+              <Button
+                onClick={() => login("/memberships")}
+                variant="outline"
+                size="lg"
+                className="rounded-full px-8 h-14 text-lg w-full sm:w-auto border-2"
+              >
                 Apply for Membership
               </Button>
             </div>
@@ -175,7 +180,7 @@ export default function Home() {
           <p className="text-xl text-muted-foreground mb-10 max-w-2xl mx-auto">
             Whether you're a property owner, contractor, or looking to drive with Ususu, your journey starts here.
           </p>
-          <Button onClick={login} size="lg" className="bg-primary hover:bg-primary/90 text-white rounded-full px-10 h-16 text-xl">
+          <Button onClick={() => login()} size="lg" className="bg-primary hover:bg-primary/90 text-white rounded-full px-10 h-16 text-xl">
             Sign In to the Portal
             <ArrowRight className="w-6 h-6 ml-2" />
           </Button>

@@ -7,7 +7,7 @@ interface AuthState {
   user: AuthUser | null;
   isLoading: boolean;
   isAuthenticated: boolean;
-  login: () => void;
+  login: (returnPath?: string) => void;
   logout: () => void;
 }
 
@@ -45,9 +45,12 @@ export function useAuth(): AuthState {
     };
   }, []);
 
-  const login = useCallback(() => {
+  const login = useCallback((returnPath?: string) => {
     const base = getBasePath();
-    window.location.href = `/api/login?returnTo=${encodeURIComponent(base)}`;
+    const target = returnPath
+      ? `${base === '/' ? '' : base}${returnPath.startsWith('/') ? returnPath : `/${returnPath}`}`
+      : base;
+    window.location.href = `/api/login?returnTo=${encodeURIComponent(target)}`;
   }, []);
 
   const logout = useCallback(() => {
