@@ -18,6 +18,10 @@ import {
   ResetPasswordResponse,
 } from "@workspace/api-zod";
 import { requireAuth } from "../middlewares/auth";
+import {
+  loginRateLimiter,
+  emailActionRateLimiter,
+} from "../middlewares/rateLimit";
 import { generateRawToken, hashToken, expiryFor } from "../lib/tokens";
 import {
   sendEmail,
@@ -105,7 +109,7 @@ router.post("/auth/register", async (req, res): Promise<void> => {
   return;
 });
 
-router.post("/auth/login", async (req, res): Promise<void> => {
+router.post("/auth/login", loginRateLimiter, async (req, res): Promise<void> => {
   const parsed = LoginBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
@@ -211,7 +215,10 @@ router.post("/auth/verify-email", async (req, res): Promise<void> => {
   );
 });
 
-router.post("/auth/resend-verification", async (req, res): Promise<void> => {
+router.post(
+  "/auth/resend-verification",
+  emailActionRateLimiter,
+  async (req, res): Promise<void> => {
   const parsed = ResendVerificationBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
@@ -235,9 +242,13 @@ router.post("/auth/resend-verification", async (req, res): Promise<void> => {
         "If that account exists and needs verification, a new email was sent.",
     }),
   );
-});
+  },
+);
 
-router.post("/auth/forgot-password", async (req, res): Promise<void> => {
+router.post(
+  "/auth/forgot-password",
+  emailActionRateLimiter,
+  async (req, res): Promise<void> => {
   const parsed = ForgotPasswordBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
@@ -258,7 +269,8 @@ router.post("/auth/forgot-password", async (req, res): Promise<void> => {
       message: "If that account exists, a reset link was sent.",
     }),
   );
-});
+  },
+);
 
 router.post("/auth/reset-password", async (req, res): Promise<void> => {
   const parsed = ResetPasswordBody.safeParse(req.body);
