@@ -101,6 +101,21 @@ describe("marketplace-listings authorization", () => {
     expect(res.body.status).toBe("sold");
   });
 
+  it("does not let an admin reassign a marketplace listing's seller via PATCH", async () => {
+    const seller = await createMemberUser("mlseller");
+    const otherUser = await createMemberUser("mlother");
+    const admin = await createAdminUser("mladmin");
+    const listingId = await createListing(seller.agent);
+
+    const res = await admin.agent
+      .patch(`/api/marketplace-listings/${listingId}`)
+      .send({ title: "Updated by admin", sellerId: otherUser.id });
+
+    expect(res.status).toBe(200);
+    expect(res.body.sellerId).toBe(seller.id);
+    expect(res.body.sellerId).not.toBe(otherUser.id);
+  });
+
   it("does not let an admin reassign a digital product's seller via PATCH", async () => {
     const seller = await createMemberUser("dpseller");
     const otherUser = await createMemberUser("dpother");
