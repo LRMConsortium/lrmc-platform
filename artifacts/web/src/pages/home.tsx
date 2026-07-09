@@ -2,6 +2,7 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@workspace/replit-auth-web";
 import { ArrowRight, Building2, Map, Car, HardHat, ShieldCheck, TrendingUp, Globe2, Briefcase } from "lucide-react";
 import { Redirect } from "wouter";
+import { crossDomainHref, CORPORATE_DOMAIN, USUSU_DOMAIN } from "@/lib/domains";
 
 const sectors = [
   { icon: Car, title: "Ususu Mobility", desc: "The Gambia's premier rideshare and mobility network. Safe, reliable, and fair." },
@@ -71,6 +72,46 @@ export default function Home() {
                 </p>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Ecosystem Links */}
+      <section id="ususu" className="py-24 bg-background">
+        <div className="container mx-auto px-4 md:px-6">
+          <div className="mb-16 max-w-2xl">
+            <h2 className="text-3xl md:text-4xl font-serif font-bold text-foreground mb-4">Two Homes Within One Trust</h2>
+            <p className="text-lg text-muted-foreground">
+              LRMC's public face lives here. Our mobility network and our corporate operations each have their own dedicated address.
+            </p>
+          </div>
+          <div className="grid md:grid-cols-2 gap-8">
+            <a
+              href={crossDomainHref(USUSU_DOMAIN, "/ususu")}
+              className="group block p-8 rounded-2xl border border-border bg-card hover:border-primary/50 transition-colors"
+            >
+              <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-6 text-primary group-hover:scale-110 transition-transform">
+                <Car className="w-6 h-6" />
+              </div>
+              <h3 className="text-xl font-bold mb-2">Ususu Mobility</h3>
+              <p className="text-muted-foreground mb-4">Rider and driver onboarding, dispatch, and settlements — at africaususu.com.</p>
+              <span className="inline-flex items-center gap-2 text-primary font-medium">
+                Visit Ususu <ArrowRight className="w-4 h-4" />
+              </span>
+            </a>
+            <a
+              href={crossDomainHref(CORPORATE_DOMAIN, "/dashboard")}
+              className="group block p-8 rounded-2xl border border-border bg-card hover:border-primary/50 transition-colors"
+            >
+              <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-6 text-primary group-hover:scale-110 transition-transform">
+                <Briefcase className="w-6 h-6" />
+              </div>
+              <h3 className="text-xl font-bold mb-2">Corporate HQ</h3>
+              <p className="text-muted-foreground mb-4">Membership, treasury, risk, and internal operations — at africalrmc.com.</p>
+              <span className="inline-flex items-center gap-2 text-primary font-medium">
+                Enter Corporate HQ <ArrowRight className="w-4 h-4" />
+              </span>
+            </a>
           </div>
         </div>
       </section>

@@ -53,43 +53,34 @@ export function LandPage() {
     );
   };
 
-  const handleTransactionStatus = (id: number, status: string, listingId: number) => {
+  const handleTransactionStatus = (id: number, status: string) => {
+    // The server cascades this onto the listing (closed -> sold, cancelled -> available),
+    // so we only need to update the transaction here and refresh both lists.
     updateTransaction.mutate(
       { id, data: { status, ...(status === "closed" ? { closedAt: new Date().toISOString() } : {}) } },
       {
         onSuccess: () => {
           toast.success(status === "closed" ? "Sale closed — listing marked sold" : "Offer rejected");
           queryClient.invalidateQueries({ queryKey: getListLandTransactionsQueryKey() });
-          if (status === "closed") {
-            updateListing.mutate(
-              { id: listingId, data: { status: "sold" } },
-              { onSuccess: () => queryClient.invalidateQueries({ queryKey: getListLandListingsQueryKey({}) }) }
-            );
-          } else {
-            // Re-open the listing for offers if the pending transaction is cancelled.
-            updateListing.mutate(
-              { id: listingId, data: { status: "available" } },
-              { onSuccess: () => queryClient.invalidateQueries({ queryKey: getListLandListingsQueryKey({}) }) }
-            );
-          }
-        }
+          queryClient.invalidateQueries({ queryKey: getListLandListingsQueryKey({}) });
+        },
+        onError: () => toast.error("Failed to update transaction. Please try again.")
       }
     );
   };
 
   const handleOffer = (listingId: number, priceUsd: number) => {
     if (!user) return;
+    // The server marks the listing 'under_offer' as part of creating the transaction.
     createTransaction.mutate(
       { data: { listingId, buyerId: user.id, amountUsd: priceUsd } },
       {
         onSuccess: () => {
           toast.success("Offer submitted! The listing is now under offer.");
           queryClient.invalidateQueries({ queryKey: getListLandTransactionsQueryKey() });
-          updateListing.mutate(
-            { id: listingId, data: { status: "under_offer" } },
-            { onSuccess: () => queryClient.invalidateQueries({ queryKey: getListLandListingsQueryKey({}) }) }
-          );
-        }
+          queryClient.invalidateQueries({ queryKey: getListLandListingsQueryKey({}) });
+        },
+        onError: () => toast.error("This listing is no longer available for offers.")
       }
     );
   };
@@ -202,8 +193,8 @@ export function LandPage() {
                         <Badge variant={tx.status === 'closed' ? 'default' : tx.status === 'cancelled' ? 'destructive' : 'secondary'}>{tx.status}</Badge>
                         {isAdmin && tx.status === 'pending' && (
                           <div className="flex gap-2 justify-end">
-                            <Button size="sm" variant="outline" onClick={() => handleTransactionStatus(tx.id, 'cancelled', tx.listingId)}>Reject</Button>
-                            <Button size="sm" onClick={() => handleTransactionStatus(tx.id, 'closed', tx.listingId)}>Close Sale</Button>
+                            <Button size="sm" variant="outline" onClick={() => handleTransactionStatus(tx.id, 'cancelled')}>Reject</Button>
+                            <Button size="sm" onClick={() => handleTransactionStatus(tx.id, 'closed')}>Close Sale</Button>
                           </div>
                         )}
                       </div>

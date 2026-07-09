@@ -3,6 +3,7 @@ import { useAuth } from "@workspace/replit-auth-web";
 import { Button } from "@/components/ui/button";
 import { Building2, Menu, X, ArrowRight, UserCircle } from "lucide-react";
 import { useState } from "react";
+import { crossDomainHref, USUSU_DOMAIN } from "@/lib/domains";
 
 export function Navbar() {
   const { user, isAuthenticated, login, logout } = useAuth();
@@ -30,7 +31,7 @@ export function Navbar() {
               <div className="flex items-center gap-6 text-sm font-medium text-muted-foreground">
                 <a href="#about" className="hover:text-primary transition-colors">Who We Are</a>
                 <a href="#sectors" className="hover:text-primary transition-colors">Sectors</a>
-                <a href="#ususu" className="hover:text-primary transition-colors">Ususu</a>
+                <a href={crossDomainHref(USUSU_DOMAIN, "/ususu")} className="hover:text-primary transition-colors">Ususu</a>
               </div>
             )}
             

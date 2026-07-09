@@ -84,7 +84,16 @@ router.post("/land-transactions", requireAuth, async (req, res): Promise<void> =
     res.status(400).json({ error: parsed.error.message });
     return;
   }
+  const [listing] = await db.select().from(landListingsTable).where(eq(landListingsTable.id, parsed.data.listingId));
+  if (!listing || listing.status !== "available") {
+    res.status(409).json({ error: "Listing is not available for offers" });
+    return;
+  }
   const [row] = await db.insert(landTransactionsTable).values(parsed.data).returning();
+  // Move the listing out of the open pool as soon as an offer is placed on it — this is
+  // a server-side side effect (not owner-controlled) so it isn't blocked by the
+  // owner/admin-only status guard on PATCH /land-listings/:id.
+  await db.update(landListingsTable).set({ status: "under_offer" }).where(eq(landListingsTable.id, parsed.data.listingId));
   res.status(201).json(CreateLandTransactionResponse.parse(row));
 });
 
@@ -103,6 +112,12 @@ router.patch("/land-transactions/:id", requireAdmin, async (req, res): Promise<v
   if (!row) {
     res.status(404).json({ error: "Land transaction not found" });
     return;
+  }
+  // Cascade the transaction's outcome onto the listing: closed -> sold, cancelled -> reopen.
+  if (body.data.status === "closed") {
+    await db.update(landListingsTable).set({ status: "sold" }).where(eq(landListingsTable.id, row.listingId));
+  } else if (body.data.status === "cancelled") {
+    await db.update(landListingsTable).set({ status: "available" }).where(eq(landListingsTable.id, row.listingId));
   }
   res.json(UpdateLandTransactionResponse.parse(row));
 });
