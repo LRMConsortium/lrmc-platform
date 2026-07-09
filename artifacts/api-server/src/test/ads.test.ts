@@ -982,4 +982,25 @@ describe("ads authorization", () => {
       expect(res.body.rejectionNote ?? null).toBeNull();
     });
   });
+
+  it("admin PATCH with a different advertiserId does not reassign ad ownership", async () => {
+    const seller = await createMemberUser("ad-advertiser-reassign-seller");
+    const admin = await createAdminUser("ad-advertiser-reassign-admin");
+    const bystander = await createMemberUser("ad-advertiser-reassign-bystander");
+    const ad = await createAd(seller.agent);
+
+    // Admin fetches the ad to learn the original advertiserId
+    const beforeRes = await admin.agent.get(`/api/ads/${ad.id}`);
+    expect(beforeRes.status).toBe(200);
+    const originalAdvertiserId: number = beforeRes.body.advertiserId;
+
+    // Admin sends a PATCH including a different advertiserId (bystander's id)
+    const patchRes = await admin.agent
+      .patch(`/api/ads/${ad.id}`)
+      .send({ advertiserId: bystander.id, status: "active" });
+
+    expect(patchRes.status).toBe(200);
+    // advertiserId must still be the original creator — not the bystander
+    expect(patchRes.body.advertiserId).toBe(originalAdvertiserId);
+  });
 });
