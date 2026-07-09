@@ -515,3 +515,39 @@ describe("digital-products authorization", () => {
     expect(res.status).toBe(204);
   });
 });
+
+describe("digital-products receipt price immutability", () => {
+  it("buyer's receipt keeps the original amountCents after seller PATCHes priceCents to a different value", async () => {
+    const seller = await createMemberUser("dp-receipt-price-seller");
+    const buyer = await createMemberUser("dp-receipt-price-buyer");
+
+    // Seller creates a product at 999 cents
+    const createRes = await seller.agent.post("/api/digital-products").send({
+      title: "Receipt Price Test Product",
+      description: "Used to verify purchase receipt price is locked at purchase time.",
+      priceCents: 999,
+      category: "ebook",
+    });
+    expect(createRes.status).toBe(201);
+    const product = createRes.body as { id: number };
+
+    // Buyer purchases the product at the original price
+    const purchaseRes = await buyer.agent.post(`/api/digital-products/${product.id}/purchase`);
+    expect(purchaseRes.status).toBe(200);
+    const receipt = purchaseRes.body as { productId: number; amountCents: number };
+
+    // Confirm the receipt reflects the purchase-time price
+    expect(receipt.amountCents).toBe(999);
+
+    // Seller raises the price after the purchase
+    const patchRes = await seller.agent
+      .patch(`/api/digital-products/${product.id}`)
+      .send({ priceCents: 1999 });
+    expect(patchRes.status).toBe(200);
+    expect(patchRes.body.priceCents).toBe(1999);
+
+    // The buyer's receipt still shows what they actually paid — 999, not 1999
+    expect(receipt.amountCents).toBe(999);
+    expect(receipt.amountCents).not.toBe(patchRes.body.priceCents);
+  });
+});
