@@ -1,5 +1,5 @@
 import { useAuth } from "@workspace/replit-auth-web";
-import { useListLandListings, useCreateLandListing, useUpdateLandListing, useListLandTransactions, useCreateLandTransaction } from "@workspace/api-client-react";
+import { useListLandListings, useCreateLandListing, useUpdateLandListing, useListLandTransactions, useCreateLandTransaction, useUpdateLandTransaction } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { Loader2, Plus, DollarSign, MapPin, Ruler } from "lucide-react";
@@ -35,6 +35,7 @@ export function LandPage() {
   const createListing = useCreateLandListing();
   const updateListing = useUpdateLandListing();
   const createTransaction = useCreateLandTransaction();
+  const updateTransaction = useUpdateLandTransaction();
 
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault();
@@ -52,13 +53,25 @@ export function LandPage() {
     );
   };
 
-  const handleStatusUpdate = (id: number, status: string) => {
-    updateListing.mutate(
-      { id, data: { status } },
+  const handleTransactionStatus = (id: number, status: string, listingId: number) => {
+    updateTransaction.mutate(
+      { id, data: { status, ...(status === "closed" ? { closedAt: new Date().toISOString() } : {}) } },
       {
         onSuccess: () => {
-          toast.success(`Listing marked as ${status}`);
-          queryClient.invalidateQueries({ queryKey: getListLandListingsQueryKey({}) });
+          toast.success(status === "closed" ? "Sale closed — listing marked sold" : "Offer rejected");
+          queryClient.invalidateQueries({ queryKey: getListLandTransactionsQueryKey() });
+          if (status === "closed") {
+            updateListing.mutate(
+              { id: listingId, data: { status: "sold" } },
+              { onSuccess: () => queryClient.invalidateQueries({ queryKey: getListLandListingsQueryKey({}) }) }
+            );
+          } else {
+            // Re-open the listing for offers if the pending transaction is cancelled.
+            updateListing.mutate(
+              { id: listingId, data: { status: "available" } },
+              { onSuccess: () => queryClient.invalidateQueries({ queryKey: getListLandListingsQueryKey({}) }) }
+            );
+          }
         }
       }
     );
@@ -70,8 +83,12 @@ export function LandPage() {
       { data: { listingId, buyerId: user.id, amountUsd: priceUsd } },
       {
         onSuccess: () => {
-          toast.success("Offer submitted! A transaction record was created.");
+          toast.success("Offer submitted! The listing is now under offer.");
           queryClient.invalidateQueries({ queryKey: getListLandTransactionsQueryKey() });
+          updateListing.mutate(
+            { id: listingId, data: { status: "under_offer" } },
+            { onSuccess: () => queryClient.invalidateQueries({ queryKey: getListLandListingsQueryKey({}) }) }
+          );
         }
       }
     );
@@ -133,7 +150,7 @@ export function LandPage() {
                     <CardHeader className="pb-2">
                       <div className="flex justify-between items-start gap-2">
                         <CardTitle className="line-clamp-1 text-lg">{listing.title}</CardTitle>
-                        <Badge variant={listing.status === 'active' ? 'default' : 'secondary'}>{listing.status}</Badge>
+                        <Badge variant={listing.status === 'available' ? 'default' : listing.status === 'sold' ? 'secondary' : 'outline'}>{listing.status.replace('_', ' ')}</Badge>
                       </div>
                       <div className="flex items-center gap-4 text-sm text-muted-foreground mt-2">
                         <span className="flex items-center"><MapPin className="w-3 h-3 mr-1" /> {listing.location}</span>
@@ -144,14 +161,19 @@ export function LandPage() {
                       <p className="text-sm text-muted-foreground line-clamp-3">{listing.description}</p>
                     </CardContent>
                     <CardFooter className="border-t bg-muted/20 pt-4 flex gap-2">
-                      {isAdmin && listing.status === 'pending' && (
-                        <Button className="w-full" variant="outline" onClick={() => handleStatusUpdate(listing.id, 'active')}>Approve Listing</Button>
-                      )}
-                      {(!isAdmin && listing.sellerId !== user?.id && listing.status === 'active') && (
+                      {(!isAdmin && listing.sellerId !== user?.id && listing.status === 'available') && (
                         <Button className="w-full" onClick={() => handleOffer(listing.id, listing.priceUsd)}>Make Offer</Button>
+                      )}
+                      {(!isAdmin && listing.sellerId !== user?.id && listing.status !== 'available') && (
+                        <div className="w-full text-center text-sm font-medium text-muted-foreground">
+                          {listing.status === 'under_offer' ? 'Offer pending review' : 'Sold'}
+                        </div>
                       )}
                       {listing.sellerId === user?.id && (
                         <div className="w-full text-center text-sm font-medium text-muted-foreground">Your Listing</div>
+                      )}
+                      {isAdmin && (
+                        <div className="w-full text-center text-sm font-medium text-muted-foreground">Manage in Transactions tab</div>
                       )}
                     </CardFooter>
                   </Card>
@@ -175,9 +197,15 @@ export function LandPage() {
                         <div className="font-medium">Listing #{tx.listingId}</div>
                         <div className="text-sm text-muted-foreground">Buyer ID: <span className="font-mono">{tx.buyerId.slice(0,8)}</span></div>
                       </div>
-                      <div className="text-right">
+                      <div className="text-right space-y-2">
                         <div className="font-bold">${tx.amountUsd.toLocaleString()}</div>
-                        <Badge variant={tx.status === 'completed' ? 'default' : 'secondary'}>{tx.status}</Badge>
+                        <Badge variant={tx.status === 'closed' ? 'default' : tx.status === 'cancelled' ? 'destructive' : 'secondary'}>{tx.status}</Badge>
+                        {isAdmin && tx.status === 'pending' && (
+                          <div className="flex gap-2 justify-end">
+                            <Button size="sm" variant="outline" onClick={() => handleTransactionStatus(tx.id, 'cancelled', tx.listingId)}>Reject</Button>
+                            <Button size="sm" onClick={() => handleTransactionStatus(tx.id, 'closed', tx.listingId)}>Close Sale</Button>
+                          </div>
+                        )}
                       </div>
                     </div>
                   ))}

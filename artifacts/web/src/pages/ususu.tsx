@@ -228,16 +228,24 @@ export function UsusuPage() {
                   <CardHeader>
                     <div className="flex justify-between items-start">
                       <CardTitle className="text-lg">Driver #{d.id}</CardTitle>
-                      <Badge variant={d.status === 'active' ? 'default' : 'secondary'}>{d.status}</Badge>
+                      <Badge variant={d.status === 'approved' ? 'default' : d.status === 'suspended' ? 'destructive' : 'secondary'}>{d.status}</Badge>
                     </div>
                     <CardDescription>{d.vehicleInfo} • Lic: {d.licenseNumber}</CardDescription>
                   </CardHeader>
-                  {d.status === 'pending' && (
-                    <CardFooter className="pt-4 border-t flex gap-2">
-                      <Button className="w-full" variant="outline" onClick={() => handleUpdateDriverStatus(d.id, 'active')}>Approve</Button>
+                  <CardFooter className="pt-4 border-t flex gap-2">
+                    {d.status === 'pending' && (
+                      <>
+                        <Button className="w-full" variant="outline" onClick={() => handleUpdateDriverStatus(d.id, 'approved')}>Approve</Button>
+                        <Button className="w-full" variant="destructive" onClick={() => handleUpdateDriverStatus(d.id, 'suspended')}>Suspend</Button>
+                      </>
+                    )}
+                    {d.status === 'approved' && (
                       <Button className="w-full" variant="destructive" onClick={() => handleUpdateDriverStatus(d.id, 'suspended')}>Suspend</Button>
-                    </CardFooter>
-                  )}
+                    )}
+                    {d.status === 'suspended' && (
+                      <Button className="w-full" variant="outline" onClick={() => handleUpdateDriverStatus(d.id, 'approved')}>Reinstate</Button>
+                    )}
+                  </CardFooter>
                 </Card>
               ))}
             </div>
@@ -246,7 +254,7 @@ export function UsusuPage() {
 
         {!isAdmin && activeTab === "driver" && (
           <TabsContent value="driver" className="m-0 space-y-8">
-            {myDriver?.status !== 'active' ? (
+            {myDriver?.status !== 'approved' ? (
               <Card className="bg-muted/50 border-dashed"><CardContent className="py-8 text-center">Your driver account is <strong className="text-foreground">{myDriver?.status}</strong>.</CardContent></Card>
             ) : (
               <div className="grid lg:grid-cols-2 gap-8">

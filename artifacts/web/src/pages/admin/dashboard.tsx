@@ -1,5 +1,5 @@
 import { useGetAdminDashboard } from "@workspace/api-client-react";
-import { Loader2, Users, Building, Map, HardHat, Car, TrendingUp } from "lucide-react";
+import { Loader2, Users, Building, Map, HardHat, Car, TrendingUp, MessageSquare, UserPlus } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
@@ -75,6 +75,8 @@ export function AdminDashboardPage() {
         <MetricCard icon={<HardHat className="w-5 h-5" />} label="Projects" value={dashboard.totalConstructionProjects} />
         <MetricCard icon={<Car className="w-5 h-5" />} label="Active Drivers" value={dashboard.activeDrivers} />
         <MetricCard icon={<TrendingUp className="w-5 h-5" />} label="Rides Today" value={dashboard.ridesCompletedToday} />
+        <MetricCard icon={<MessageSquare className="w-5 h-5" />} label="Open Tickets" value={dashboard.openTickets} />
+        <MetricCard icon={<UserPlus className="w-5 h-5" />} label="New Leads" value={dashboard.newLeads} />
       </div>
 
       {/* Recent Treasury Transactions */}
