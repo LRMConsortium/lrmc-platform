@@ -5,6 +5,12 @@ import NotFound from '@/pages/not-found';
 import { Route, Switch, Router as WouterRouter, Redirect } from 'wouter';
 import { useGetCurrentUser } from '@workspace/api-client-react';
 
+import Home from '@/pages/public/home';
+import About from '@/pages/public/about';
+import Services from '@/pages/public/services';
+import HowItWorks from '@/pages/public/how-it-works';
+import Contact from '@/pages/public/contact';
+import Ususu from '@/pages/public/ususu';
 import Login from '@/pages/login';
 import Register from '@/pages/register';
 import VerifyEmail from '@/pages/verify-email';
@@ -59,8 +65,14 @@ function Router() {
       <Route path="/verify-email" component={VerifyEmail} />
       <Route path="/forgot-password" component={ForgotPassword} />
       <Route path="/reset-password" component={ResetPassword} />
-      
-      <Route path="/" component={() => <Redirect href="/dashboard" />} />
+
+      {/* Public marketing pages */}
+      <Route path="/" component={Home} />
+      <Route path="/about" component={About} />
+      <Route path="/services" component={Services} />
+      <Route path="/how-it-works" component={HowItWorks} />
+      <Route path="/contact" component={Contact} />
+      <Route path="/ususu" component={Ususu} />
       <Route path="/dashboard" component={() => <ProtectedRoute component={Dashboard} />} />
       <Route path="/memberships" component={() => <ProtectedRoute component={Memberships} />} />
       <Route path="/properties" component={() => <ProtectedRoute component={Properties} />} />
