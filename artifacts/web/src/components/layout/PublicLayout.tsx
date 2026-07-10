@@ -1,11 +1,16 @@
 import { Link, useLocation } from "wouter"
-import { ShieldCheck, Menu, X, Mail } from "lucide-react"
+import { ShieldCheck, Menu, Mail } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { cn } from "@/lib/utils"
 import { useState } from "react"
 import { useToast } from "@/hooks/use-toast"
-import logo from "@/assets/logo.png"
 
 const navItems = [
   { href: "/", label: "Home" },
@@ -38,69 +43,52 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
       <header className="sticky top-0 z-50 bg-background/90 backdrop-blur border-b border-border/60">
         <div className="max-w-6xl mx-auto flex items-center justify-between px-4 md:px-8 h-16">
           <Link href="/" className="flex items-center gap-2.5">
-            <img src={logo} alt="LRMC" className="h-10 w-10 object-contain shrink-0" />
             <div className="leading-none">
               <div className="font-serif font-bold text-lg tracking-tight text-primary">LRMC</div>
               <div className="text-[9px] uppercase tracking-wider text-muted-foreground font-semibold">Legacy Rental Management Consortium</div>
             </div>
           </Link>
 
-          <nav className="hidden md:flex items-center gap-1">
-            {navItems.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={cn(
-                  "px-3 py-2 rounded-md text-sm font-medium transition-colors",
-                  location === item.href
-                    ? "text-primary bg-primary/10"
-                    : "text-muted-foreground hover:text-foreground hover:bg-muted"
-                )}
-              >
-                {item.label}
+          <div className="flex items-center gap-2">
+            <div className="hidden md:flex items-center gap-2">
+              <Link href="/login">
+                <Button variant="ghost" size="sm">Member Sign In</Button>
               </Link>
-            ))}
-          </nav>
-
-          <div className="hidden md:flex items-center gap-2">
-            <Link href="/login">
-              <Button variant="ghost" size="sm">Member Sign In</Button>
-            </Link>
-            <Link href="/register">
-              <Button size="sm">Join LRMC</Button>
-            </Link>
-          </div>
-
-          <Button variant="ghost" size="icon" className="md:hidden" onClick={() => setOpen(!open)}>
-            {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-          </Button>
-        </div>
-
-        {open && (
-          <div className="md:hidden border-t border-border/60 bg-background px-4 py-3 space-y-1">
-            {navItems.map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                onClick={() => setOpen(false)}
-                className={cn(
-                  "block px-3 py-2 rounded-md text-sm font-medium",
-                  location === item.href ? "text-primary bg-primary/10" : "text-muted-foreground hover:bg-muted"
-                )}
-              >
-                {item.label}
-              </Link>
-            ))}
-            <div className="flex gap-2 pt-2">
-              <Link href="/login" className="flex-1" onClick={() => setOpen(false)}>
-                <Button variant="outline" size="sm" className="w-full">Sign In</Button>
-              </Link>
-              <Link href="/register" className="flex-1" onClick={() => setOpen(false)}>
-                <Button size="sm" className="w-full">Join LRMC</Button>
+              <Link href="/register">
+                <Button size="sm">Join LRMC</Button>
               </Link>
             </div>
+
+            <DropdownMenu open={open} onOpenChange={setOpen}>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" aria-label="Open menu">
+                  <Menu className="h-5 w-5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                {navItems.map((item) => (
+                  <DropdownMenuItem key={item.href} asChild>
+                    <Link
+                      href={item.href}
+                      className={cn(
+                        "w-full cursor-pointer",
+                        location === item.href && "text-primary font-medium"
+                      )}
+                    >
+                      {item.label}
+                    </Link>
+                  </DropdownMenuItem>
+                ))}
+                <DropdownMenuItem asChild className="md:hidden">
+                  <Link href="/login" className="w-full cursor-pointer">Member Sign In</Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild className="md:hidden">
+                  <Link href="/register" className="w-full cursor-pointer font-medium text-primary">Join LRMC</Link>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
-        )}
+        </div>
       </header>
 
       <main className="flex-1">{children}</main>
