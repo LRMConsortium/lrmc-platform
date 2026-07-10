@@ -61,7 +61,11 @@ import type {
   MarketplaceListingUpdate,
   MemberDashboard,
   Membership,
+  MembershipCheckoutInput,
+  MembershipCheckoutSession,
   MembershipInput,
+  MembershipKycReview,
+  MembershipKycSubmission,
   MembershipStatusUpdate,
   MessageResponse,
   PropertyListing,
@@ -1000,6 +1004,213 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
         TContext
       > => {
       return useMutation(getUpdateMembershipMutationOptions(options));
+    }
+
+export const getCheckoutMembershipUrl = (id: number,) => {
+
+
+
+
+  return `/api/memberships/${id}/checkout`
+}
+
+/**
+ * Creates a Stripe Checkout session for the membership's application fee. Owner-only. Free tiers have nothing to charge, so this returns 409 for memberships that are already paid.
+ */
+export const checkoutMembership = async (id: number,
+    membershipCheckoutInput: MembershipCheckoutInput, options?: RequestInit): Promise<MembershipCheckoutSession> => {
+
+  return customFetch<MembershipCheckoutSession>(getCheckoutMembershipUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(membershipCheckoutInput)
+  }
+);}
+
+
+
+
+
+export const getCheckoutMembershipMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof checkoutMembership>>, TError,{id: number;data: BodyType<MembershipCheckoutInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof checkoutMembership>>, TError,{id: number;data: BodyType<MembershipCheckoutInput>}, TContext> => {
+
+const mutationKey = ['checkoutMembership'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof checkoutMembership>>, {id: number;data: BodyType<MembershipCheckoutInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  checkoutMembership(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CheckoutMembershipMutationResult = NonNullable<Awaited<ReturnType<typeof checkoutMembership>>>
+    export type CheckoutMembershipMutationBody = BodyType<MembershipCheckoutInput>
+    export type CheckoutMembershipMutationError = ErrorType<void>
+
+    export const useCheckoutMembership = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof checkoutMembership>>, TError,{id: number;data: BodyType<MembershipCheckoutInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof checkoutMembership>>,
+        TError,
+        {id: number;data: BodyType<MembershipCheckoutInput>},
+        TContext
+      > => {
+      return useMutation(getCheckoutMembershipMutationOptions(options));
+    }
+
+export const getSubmitMembershipKycUrl = (id: number,) => {
+
+
+
+
+  return `/api/memberships/${id}/kyc`
+}
+
+/**
+ * Owner-only. Submits (or resubmits after rejection) the member's KYC details. Fails until the membership fee has been paid.
+ */
+export const submitMembershipKyc = async (id: number,
+    membershipKycSubmission: MembershipKycSubmission, options?: RequestInit): Promise<Membership> => {
+
+  return customFetch<Membership>(getSubmitMembershipKycUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(membershipKycSubmission)
+  }
+);}
+
+
+
+
+
+export const getSubmitMembershipKycMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof submitMembershipKyc>>, TError,{id: number;data: BodyType<MembershipKycSubmission>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof submitMembershipKyc>>, TError,{id: number;data: BodyType<MembershipKycSubmission>}, TContext> => {
+
+const mutationKey = ['submitMembershipKyc'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof submitMembershipKyc>>, {id: number;data: BodyType<MembershipKycSubmission>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  submitMembershipKyc(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SubmitMembershipKycMutationResult = NonNullable<Awaited<ReturnType<typeof submitMembershipKyc>>>
+    export type SubmitMembershipKycMutationBody = BodyType<MembershipKycSubmission>
+    export type SubmitMembershipKycMutationError = ErrorType<void>
+
+    export const useSubmitMembershipKyc = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof submitMembershipKyc>>, TError,{id: number;data: BodyType<MembershipKycSubmission>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof submitMembershipKyc>>,
+        TError,
+        {id: number;data: BodyType<MembershipKycSubmission>},
+        TContext
+      > => {
+      return useMutation(getSubmitMembershipKycMutationOptions(options));
+    }
+
+export const getReviewMembershipKycUrl = (id: number,) => {
+
+
+
+
+  return `/api/memberships/${id}/kyc`
+}
+
+/**
+ * Admin-only. Approves or rejects a member's pending KYC submission.
+ */
+export const reviewMembershipKyc = async (id: number,
+    membershipKycReview: MembershipKycReview, options?: RequestInit): Promise<Membership> => {
+
+  return customFetch<Membership>(getReviewMembershipKycUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(membershipKycReview)
+  }
+);}
+
+
+
+
+
+export const getReviewMembershipKycMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reviewMembershipKyc>>, TError,{id: number;data: BodyType<MembershipKycReview>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof reviewMembershipKyc>>, TError,{id: number;data: BodyType<MembershipKycReview>}, TContext> => {
+
+const mutationKey = ['reviewMembershipKyc'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof reviewMembershipKyc>>, {id: number;data: BodyType<MembershipKycReview>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  reviewMembershipKyc(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ReviewMembershipKycMutationResult = NonNullable<Awaited<ReturnType<typeof reviewMembershipKyc>>>
+    export type ReviewMembershipKycMutationBody = BodyType<MembershipKycReview>
+    export type ReviewMembershipKycMutationError = ErrorType<void>
+
+    export const useReviewMembershipKyc = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reviewMembershipKyc>>, TError,{id: number;data: BodyType<MembershipKycReview>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof reviewMembershipKyc>>,
+        TError,
+        {id: number;data: BodyType<MembershipKycReview>},
+        TContext
+      > => {
+      return useMutation(getReviewMembershipKycMutationOptions(options));
     }
 
 export const getListPropertyListingsUrl = (params?: ListPropertyListingsParams,) => {

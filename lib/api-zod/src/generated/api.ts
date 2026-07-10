@@ -140,6 +140,14 @@ export const ListMembershipsResponseItem = zod.object({
   "type": zod.string(),
   "feePaidCents": zod.number().int(),
   "status": zod.string(),
+  "paymentStatus": zod.enum(['unpaid', 'paid']),
+  "kycStatus": zod.enum(['not_submitted', 'pending', 'approved', 'rejected']),
+  "kycFullName": zod.string().nullish(),
+  "kycIdType": zod.string().nullish(),
+  "kycIdNumber": zod.string().nullish(),
+  "kycNotes": zod.string().nullish(),
+  "kycSubmittedAt": zod.coerce.date().nullish(),
+  "kycReviewedAt": zod.coerce.date().nullish(),
   "createdAt": zod.coerce.date()
 })
 export const ListMembershipsResponse = zod.array(ListMembershipsResponseItem)
@@ -155,6 +163,14 @@ export const CreateMembershipResponse = zod.object({
   "type": zod.string(),
   "feePaidCents": zod.number().int(),
   "status": zod.string(),
+  "paymentStatus": zod.enum(['unpaid', 'paid']),
+  "kycStatus": zod.enum(['not_submitted', 'pending', 'approved', 'rejected']),
+  "kycFullName": zod.string().nullish(),
+  "kycIdType": zod.string().nullish(),
+  "kycIdNumber": zod.string().nullish(),
+  "kycNotes": zod.string().nullish(),
+  "kycSubmittedAt": zod.coerce.date().nullish(),
+  "kycReviewedAt": zod.coerce.date().nullish(),
   "createdAt": zod.coerce.date()
 })
 
@@ -165,6 +181,14 @@ export const GetMyMembershipResponse = zod.object({
   "type": zod.string(),
   "feePaidCents": zod.number().int(),
   "status": zod.string(),
+  "paymentStatus": zod.enum(['unpaid', 'paid']),
+  "kycStatus": zod.enum(['not_submitted', 'pending', 'approved', 'rejected']),
+  "kycFullName": zod.string().nullish(),
+  "kycIdType": zod.string().nullish(),
+  "kycIdNumber": zod.string().nullish(),
+  "kycNotes": zod.string().nullish(),
+  "kycSubmittedAt": zod.coerce.date().nullish(),
+  "kycReviewedAt": zod.coerce.date().nullish(),
   "createdAt": zod.coerce.date()
 })
 
@@ -174,7 +198,7 @@ export const UpdateMembershipParams = zod.object({
 })
 
 export const UpdateMembershipBody = zod.object({
-  "status": zod.enum(['pending', 'active', 'rejected'])
+  "status": zod.enum(['pending', 'active', 'rejected', 'suspended'])
 })
 
 export const UpdateMembershipResponse = zod.object({
@@ -183,6 +207,103 @@ export const UpdateMembershipResponse = zod.object({
   "type": zod.string(),
   "feePaidCents": zod.number().int(),
   "status": zod.string(),
+  "paymentStatus": zod.enum(['unpaid', 'paid']),
+  "kycStatus": zod.enum(['not_submitted', 'pending', 'approved', 'rejected']),
+  "kycFullName": zod.string().nullish(),
+  "kycIdType": zod.string().nullish(),
+  "kycIdNumber": zod.string().nullish(),
+  "kycNotes": zod.string().nullish(),
+  "kycSubmittedAt": zod.coerce.date().nullish(),
+  "kycReviewedAt": zod.coerce.date().nullish(),
+  "createdAt": zod.coerce.date()
+})
+
+
+/**
+ * Creates a Stripe Checkout session for the membership's application fee. Owner-only. Free tiers have nothing to charge, so this returns 409 for memberships that are already paid.
+ */
+export const CheckoutMembershipParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const checkoutMembershipBodyBuyerEmailMin = 3;
+
+
+
+export const CheckoutMembershipBody = zod.object({
+  "buyerEmail": zod.string().min(checkoutMembershipBodyBuyerEmailMin).describe('Address the Stripe receipt is sent to.')
+})
+
+export const CheckoutMembershipResponse = zod.object({
+  "checkoutUrl": zod.string().describe('Stripe-hosted checkout URL to redirect the member to.')
+})
+
+
+/**
+ * Owner-only. Submits (or resubmits after rejection) the member's KYC details. Fails until the membership fee has been paid.
+ */
+export const SubmitMembershipKycParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const submitMembershipKycBodyFullNameMin = 2;
+
+export const submitMembershipKycBodyIdTypeMin = 2;
+
+export const submitMembershipKycBodyIdNumberMin = 2;
+
+
+
+export const SubmitMembershipKycBody = zod.object({
+  "fullName": zod.string().min(submitMembershipKycBodyFullNameMin),
+  "idType": zod.string().min(submitMembershipKycBodyIdTypeMin),
+  "idNumber": zod.string().min(submitMembershipKycBodyIdNumberMin)
+})
+
+export const SubmitMembershipKycResponse = zod.object({
+  "id": zod.number().int(),
+  "userId": zod.number().int(),
+  "type": zod.string(),
+  "feePaidCents": zod.number().int(),
+  "status": zod.string(),
+  "paymentStatus": zod.enum(['unpaid', 'paid']),
+  "kycStatus": zod.enum(['not_submitted', 'pending', 'approved', 'rejected']),
+  "kycFullName": zod.string().nullish(),
+  "kycIdType": zod.string().nullish(),
+  "kycIdNumber": zod.string().nullish(),
+  "kycNotes": zod.string().nullish(),
+  "kycSubmittedAt": zod.coerce.date().nullish(),
+  "kycReviewedAt": zod.coerce.date().nullish(),
+  "createdAt": zod.coerce.date()
+})
+
+
+/**
+ * Admin-only. Approves or rejects a member's pending KYC submission.
+ */
+export const ReviewMembershipKycParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const ReviewMembershipKycBody = zod.object({
+  "action": zod.enum(['approve', 'reject']),
+  "notes": zod.string().optional()
+})
+
+export const ReviewMembershipKycResponse = zod.object({
+  "id": zod.number().int(),
+  "userId": zod.number().int(),
+  "type": zod.string(),
+  "feePaidCents": zod.number().int(),
+  "status": zod.string(),
+  "paymentStatus": zod.enum(['unpaid', 'paid']),
+  "kycStatus": zod.enum(['not_submitted', 'pending', 'approved', 'rejected']),
+  "kycFullName": zod.string().nullish(),
+  "kycIdType": zod.string().nullish(),
+  "kycIdNumber": zod.string().nullish(),
+  "kycNotes": zod.string().nullish(),
+  "kycSubmittedAt": zod.coerce.date().nullish(),
+  "kycReviewedAt": zod.coerce.date().nullish(),
   "createdAt": zod.coerce.date()
 })
 
@@ -1213,6 +1334,14 @@ export const GetMemberDashboardResponse = zod.object({
   "type": zod.string(),
   "feePaidCents": zod.number().int(),
   "status": zod.string(),
+  "paymentStatus": zod.enum(['unpaid', 'paid']),
+  "kycStatus": zod.enum(['not_submitted', 'pending', 'approved', 'rejected']),
+  "kycFullName": zod.string().nullish(),
+  "kycIdType": zod.string().nullish(),
+  "kycIdNumber": zod.string().nullish(),
+  "kycNotes": zod.string().nullish(),
+  "kycSubmittedAt": zod.coerce.date().nullish(),
+  "kycReviewedAt": zod.coerce.date().nullish(),
   "createdAt": zod.coerce.date()
 }),
   "propertyListingsCount": zod.number().int(),

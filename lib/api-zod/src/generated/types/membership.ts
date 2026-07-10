@@ -5,6 +5,8 @@
  * LRMC / Ususu institution API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { MembershipKycStatus } from './membershipKycStatus';
+import type { MembershipPaymentStatus } from './membershipPaymentStatus';
 
 export interface Membership {
   id: number;
@@ -12,5 +14,13 @@ export interface Membership {
   type: string;
   feePaidCents: number;
   status: string;
+  paymentStatus: MembershipPaymentStatus;
+  kycStatus: MembershipKycStatus;
+  kycFullName?: string | null;
+  kycIdType?: string | null;
+  kycIdNumber?: string | null;
+  kycNotes?: string | null;
+  kycSubmittedAt?: Date | null;
+  kycReviewedAt?: Date | null;
   createdAt: Date;
 }

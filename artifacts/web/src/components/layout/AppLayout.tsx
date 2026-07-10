@@ -1,4 +1,4 @@
-import { Link, useLocation } from "wouter"
+import { Link, useLocation, Redirect } from "wouter"
 import { 
   Building2, 
   Home, 
@@ -15,9 +15,10 @@ import {
   Settings,
   LogOut,
   Menu,
-  ShieldCheck
+  ShieldCheck,
+  Hourglass
 } from "lucide-react"
-import { useLogout, useGetCurrentUser } from "@workspace/api-client-react"
+import { useLogout, useGetCurrentUser, useGetMyMembership, getGetMyMembershipQueryKey } from "@workspace/api-client-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { useQueryClient } from "@tanstack/react-query"
@@ -26,9 +27,12 @@ import { useState } from "react"
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const { data: user } = useGetCurrentUser()
   const logout = useLogout()
-  const [, setLocation] = useLocation()
+  const [location, setLocation] = useLocation()
   const queryClient = useQueryClient()
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const { data: membership, isLoading: membershipLoading } = useGetMyMembership({
+    query: { queryKey: getGetMyMembershipQueryKey(), retry: false },
+  })
 
   const handleLogout = () => {
     logout.mutate(undefined, {
@@ -42,6 +46,17 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   if (!user) return null
 
   const isAdmin = user.role === "admin"
+
+  // Members must pay the membership fee and pass KYC review before getting
+  // full access to the member's area. The /memberships page itself is
+  // always exempt so members can complete those steps.
+  const onMembershipsPage = location === "/memberships"
+  const needsPayment = !isAdmin && !membershipLoading && (!membership || membership.paymentStatus === "unpaid")
+  const needsReview = !isAdmin && !membershipLoading && !!membership && membership.paymentStatus === "paid" && membership.kycStatus !== "approved"
+
+  if (needsPayment && !onMembershipsPage) {
+    return <Redirect href="/memberships" />
+  }
 
   const navItems = [
     { href: "/dashboard", label: "Dashboard", icon: Home },
@@ -121,7 +136,24 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       {/* Main Content */}
       <main className="flex-1 overflow-y-auto bg-background/50">
         <div className="max-w-6xl mx-auto p-4 md:p-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
-          {children}
+          {needsReview && !onMembershipsPage && (
+            <div className="mb-6 flex items-center gap-3 rounded-lg border border-amber-400/40 bg-amber-500/10 px-4 py-3 text-amber-900 dark:text-amber-200">
+              <Hourglass className="h-5 w-5 shrink-0" />
+              <div className="text-sm">
+                <p className="font-semibold">Your account is under review</p>
+                <p className="text-amber-800/80 dark:text-amber-200/80">
+                  {membership?.kycStatus === "rejected"
+                    ? "Your identity verification was rejected. Visit Memberships to resubmit."
+                    : membership?.kycStatus === "pending"
+                      ? "We're reviewing your identity verification. This area will unlock once it's approved."
+                      : "Submit your identity verification on the Memberships page to unlock full access."}
+                </p>
+              </div>
+            </div>
+          )}
+          <div className={needsReview && !onMembershipsPage ? "pointer-events-none opacity-40 select-none" : undefined}>
+            {children}
+          </div>
         </div>
       </main>
     </div>

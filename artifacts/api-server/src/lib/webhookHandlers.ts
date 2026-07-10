@@ -2,6 +2,7 @@ import { sql } from "drizzle-orm";
 import { db } from "@workspace/db";
 import { getStripeSync, getUncachableStripeClient } from "./stripeClient";
 import { fulfillDigitalProductCheckout } from "./digitalProductFulfillment";
+import { fulfillMembershipCheckout } from "./membershipFulfillment";
 import { logger } from "./logger";
 
 /**
@@ -60,6 +61,7 @@ export class WebhookHandlers {
     if (event.type === "checkout.session.completed") {
       const session = event.data.object;
       await fulfillDigitalProductCheckout(session);
+      await fulfillMembershipCheckout(session);
     }
   }
 }

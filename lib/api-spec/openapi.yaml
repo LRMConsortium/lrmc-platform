@@ -238,6 +238,98 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Membership"
+  /memberships/{id}/checkout:
+    post:
+      operationId: checkoutMembership
+      tags: [memberships]
+      description: >
+        Creates a Stripe Checkout session for the membership's application fee.
+        Owner-only. Free tiers have nothing to charge, so this returns 409 for
+        memberships that are already paid.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MembershipCheckoutInput"
+      responses:
+        "200":
+          description: Checkout session created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MembershipCheckoutSession"
+        "403":
+          description: Not the membership owner
+        "404":
+          description: Membership not found
+        "409":
+          description: Membership fee already paid
+  /memberships/{id}/kyc:
+    post:
+      operationId: submitMembershipKyc
+      tags: [memberships]
+      description: >
+        Owner-only. Submits (or resubmits after rejection) the member's KYC
+        details. Fails until the membership fee has been paid.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MembershipKycSubmission"
+      responses:
+        "200":
+          description: KYC submitted, now pending admin review
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Membership"
+        "403":
+          description: Not the membership owner
+        "404":
+          description: Membership not found
+        "409":
+          description: Membership fee not paid yet
+    patch:
+      operationId: reviewMembershipKyc
+      tags: [memberships]
+      description: Admin-only. Approves or rejects a member's pending KYC submission.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MembershipKycReview"
+      responses:
+        "200":
+          description: KYC reviewed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Membership"
+        "404":
+          description: Membership not found
+        "409":
+          description: No pending KYC submission to review
 
   # ---------------- PROPERTY LISTINGS ----------------
   /property-listings:
@@ -1297,13 +1389,21 @@ components:
     # ---------- MEMBERSHIPS ----------
     Membership:
       type: object
-      required: [id, userId, type, feePaidCents, status, createdAt]
+      required: [id, userId, type, feePaidCents, status, paymentStatus, kycStatus, createdAt]
       properties:
         id: { type: integer }
         userId: { type: integer }
         type: { type: string }
         feePaidCents: { type: integer }
         status: { type: string }
+        paymentStatus: { type: string, enum: [unpaid, paid] }
+        kycStatus: { type: string, enum: [not_submitted, pending, approved, rejected] }
+        kycFullName: { type: string, nullable: true }
+        kycIdType: { type: string, nullable: true }
+        kycIdNumber: { type: string, nullable: true }
+        kycNotes: { type: string, nullable: true }
+        kycSubmittedAt: { type: string, format: date-time, nullable: true }
+        kycReviewedAt: { type: string, format: date-time, nullable: true }
         createdAt: { type: string, format: date-time }
     MembershipInput:
       type: object
@@ -1314,7 +1414,35 @@ components:
       type: object
       required: [status]
       properties:
-        status: { type: string, enum: [pending, active, rejected] }
+        status: { type: string, enum: [pending, active, rejected, suspended] }
+    MembershipCheckoutInput:
+      type: object
+      required: [buyerEmail]
+      properties:
+        buyerEmail:
+          type: string
+          minLength: 3
+          description: Address the Stripe receipt is sent to.
+    MembershipCheckoutSession:
+      type: object
+      required: [checkoutUrl]
+      properties:
+        checkoutUrl:
+          type: string
+          description: Stripe-hosted checkout URL to redirect the member to.
+    MembershipKycSubmission:
+      type: object
+      required: [fullName, idType, idNumber]
+      properties:
+        fullName: { type: string, minLength: 2 }
+        idType: { type: string, minLength: 2 }
+        idNumber: { type: string, minLength: 2 }
+    MembershipKycReview:
+      type: object
+      required: [action]
+      properties:
+        action: { type: string, enum: [approve, reject] }
+        notes: { type: string }
 
     # ---------- PROPERTY LISTINGS ----------
     PropertyListing:

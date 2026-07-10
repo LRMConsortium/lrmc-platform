@@ -62,12 +62,38 @@ export interface MessageResponse {
   message: string;
 }
 
+export type MembershipPaymentStatus = typeof MembershipPaymentStatus[keyof typeof MembershipPaymentStatus];
+
+
+export const MembershipPaymentStatus = {
+  unpaid: 'unpaid',
+  paid: 'paid',
+} as const;
+
+export type MembershipKycStatus = typeof MembershipKycStatus[keyof typeof MembershipKycStatus];
+
+
+export const MembershipKycStatus = {
+  not_submitted: 'not_submitted',
+  pending: 'pending',
+  approved: 'approved',
+  rejected: 'rejected',
+} as const;
+
 export interface Membership {
   id: number;
   userId: number;
   type: string;
   feePaidCents: number;
   status: string;
+  paymentStatus: MembershipPaymentStatus;
+  kycStatus: MembershipKycStatus;
+  kycFullName?: string | null;
+  kycIdType?: string | null;
+  kycIdNumber?: string | null;
+  kycNotes?: string | null;
+  kycSubmittedAt?: string | null;
+  kycReviewedAt?: string | null;
   createdAt: string;
 }
 
@@ -82,10 +108,46 @@ export const MembershipStatusUpdateStatus = {
   pending: 'pending',
   active: 'active',
   rejected: 'rejected',
+  suspended: 'suspended',
 } as const;
 
 export interface MembershipStatusUpdate {
   status: MembershipStatusUpdateStatus;
+}
+
+export interface MembershipCheckoutInput {
+  /**
+     * Address the Stripe receipt is sent to.
+     * @minLength 3
+     */
+  buyerEmail: string;
+}
+
+export interface MembershipCheckoutSession {
+  /** Stripe-hosted checkout URL to redirect the member to. */
+  checkoutUrl: string;
+}
+
+export interface MembershipKycSubmission {
+  /** @minLength 2 */
+  fullName: string;
+  /** @minLength 2 */
+  idType: string;
+  /** @minLength 2 */
+  idNumber: string;
+}
+
+export type MembershipKycReviewAction = typeof MembershipKycReviewAction[keyof typeof MembershipKycReviewAction];
+
+
+export const MembershipKycReviewAction = {
+  approve: 'approve',
+  reject: 'reject',
+} as const;
+
+export interface MembershipKycReview {
+  action: MembershipKycReviewAction;
+  notes?: string;
 }
 
 export interface PropertyListing {
