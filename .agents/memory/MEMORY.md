@@ -6,3 +6,5 @@
 - [stripe-replit-sync managed webhook secret location](stripe-webhook-secret-location.md) — managed webhook secret lives in `stripe._managed_webhooks`, not the connection settings API.
 - [SendGrid connector needs direct API calls](sendgrid-connector-direct-api.md) — `connectors.proxy("sendgrid", ...)` returns 400; fetch api_key/from_email from the connection API and call SendGrid's REST endpoint directly instead.
 - [Payment/KYC gate = soft UI gate, not API lockdown](membership-payment-kyc-soft-gate.md) — "grayed-out member area pending review" was interpreted as UI-only dimming; underlying data queries still run.
+- [Stripe webhook must fail closed on missing secret](stripe-webhook-fail-closed.md) — empty-string webhook secret makes Stripe's SDK skip signature verification entirely; throw/abort instead of `?? ""`.
+- [Rate limiter test-suite exemption pattern](ratelimit-test-exemption.md) — new rate limiters on high-volume auth routes need `skip: () => NODE_ENV === "test"` or the authz suite (hundreds of registrations/run) trips them.

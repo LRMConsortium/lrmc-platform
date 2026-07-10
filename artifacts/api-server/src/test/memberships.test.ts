@@ -6,7 +6,7 @@ import { createMemberUser, createAdminUser } from "./helpers";
 import { fulfillMembershipCheckout } from "../lib/membershipFulfillment";
 
 async function createMembership(agent: Awaited<ReturnType<typeof createMemberUser>>["agent"]) {
-  const res = await agent.post("/api/memberships").send({ type: "property_owner" });
+  const res = await agent.post("/api/memberships").send({ type: "premium" });
   expect(res.status).toBe(201);
   return res.body.id as number;
 }

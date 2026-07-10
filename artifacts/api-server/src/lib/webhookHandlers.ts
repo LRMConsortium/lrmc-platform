@@ -33,6 +33,18 @@ export class WebhookHandlers {
       );
     }
 
+    // An empty signing secret makes Stripe's SDK skip signature verification
+    // entirely, so any POST with a fake Stripe-Signature header would be
+    // treated as authentic. Fail closed *before* handing the payload to
+    // either verification path, rather than only checking the second one.
+    const managedWebhookSecret = await getManagedWebhookSecret();
+    if (!managedWebhookSecret) {
+      logger.error(
+        "Managed Stripe webhook secret not found; refusing to process webhook without signature verification",
+      );
+      return;
+    }
+
     // Let stripe-replit-sync keep the `stripe` schema (products/prices/etc) in
     // sync -- this is the mandatory, generic half of webhook processing.
     const sync = await getStripeSync();
@@ -48,7 +60,7 @@ export class WebhookHandlers {
       event = await stripe.webhooks.constructEventAsync(
         payload,
         signature,
-        (await getManagedWebhookSecret()) ?? "",
+        managedWebhookSecret,
       );
     } catch (err) {
       // Signature was already verified once by sync.processWebhook above, so

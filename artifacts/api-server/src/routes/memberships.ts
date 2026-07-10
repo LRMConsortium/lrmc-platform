@@ -29,6 +29,12 @@ import {
 
 const router: IRouter = Router();
 
+// Self-service registration is intentionally limited to the tiers actually
+// offered on the membership signup form (see membershipStripe.ts fee
+// schedule). Other type strings (e.g. legacy "property_owner" applications)
+// are assigned out-of-band by an admin, not chosen by the registering user.
+const SELF_SERVICE_MEMBERSHIP_TYPES = new Set(["basic", "premium", "corporate"]);
+
 router.get("/memberships", requireAdmin, async (req, res): Promise<void> => {
   const query = ListMembershipsQueryParams.safeParse(req.query);
   if (!query.success) {
@@ -50,6 +56,11 @@ router.post("/memberships", requireAuth, async (req, res): Promise<void> => {
   const parsed = CreateMembershipBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+
+  if (!SELF_SERVICE_MEMBERSHIP_TYPES.has(parsed.data.type)) {
+    res.status(400).json({ error: "Invalid membership type" });
     return;
   }
 

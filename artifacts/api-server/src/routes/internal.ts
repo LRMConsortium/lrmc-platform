@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { eq, or, desc } from "drizzle-orm";
-import { db, internalMessagesTable, internalTicketsTable } from "@workspace/db";
+import { db, internalMessagesTable, internalTicketsTable, membershipsTable, usersTable } from "@workspace/db";
 import {
   ListInternalMessagesResponse,
   CreateInternalMessageBody,
@@ -37,6 +37,35 @@ router.post("/internal-messages", requireAuth, requireApprovedMembership, async 
   const parsed = CreateInternalMessageBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+
+  // Recipients must be real, approved members or admins -- otherwise the
+  // insert result (success vs FK error) becomes a user-ID enumeration oracle,
+  // and messages could be sent to accounts that can never even read them.
+  const [recipient] = await db
+    .select({ role: usersTable.role })
+    .from(usersTable)
+    .where(eq(usersTable.id, parsed.data.recipientId));
+
+  let recipientIsEligible = !!recipient && recipient.role === "admin";
+  if (recipient && !recipientIsEligible) {
+    const [recipientMembership] = await db
+      .select({
+        paymentStatus: membershipsTable.paymentStatus,
+        kycStatus: membershipsTable.kycStatus,
+      })
+      .from(membershipsTable)
+      .where(eq(membershipsTable.userId, parsed.data.recipientId));
+
+    recipientIsEligible =
+      !!recipientMembership &&
+      recipientMembership.paymentStatus === "paid" &&
+      recipientMembership.kycStatus === "approved";
+  }
+
+  if (!recipientIsEligible) {
+    res.status(404).json({ error: "Recipient not found" });
     return;
   }
 

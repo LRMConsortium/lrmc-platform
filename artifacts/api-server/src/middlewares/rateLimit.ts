@@ -22,6 +22,24 @@ export const loginRateLimiter = rateLimit({
   message: { error: "Too many login attempts. Please try again later." },
 });
 
+// Register: unauthenticated and otherwise unlimited, so without a limiter a
+// script can create accounts as fast as the network allows -- exhausting the
+// outbound-email provider's quota (every registration sends a verification
+// email) and bloating the users table. Key on IP only (no existing account
+// to key on yet); generous enough for real signup bursts from one network.
+export const registerRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req: Request) => ipKeyGenerator(req.ip ?? ""),
+  message: { error: "Too many registration attempts. Please try again later." },
+  // The authz test suite registers hundreds of throwaway users per run from
+  // a single IP against the real dev server; a real attacker doesn't have
+  // NODE_ENV=test. Skip the cap there rather than inventing a bypass header.
+  skip: () => process.env.NODE_ENV === "test",
+});
+
 // Forgot-password / resend-verification: these always return the same
 // generic response regardless of whether the account exists, but without a
 // limit an attacker could still spam a victim's inbox or exhaust the email

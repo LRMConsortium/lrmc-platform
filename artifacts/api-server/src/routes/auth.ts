@@ -20,6 +20,7 @@ import {
 import { requireAuth } from "../middlewares/auth";
 import {
   loginRateLimiter,
+  registerRateLimiter,
   emailActionRateLimiter,
   tokenActionRateLimiter,
 } from "../middlewares/rateLimit";
@@ -74,7 +75,7 @@ async function sendPasswordResetEmail(user: typeof usersTable.$inferSelect) {
   }
 }
 
-router.post("/auth/register", async (req, res): Promise<void> => {
+router.post("/auth/register", registerRateLimiter, async (req, res): Promise<void> => {
   const parsed = RegisterBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
