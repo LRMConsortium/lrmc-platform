@@ -1,4 +1,5 @@
 import bcrypt from "bcryptjs";
+import Stripe from "stripe";
 import { eq } from "drizzle-orm";
 import { db, pool } from "./index";
 import {
@@ -25,6 +26,72 @@ import {
   internalMessagesTable,
   internalTicketsTable,
 } from "./schema";
+
+/**
+ * Fetches Stripe credentials from the Replit connection API. Mirrors
+ * getStripeCredentials() in artifacts/api-server/src/lib/stripeClient.ts --
+ * duplicated here rather than imported because lib/db must not depend on
+ * the api-server artifact.
+ */
+async function getStripeCredentials(): Promise<{ secretKey: string }> {
+  const hostname = process.env.REPLIT_CONNECTORS_HOSTNAME;
+  const xReplitToken = process.env.REPL_IDENTITY
+    ? "repl " + process.env.REPL_IDENTITY
+    : process.env.WEB_REPL_RENEWAL
+      ? "depl " + process.env.WEB_REPL_RENEWAL
+      : null;
+
+  if (!hostname || !xReplitToken) {
+    throw new Error(
+      "Missing Replit environment variables. Ensure the Stripe integration is connected.",
+    );
+  }
+
+  const resp = await fetch(
+    `https://${hostname}/api/v2/connection?include_secrets=true&connector_names=stripe`,
+    {
+      headers: { Accept: "application/json", X_REPLIT_TOKEN: xReplitToken },
+      signal: AbortSignal.timeout(10_000),
+    },
+  );
+
+  if (!resp.ok) {
+    throw new Error(`Failed to fetch Stripe credentials: ${resp.status} ${resp.statusText}`);
+  }
+
+  const data = (await resp.json()) as { items?: Array<{ settings?: { secret?: string } }> };
+  const secret = data.items?.[0]?.settings?.secret;
+  if (!secret) {
+    throw new Error("Stripe integration not connected or missing secret key.");
+  }
+  return { secretKey: secret };
+}
+
+/**
+ * Creates the real Stripe Product + Price backing a seeded digital product,
+ * so it's checkout-ready immediately -- mirrors
+ * createDigitalProductStripeCatalog() in the api-server digitalProductStripeSync lib.
+ */
+async function createDigitalProductStripeCatalog(input: {
+  title: string;
+  description: string;
+  priceCents: number;
+}): Promise<{ stripeProductId: string; stripePriceId: string }> {
+  const { secretKey } = await getStripeCredentials();
+  const stripe = new Stripe(secretKey);
+
+  const product = await stripe.products.create({
+    name: input.title,
+    description: input.description,
+  });
+  const price = await stripe.prices.create({
+    product: product.id,
+    unit_amount: input.priceCents,
+    currency: "usd",
+  });
+
+  return { stripeProductId: product.id, stripePriceId: price.id };
+}
 
 async function main() {
   console.log("Seeding LRMC / Ususu demo data...");
@@ -243,18 +310,33 @@ async function main() {
     },
   ]);
 
+  const landlordToolkitInput = {
+    title: "LRMC Landlord Toolkit (PDF Guide)",
+    description: "Rental agreements, tenant vetting checklists, and Dalasi rent calculators.",
+    priceCents: 50000,
+  };
+  const driverCourseInput = {
+    title: "Ususu Driver Onboarding Course",
+    description: "Video course covering safety, routes, and passenger service standards.",
+    priceCents: 75000,
+  };
+  const [landlordToolkitCatalog, driverCourseCatalog] = await Promise.all([
+    createDigitalProductStripeCatalog(landlordToolkitInput),
+    createDigitalProductStripeCatalog(driverCourseInput),
+  ]);
+
   await db.insert(digitalProductsTable).values([
     {
-      title: "LRMC Landlord Toolkit (PDF Guide)",
-      description: "Rental agreements, tenant vetting checklists, and Dalasi rent calculators.",
-      priceCents: 50000,
+      ...landlordToolkitInput,
       category: "guides",
+      stripeProductId: landlordToolkitCatalog.stripeProductId,
+      stripePriceId: landlordToolkitCatalog.stripePriceId,
     },
     {
-      title: "Ususu Driver Onboarding Course",
-      description: "Video course covering safety, routes, and passenger service standards.",
-      priceCents: 75000,
+      ...driverCourseInput,
       category: "training",
+      stripeProductId: driverCourseCatalog.stripeProductId,
+      stripePriceId: driverCourseCatalog.stripePriceId,
     },
   ]);
 

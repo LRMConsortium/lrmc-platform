@@ -660,6 +660,9 @@ importers:
       pg:
         specifier: ^8.22.0
         version: 8.22.0
+      stripe:
+        specifier: ^22.3.0
+        version: 22.3.0(@types/node@25.9.4)
       zod:
         specifier: 'catalog:'
         version: 3.25.76
