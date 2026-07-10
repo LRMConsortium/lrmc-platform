@@ -30,6 +30,18 @@ export async function fulfillMembershipCheckout(
 
   if (membership.paymentStatus === "paid") return; // already fulfilled
 
+  if (membership.stripeCheckoutSessionId !== session.id) {
+    // This completed session isn't the one currently on file for the
+    // membership (e.g. an older/abandoned checkout attempt completing
+    // after a newer session was started). Only the latest stored session
+    // is allowed to flip payment status.
+    logger.warn(
+      { membershipId, sessionId: session.id, expectedSessionId: membership.stripeCheckoutSessionId },
+      "Ignoring checkout.session.completed for a stale/mismatched membership checkout session",
+    );
+    return;
+  }
+
   // Atomically claim the "unpaid -> paid" transition so concurrent/retried
   // webhook deliveries can't double-apply this.
   await db
@@ -43,6 +55,7 @@ export async function fulfillMembershipCheckout(
       and(
         eq(membershipsTable.id, membershipId),
         eq(membershipsTable.paymentStatus, "unpaid"),
+        eq(membershipsTable.stripeCheckoutSessionId, session.id),
       ),
     );
 }
