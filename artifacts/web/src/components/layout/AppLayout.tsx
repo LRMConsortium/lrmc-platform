@@ -34,7 +34,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     logout.mutate(undefined, {
       onSuccess: () => {
         queryClient.clear()
-        setLocation("/login")
+        setLocation("/")
       }
     })
   }
