@@ -6,7 +6,7 @@ export default function About() {
   return (
     <PublicLayout>
       <section className="bg-gradient-to-b from-primary/5 to-background">
-        <div className="max-w-4xl mx-auto px-4 md:px-8 py-12 md:py-14 text-center">
+        <div className="max-w-4xl mx-auto px-4 md:px-8 py-10 md:py-12 text-center">
           <span className="inline-block text-xs font-semibold uppercase tracking-wider text-primary bg-primary/10 rounded-full px-3 py-1 mb-6">
             Who We Are
           </span>
@@ -24,8 +24,8 @@ export default function About() {
         </div>
       </section>
 
-      <section className="max-w-6xl mx-auto px-4 md:px-8 py-12 md:py-16">
-        <div className="grid md:grid-cols-2 gap-12">
+      <section className="max-w-6xl mx-auto px-4 md:px-8 py-10 md:py-14">
+        <div className="grid md:grid-cols-2 gap-10">
           <div>
             <h2 className="font-serif text-2xl font-bold mb-4">Our Story</h2>
             <p className="text-muted-foreground leading-relaxed mb-4">
@@ -68,7 +68,7 @@ export default function About() {
       </section>
 
       <section className="bg-card border-y border-border/60">
-        <div className="max-w-6xl mx-auto px-4 md:px-8 py-12 md:py-16">
+        <div className="max-w-6xl mx-auto px-4 md:px-8 py-10 md:py-14">
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
             <Card>
               <CardContent className="p-6">
@@ -116,7 +116,7 @@ export default function About() {
         </div>
       </section>
 
-      <section className="max-w-4xl mx-auto px-4 md:px-8 py-12 md:py-14 text-center">
+      <section className="max-w-4xl mx-auto px-4 md:px-8 py-10 md:py-12 text-center">
         <ShieldCheck className="h-10 w-10 mx-auto text-primary mb-4" />
         <h2 className="font-serif text-2xl font-bold mb-4">One Institution, Every Stakeholder</h2>
         <p className="text-muted-foreground leading-relaxed">

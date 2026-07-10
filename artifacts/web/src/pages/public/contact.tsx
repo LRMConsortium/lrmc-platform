@@ -33,7 +33,7 @@ export default function Contact() {
   return (
     <PublicLayout>
       <section className="bg-gradient-to-b from-primary/5 to-background">
-        <div className="max-w-4xl mx-auto px-4 md:px-8 py-12 md:py-14 text-center">
+        <div className="max-w-4xl mx-auto px-4 md:px-8 py-10 md:py-12 text-center">
           <span className="inline-block text-xs font-semibold uppercase tracking-wider text-primary bg-primary/10 rounded-full px-3 py-1 mb-6">
             Contact
           </span>
@@ -47,7 +47,7 @@ export default function Contact() {
         </div>
       </section>
 
-      <section className="max-w-6xl mx-auto px-4 md:px-8 py-12 md:py-16 grid md:grid-cols-5 gap-10">
+      <section className="max-w-6xl mx-auto px-4 md:px-8 py-10 md:py-14 grid md:grid-cols-5 gap-10">
         <div className="md:col-span-3">
           <Card>
             <CardContent className="p-6 md:p-8">

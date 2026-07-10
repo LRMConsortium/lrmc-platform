@@ -11,7 +11,7 @@ export default function Ususu() {
   return (
     <PublicLayout>
       <section className="bg-gradient-to-b from-primary/5 to-background">
-        <div className="max-w-4xl mx-auto px-4 md:px-8 py-12 md:py-14 text-center">
+        <div className="max-w-4xl mx-auto px-4 md:px-8 py-10 md:py-12 text-center">
           <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-primary bg-primary/10 rounded-full px-3 py-1 mb-6">
             <Car className="h-3.5 w-3.5" /> A Mobility Product of LRMC
           </span>
@@ -28,8 +28,8 @@ export default function Ususu() {
       </section>
 
       {/* The problem */}
-      <section className="max-w-6xl mx-auto px-4 md:px-8 py-12 md:py-16">
-        <div className="grid md:grid-cols-2 gap-12 items-center">
+      <section className="max-w-6xl mx-auto px-4 md:px-8 py-10 md:py-14">
+        <div className="grid md:grid-cols-2 gap-10 items-center">
           <div>
             <h2 className="font-serif text-2xl font-bold mb-4">The problem we built Ususu to solve</h2>
             <p className="text-muted-foreground leading-relaxed mb-4">
@@ -57,7 +57,7 @@ export default function Ususu() {
 
       {/* How Ususu works */}
       <section className="bg-card border-y border-border/60">
-        <div className="max-w-6xl mx-auto px-4 md:px-8 py-12 md:py-16">
+        <div className="max-w-6xl mx-auto px-4 md:px-8 py-10 md:py-14">
           <h2 className="font-serif text-2xl font-bold mb-8 text-center">How Ususu works</h2>
           <div className="grid md:grid-cols-3 gap-6">
             <Card>
@@ -95,8 +95,8 @@ export default function Ususu() {
       </section>
 
       {/* For drivers */}
-      <section className="max-w-6xl mx-auto px-4 md:px-8 py-12 md:py-16">
-        <div className="grid md:grid-cols-2 gap-12 items-center">
+      <section className="max-w-6xl mx-auto px-4 md:px-8 py-10 md:py-14">
+        <div className="grid md:grid-cols-2 gap-10 items-center">
           <div>
             <span className="inline-block text-xs font-semibold uppercase tracking-wider text-primary bg-primary/10 rounded-full px-3 py-1 mb-4">
               For Drivers
@@ -124,7 +124,7 @@ export default function Ususu() {
       </section>
 
       <section className="bg-primary text-primary-foreground">
-        <div className="max-w-6xl mx-auto px-4 md:px-8 py-14 text-center">
+        <div className="max-w-6xl mx-auto px-4 md:px-8 py-12 text-center">
           <Car className="h-10 w-10 mx-auto mb-4 opacity-90" />
           <h2 className="font-serif text-3xl font-bold mb-3">Ride fair. Drive fair.</h2>
           <p className="opacity-90 max-w-xl mx-auto mb-6">

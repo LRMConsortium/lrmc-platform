@@ -16,7 +16,7 @@ export default function Store() {
   return (
     <PublicLayout>
       <section className="bg-gradient-to-b from-primary/5 to-background border-b border-border/60">
-        <div className="max-w-6xl mx-auto px-4 md:px-8 py-12 md:py-16">
+        <div className="max-w-6xl mx-auto px-4 md:px-8 py-10 md:py-14">
           <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-primary bg-primary/10 rounded-full px-3 py-1 mb-6">
             <StoreIcon className="w-3.5 h-3.5" /> Digital Store
           </span>
