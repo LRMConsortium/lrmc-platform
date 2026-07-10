@@ -229,9 +229,11 @@ export const CheckoutMembershipParams = zod.object({
 export const checkoutMembershipBodyBuyerEmailMin = 3;
 
 
+export const checkoutMembershipBodyBuyerEmailRegExp = new RegExp('^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$');
+
 
 export const CheckoutMembershipBody = zod.object({
-  "buyerEmail": zod.string().min(checkoutMembershipBodyBuyerEmailMin).describe('Address the Stripe receipt is sent to.')
+  "buyerEmail": zod.string().min(checkoutMembershipBodyBuyerEmailMin).regex(checkoutMembershipBodyBuyerEmailRegExp).describe('Address the Stripe receipt is sent to.')
 })
 
 export const CheckoutMembershipResponse = zod.object({
@@ -765,13 +767,15 @@ export const ListDigitalProductsResponse = zod.array(ListDigitalProductsResponse
 
 
 
+export const createDigitalProductBodyFileUrlRegExp = new RegExp('^https:/');
+
 
 export const CreateDigitalProductBody = zod.object({
   "title": zod.string().min(1),
   "description": zod.string(),
   "priceCents": zod.number().int().min(1),
   "category": zod.string().min(1),
-  "fileUrl": zod.string().min(1).optional().describe('Link to the hosted deliverable (e.g. a PDF) emailed to buyers after payment.')
+  "fileUrl": zod.string().min(1).regex(createDigitalProductBodyFileUrlRegExp).optional().describe('Link to the hosted deliverable (e.g. a PDF) emailed to buyers after payment. Must be an https:\/\/ URL.')
 })
 
 export const CreateDigitalProductResponse = zod.object({
@@ -795,6 +799,8 @@ export const UpdateDigitalProductParams = zod.object({
 
 
 
+export const updateDigitalProductBodyFileUrlRegExp = new RegExp('^https:/');
+
 
 export const UpdateDigitalProductBody = zod.object({
   "title": zod.string().min(1).optional(),
@@ -802,7 +808,7 @@ export const UpdateDigitalProductBody = zod.object({
   "priceCents": zod.number().int().min(1).optional(),
   "category": zod.string().min(1).optional(),
   "status": zod.enum(['active', 'archived']).optional(),
-  "fileUrl": zod.string().min(1).optional().describe('Link to the hosted deliverable (e.g. a PDF) emailed to buyers after payment.')
+  "fileUrl": zod.string().min(1).regex(updateDigitalProductBodyFileUrlRegExp).optional().describe('Link to the hosted deliverable (e.g. a PDF) emailed to buyers after payment. Must be an https:\/\/ URL.')
 })
 
 export const UpdateDigitalProductResponse = zod.object({
@@ -834,9 +840,11 @@ export const CheckoutDigitalProductParams = zod.object({
 export const checkoutDigitalProductBodyBuyerEmailMin = 3;
 
 
+export const checkoutDigitalProductBodyBuyerEmailRegExp = new RegExp('^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$');
+
 
 export const CheckoutDigitalProductBody = zod.object({
-  "buyerEmail": zod.string().min(checkoutDigitalProductBodyBuyerEmailMin).describe('Address the receipt and download link are sent to.')
+  "buyerEmail": zod.string().min(checkoutDigitalProductBodyBuyerEmailMin).regex(checkoutDigitalProductBodyBuyerEmailRegExp).describe('Address the receipt and download link are sent to.')
 })
 
 export const CheckoutDigitalProductResponse = zod.object({

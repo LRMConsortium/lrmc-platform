@@ -119,6 +119,7 @@ export interface MembershipCheckoutInput {
   /**
      * Address the Stripe receipt is sent to.
      * @minLength 3
+     * @pattern ^[^\s@]+@[^\s@]+\.[^\s@]+$
      */
   buyerEmail: string;
 }
@@ -423,8 +424,9 @@ export interface DigitalProductInput {
   /** @minLength 1 */
   category: string;
   /**
-     * Link to the hosted deliverable (e.g. a PDF) emailed to buyers after payment.
+     * Link to the hosted deliverable (e.g. a PDF) emailed to buyers after payment. Must be an https:// URL.
      * @minLength 1
+     * @pattern ^https://
      */
   fileUrl?: string;
 }
@@ -447,8 +449,9 @@ export interface DigitalProductUpdate {
   category?: string;
   status?: DigitalProductUpdateStatus;
   /**
-     * Link to the hosted deliverable (e.g. a PDF) emailed to buyers after payment.
+     * Link to the hosted deliverable (e.g. a PDF) emailed to buyers after payment. Must be an https:// URL.
      * @minLength 1
+     * @pattern ^https://
      */
   fileUrl?: string;
 }
@@ -457,6 +460,7 @@ export interface DigitalProductCheckoutInput {
   /**
      * Address the receipt and download link are sent to.
      * @minLength 3
+     * @pattern ^[^\s@]+@[^\s@]+\.[^\s@]+$
      */
   buyerEmail: string;
 }

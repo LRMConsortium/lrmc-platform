@@ -17,8 +17,9 @@ export interface DigitalProductUpdate {
   category?: string;
   status?: DigitalProductUpdateStatus;
   /**
-     * Link to the hosted deliverable (e.g. a PDF) emailed to buyers after payment.
+     * Link to the hosted deliverable (e.g. a PDF) emailed to buyers after payment. Must be an https:// URL.
      * @minLength 1
+     * @pattern ^https://
      */
   fileUrl?: string;
 }

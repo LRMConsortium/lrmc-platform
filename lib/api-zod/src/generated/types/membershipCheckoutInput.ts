@@ -10,6 +10,7 @@ export interface MembershipCheckoutInput {
   /**
      * Address the Stripe receipt is sent to.
      * @minLength 3
+     * @pattern ^[^\s@]+@[^\s@]+\.[^\s@]+$
      */
   buyerEmail: string;
 }

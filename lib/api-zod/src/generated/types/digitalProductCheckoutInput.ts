@@ -10,6 +10,7 @@ export interface DigitalProductCheckoutInput {
   /**
      * Address the receipt and download link are sent to.
      * @minLength 3
+     * @pattern ^[^\s@]+@[^\s@]+\.[^\s@]+$
      */
   buyerEmail: string;
 }

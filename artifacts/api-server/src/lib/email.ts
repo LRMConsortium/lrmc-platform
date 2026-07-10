@@ -118,15 +118,42 @@ This link expires in 24 hours. If you did not create this account, you can ignor
   };
 }
 
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+/**
+ * Defense-in-depth: only ever render a fileUrl as a clickable link if it is
+ * an absolute https:// URL. The API schema already enforces this at write
+ * time, but we re-validate here so a schema regression or data-layer bypass
+ * can't turn into stored HTML/script injection in a transactional email.
+ */
+function isSafeHttpsUrl(value: string): boolean {
+  try {
+    const url = new URL(value);
+    return url.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
 export function digitalProductDeliveryEmailContent(
   productTitle: string,
   fileUrl: string | null,
 ): Pick<SendEmailInput, "subject" | "html" | "text"> {
-  const downloadSection = fileUrl
-    ? `<p><a href="${fileUrl}">Download "${productTitle}"</a></p>`
-    : `<p>Our team will follow up shortly with your download link for "${productTitle}". If you don't hear from us within one business day, contact office@africalrmc.com.</p>`;
-  const downloadSectionText = fileUrl
-    ? `Download "${productTitle}": ${fileUrl}`
+  const safeTitle = escapeHtml(productTitle);
+  const safeUrl = fileUrl && isSafeHttpsUrl(fileUrl) ? fileUrl : null;
+
+  const downloadSection = safeUrl
+    ? `<p><a href="${escapeHtml(safeUrl)}">Download "${safeTitle}"</a></p>`
+    : `<p>Our team will follow up shortly with your download link for "${safeTitle}". If you don't hear from us within one business day, contact office@africalrmc.com.</p>`;
+  const downloadSectionText = safeUrl
+    ? `Download "${productTitle}": ${safeUrl}`
     : `Our team will follow up shortly with your download link for "${productTitle}". If you don't hear from us within one business day, contact office@africalrmc.com.`;
 
   return {

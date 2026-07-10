@@ -1422,6 +1422,7 @@ components:
         buyerEmail:
           type: string
           minLength: 3
+          pattern: "^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$"
           description: Address the Stripe receipt is sent to.
     MembershipCheckoutSession:
       type: object
@@ -1657,7 +1658,8 @@ components:
         fileUrl:
           type: string
           minLength: 1
-          description: Link to the hosted deliverable (e.g. a PDF) emailed to buyers after payment.
+          pattern: "^https://"
+          description: Link to the hosted deliverable (e.g. a PDF) emailed to buyers after payment. Must be an https:// URL.
     DigitalProductUpdate:
       type: object
       properties:
@@ -1669,7 +1671,8 @@ components:
         fileUrl:
           type: string
           minLength: 1
-          description: Link to the hosted deliverable (e.g. a PDF) emailed to buyers after payment.
+          pattern: "^https://"
+          description: Link to the hosted deliverable (e.g. a PDF) emailed to buyers after payment. Must be an https:// URL.
     DigitalProductCheckoutInput:
       type: object
       required: [buyerEmail]
@@ -1677,6 +1680,7 @@ components:
         buyerEmail:
           type: string
           minLength: 3
+          pattern: "^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$"
           description: Address the receipt and download link are sent to.
     DigitalProductCheckoutSession:
       type: object
