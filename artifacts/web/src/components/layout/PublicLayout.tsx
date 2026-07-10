@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter"
-import { ShieldCheck, Menu, Mail } from "lucide-react"
+import { ShieldCheck, Menu, Mail, ArrowUp } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
@@ -9,7 +9,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { cn } from "@/lib/utils"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useToast } from "@/hooks/use-toast"
 
 const navItems = [
@@ -26,7 +26,19 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation()
   const [open, setOpen] = useState(false)
   const [email, setEmail] = useState("")
+  const [showScrollTop, setShowScrollTop] = useState(false)
   const { toast } = useToast()
+
+  useEffect(() => {
+    const onScroll = () => setShowScrollTop(window.scrollY > 400)
+    onScroll()
+    window.addEventListener("scroll", onScroll, { passive: true })
+    return () => window.removeEventListener("scroll", onScroll)
+  }, [])
+
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: "smooth" })
+  }
 
   const handleNewsletterSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -162,6 +174,17 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
           © {new Date().getFullYear()} Legacy Rental Management Consortium. All rights reserved.
         </div>
       </footer>
+
+      <button
+        onClick={scrollToTop}
+        aria-label="Back to top"
+        className={cn(
+          "fixed bottom-6 right-6 z-40 flex h-11 w-11 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg transition-all duration-300 hover:bg-primary/90",
+          showScrollTop ? "opacity-100 translate-y-0 pointer-events-auto" : "opacity-0 translate-y-2 pointer-events-none"
+        )}
+      >
+        <ArrowUp className="h-5 w-5" />
+      </button>
     </div>
   )
 }
