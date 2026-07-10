@@ -16,7 +16,7 @@ import {
   UpdateConstructionProjectBody,
   UpdateConstructionProjectResponse,
 } from "@workspace/api-zod";
-import { requireAuth } from "../middlewares/auth";
+import { requireAuth, requireApprovedMembership } from "../middlewares/auth";
 import { isOwnerOrAdmin } from "../middlewares/authz";
 
 const router: IRouter = Router();
@@ -28,7 +28,7 @@ router.get("/construction-contractors", async (_req, res): Promise<void> => {
 
 router.post(
   "/construction-contractors",
-  requireAuth,
+  requireAuth, requireApprovedMembership,
   async (req, res): Promise<void> => {
     const parsed = CreateConstructionContractorBody.safeParse(req.body);
     if (!parsed.success) {
@@ -54,7 +54,7 @@ router.get("/construction-projects", async (_req, res): Promise<void> => {
 
 router.post(
   "/construction-projects",
-  requireAuth,
+  requireAuth, requireApprovedMembership,
   async (req, res): Promise<void> => {
     const parsed = CreateConstructionProjectBody.safeParse(req.body);
     if (!parsed.success) {
@@ -73,7 +73,7 @@ router.post(
 
 router.patch(
   "/construction-projects/:id",
-  requireAuth,
+  requireAuth, requireApprovedMembership,
   async (req, res): Promise<void> => {
     const params = UpdateConstructionProjectParams.safeParse(req.params);
     if (!params.success) {

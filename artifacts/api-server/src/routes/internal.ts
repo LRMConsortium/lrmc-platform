@@ -14,11 +14,11 @@ import {
   UpdateInternalTicketBody,
   UpdateInternalTicketResponse,
 } from "@workspace/api-zod";
-import { requireAuth, requireAdmin } from "../middlewares/auth";
+import { requireAuth, requireAdmin, requireApprovedMembership } from "../middlewares/auth";
 
 const router: IRouter = Router();
 
-router.get("/internal-messages", requireAuth, async (req, res): Promise<void> => {
+router.get("/internal-messages", requireAuth, requireApprovedMembership, async (req, res): Promise<void> => {
   const userId = req.session.userId!;
   const rows = await db
     .select()
@@ -33,7 +33,7 @@ router.get("/internal-messages", requireAuth, async (req, res): Promise<void> =>
   res.json(ListInternalMessagesResponse.parse(rows));
 });
 
-router.post("/internal-messages", requireAuth, async (req, res): Promise<void> => {
+router.post("/internal-messages", requireAuth, requireApprovedMembership, async (req, res): Promise<void> => {
   const parsed = CreateInternalMessageBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
@@ -50,7 +50,7 @@ router.post("/internal-messages", requireAuth, async (req, res): Promise<void> =
 
 router.patch(
   "/internal-messages/:id/read",
-  requireAuth,
+  requireAuth, requireApprovedMembership,
   async (req, res): Promise<void> => {
     const params = MarkInternalMessageReadParams.safeParse(req.params);
     if (!params.success) {
@@ -88,7 +88,7 @@ router.patch(
   },
 );
 
-router.get("/internal-tickets", requireAuth, async (req, res): Promise<void> => {
+router.get("/internal-tickets", requireAuth, requireApprovedMembership, async (req, res): Promise<void> => {
   const rows =
     req.session.role === "admin"
       ? await db
@@ -104,7 +104,7 @@ router.get("/internal-tickets", requireAuth, async (req, res): Promise<void> => 
   res.json(ListInternalTicketsResponse.parse(rows));
 });
 
-router.post("/internal-tickets", requireAuth, async (req, res): Promise<void> => {
+router.post("/internal-tickets", requireAuth, requireApprovedMembership, async (req, res): Promise<void> => {
   const parsed = CreateInternalTicketBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });

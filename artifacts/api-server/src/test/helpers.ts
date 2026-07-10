@@ -1,6 +1,6 @@
 import request from "supertest";
 import { eq } from "drizzle-orm";
-import { db, usersTable } from "@workspace/db";
+import { db, usersTable, membershipsTable } from "@workspace/db";
 import app from "../app";
 
 let counter = 0;
@@ -43,6 +43,19 @@ export async function createMemberUser(prefix = "member"): Promise<TestUser> {
     .update(usersTable)
     .set({ emailVerifiedAt: new Date() })
     .where(eq(usersTable.id, res.body.id));
+
+  // Most authz tests exercise member-area endpoints, which now require a
+  // paid + KYC-approved membership server-side. Give test members one by
+  // default so existing "can the owner do X" tests aren't tripped up by the
+  // membership gate; tests that specifically want to exercise the gate can
+  // create a user and adjust its membership row directly.
+  await db.insert(membershipsTable).values({
+    userId: res.body.id,
+    type: "renter",
+    status: "active",
+    paymentStatus: "paid",
+    kycStatus: "approved",
+  });
 
   const agent = request.agent(app);
   const loginRes = await agent.post("/api/auth/login").send({ email, password });

@@ -24,7 +24,7 @@ import {
   GetAdminDashboardResponse,
   GetMemberDashboardResponse,
 } from "@workspace/api-zod";
-import { requireAuth, requireAdmin } from "../middlewares/auth";
+import { requireAuth, requireAdmin, requireApprovedMembership } from "../middlewares/auth";
 
 const router: IRouter = Router();
 
@@ -133,7 +133,7 @@ router.get("/dashboard/admin", requireAdmin, async (_req, res): Promise<void> =>
   );
 });
 
-router.get("/dashboard/member", requireAuth, async (req, res): Promise<void> => {
+router.get("/dashboard/member", requireAuth, requireApprovedMembership, async (req, res): Promise<void> => {
   const userId = req.session.userId!;
 
   const [membership] = await db

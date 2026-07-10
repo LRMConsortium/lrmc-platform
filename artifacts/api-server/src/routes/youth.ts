@@ -9,12 +9,12 @@ import {
   UpdateYouthEmploymentRecordBody,
   UpdateYouthEmploymentRecordResponse,
 } from "@workspace/api-zod";
-import { requireAuth } from "../middlewares/auth";
+import { requireAuth, requireApprovedMembership } from "../middlewares/auth";
 import { isOwnerOrAdmin } from "../middlewares/authz";
 
 const router: IRouter = Router();
 
-router.get("/youth-employment-records", requireAuth, async (req, res): Promise<void> => {
+router.get("/youth-employment-records", requireAuth, requireApprovedMembership, async (req, res): Promise<void> => {
   const rows =
     req.session.role === "admin"
       ? await db.select().from(youthEmploymentRecordsTable)
@@ -27,7 +27,7 @@ router.get("/youth-employment-records", requireAuth, async (req, res): Promise<v
 
 router.post(
   "/youth-employment-records",
-  requireAuth,
+  requireAuth, requireApprovedMembership,
   async (req, res): Promise<void> => {
     const parsed = CreateYouthEmploymentRecordBody.safeParse(req.body);
     if (!parsed.success) {
@@ -46,7 +46,7 @@ router.post(
 
 router.patch(
   "/youth-employment-records/:id",
-  requireAuth,
+  requireAuth, requireApprovedMembership,
   async (req, res): Promise<void> => {
     const params = UpdateYouthEmploymentRecordParams.safeParse(req.params);
     if (!params.success) {

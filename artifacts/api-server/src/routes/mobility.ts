@@ -15,7 +15,7 @@ import {
   UpdateRideBody,
   UpdateRideResponse,
 } from "@workspace/api-zod";
-import { requireAuth } from "../middlewares/auth";
+import { requireAuth, requireApprovedMembership } from "../middlewares/auth";
 import { isOwnerOrAdmin } from "../middlewares/authz";
 
 const router: IRouter = Router();
@@ -25,7 +25,7 @@ router.get("/drivers", async (_req, res): Promise<void> => {
   res.json(ListDriversResponse.parse(rows));
 });
 
-router.post("/drivers", requireAuth, async (req, res): Promise<void> => {
+router.post("/drivers", requireAuth, requireApprovedMembership, async (req, res): Promise<void> => {
   const parsed = CreateDriverBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
@@ -40,7 +40,7 @@ router.post("/drivers", requireAuth, async (req, res): Promise<void> => {
   res.status(201).json(CreateDriverResponse.parse(driver));
 });
 
-router.patch("/drivers/:id", requireAuth, async (req, res): Promise<void> => {
+router.patch("/drivers/:id", requireAuth, requireApprovedMembership, async (req, res): Promise<void> => {
   const params = UpdateDriverParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -77,7 +77,7 @@ router.patch("/drivers/:id", requireAuth, async (req, res): Promise<void> => {
   res.json(UpdateDriverResponse.parse(driver));
 });
 
-router.get("/rides", requireAuth, async (req, res): Promise<void> => {
+router.get("/rides", requireAuth, requireApprovedMembership, async (req, res): Promise<void> => {
   const rows =
     req.session.role === "admin"
       ? await db.select().from(ridesTable)
@@ -85,7 +85,7 @@ router.get("/rides", requireAuth, async (req, res): Promise<void> => {
   res.json(ListRidesResponse.parse(rows));
 });
 
-router.post("/rides", requireAuth, async (req, res): Promise<void> => {
+router.post("/rides", requireAuth, requireApprovedMembership, async (req, res): Promise<void> => {
   const parsed = CreateRideBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
@@ -100,7 +100,7 @@ router.post("/rides", requireAuth, async (req, res): Promise<void> => {
   res.status(201).json(CreateRideResponse.parse(ride));
 });
 
-router.patch("/rides/:id", requireAuth, async (req, res): Promise<void> => {
+router.patch("/rides/:id", requireAuth, requireApprovedMembership, async (req, res): Promise<void> => {
   const params = UpdateRideParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });

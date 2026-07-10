@@ -12,7 +12,7 @@ import {
   CreateLandTransactionBody,
   CreateLandTransactionResponse,
 } from "@workspace/api-zod";
-import { requireAuth } from "../middlewares/auth";
+import { requireAuth, requireApprovedMembership } from "../middlewares/auth";
 import { isOwnerOrAdmin } from "../middlewares/authz";
 import { or, eq as eqOp } from "drizzle-orm";
 
@@ -23,7 +23,7 @@ router.get("/land-listings", async (_req, res): Promise<void> => {
   res.json(ListLandListingsResponse.parse(rows));
 });
 
-router.post("/land-listings", requireAuth, async (req, res): Promise<void> => {
+router.post("/land-listings", requireAuth, requireApprovedMembership, async (req, res): Promise<void> => {
   const parsed = CreateLandListingBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
@@ -38,7 +38,7 @@ router.post("/land-listings", requireAuth, async (req, res): Promise<void> => {
   res.status(201).json(CreateLandListingResponse.parse(listing));
 });
 
-router.patch("/land-listings/:id", requireAuth, async (req, res): Promise<void> => {
+router.patch("/land-listings/:id", requireAuth, requireApprovedMembership, async (req, res): Promise<void> => {
   const params = UpdateLandListingParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
@@ -75,7 +75,7 @@ router.patch("/land-listings/:id", requireAuth, async (req, res): Promise<void> 
   res.json(UpdateLandListingResponse.parse(listing));
 });
 
-router.get("/land-transactions", requireAuth, async (req, res): Promise<void> => {
+router.get("/land-transactions", requireAuth, requireApprovedMembership, async (req, res): Promise<void> => {
   if (req.session.role === "admin") {
     const rows = await db.select().from(landTransactionsTable);
     res.json(ListLandTransactionsResponse.parse(rows));
@@ -103,7 +103,7 @@ router.get("/land-transactions", requireAuth, async (req, res): Promise<void> =>
   res.json(ListLandTransactionsResponse.parse(rows));
 });
 
-router.post("/land-transactions", requireAuth, async (req, res): Promise<void> => {
+router.post("/land-transactions", requireAuth, requireApprovedMembership, async (req, res): Promise<void> => {
   const parsed = CreateLandTransactionBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });

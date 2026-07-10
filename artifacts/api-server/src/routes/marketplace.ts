@@ -55,7 +55,7 @@ const ListAdsPublicResponse = ListAdsPublicResponseItem.array();
 // Single-ad public schema: omit parentAdId, advertiserId, and rejectionChain so
 // non-admins cannot traverse the moderation chain or enumerate user IDs.
 const GetAdPublicResponse = GetAdResponse.omit({ parentAdId: true, rejectionChain: true, advertiserId: true });
-import { requireAuth } from "../middlewares/auth";
+import { requireAuth, requireApprovedMembership } from "../middlewares/auth";
 import { isOwnerOrAdmin } from "../middlewares/authz";
 
 const router: IRouter = Router();
@@ -67,7 +67,7 @@ router.get("/marketplace-listings", async (_req, res): Promise<void> => {
 
 router.post(
   "/marketplace-listings",
-  requireAuth,
+  requireAuth, requireApprovedMembership,
   async (req, res): Promise<void> => {
     const parsed = CreateMarketplaceListingBody.safeParse(req.body);
     if (!parsed.success) {
@@ -86,7 +86,7 @@ router.post(
 
 router.patch(
   "/marketplace-listings/:id",
-  requireAuth,
+  requireAuth, requireApprovedMembership,
   async (req, res): Promise<void> => {
     const params = UpdateMarketplaceListingParams.safeParse(req.params);
     if (!params.success) {
@@ -127,7 +127,7 @@ router.patch(
 
 router.delete(
   "/marketplace-listings/:id",
-  requireAuth,
+  requireAuth, requireApprovedMembership,
   async (req, res): Promise<void> => {
     const params = DeleteMarketplaceListingParams.safeParse(req.params);
     if (!params.success) {
@@ -194,7 +194,7 @@ router.get("/digital-products", async (req, res): Promise<void> => {
 
 router.post(
   "/digital-products",
-  requireAuth,
+  requireAuth, requireApprovedMembership,
   async (req, res): Promise<void> => {
     const parsed = CreateDigitalProductBody.safeParse(req.body);
     if (!parsed.success) {
@@ -226,7 +226,7 @@ router.post(
 
 router.patch(
   "/digital-products/:id",
-  requireAuth,
+  requireAuth, requireApprovedMembership,
   async (req, res): Promise<void> => {
     const params = UpdateDigitalProductParams.safeParse(req.params);
     if (!params.success) {
@@ -296,7 +296,7 @@ router.patch(
 
 router.delete(
   "/digital-products/:id",
-  requireAuth,
+  requireAuth, requireApprovedMembership,
   async (req, res): Promise<void> => {
     const params = DeleteDigitalProductParams.safeParse(req.params);
     if (!params.success) {
@@ -416,7 +416,7 @@ router.post(
 // Checkout session and is open to guests.
 router.post(
   "/digital-products/:id/purchase",
-  requireAuth,
+  requireAuth, requireApprovedMembership,
   async (req, res): Promise<void> => {
     const params = PurchaseDigitalProductParams.safeParse(req.params);
     if (!params.success) {
@@ -539,7 +539,7 @@ router.get("/ads/:id", async (req, res): Promise<void> => {
   res.json(GetAdResponse.parse({ ...ad, rejectionChain }));
 });
 
-router.post("/ads", requireAuth, async (req, res): Promise<void> => {
+router.post("/ads", requireAuth, requireApprovedMembership, async (req, res): Promise<void> => {
   const parsed = CreateAdBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
@@ -612,7 +612,7 @@ router.post("/ads", requireAuth, async (req, res): Promise<void> => {
 
 router.patch(
   "/ads/:id",
-  requireAuth,
+  requireAuth, requireApprovedMembership,
   async (req, res): Promise<void> => {
     const params = UpdateAdParams.safeParse(req.params);
     if (!params.success) {
@@ -673,7 +673,7 @@ router.patch(
 
 router.delete(
   "/ads/:id",
-  requireAuth,
+  requireAuth, requireApprovedMembership,
   async (req, res): Promise<void> => {
     const params = DeleteAdParams.safeParse(req.params);
     if (!params.success) {
