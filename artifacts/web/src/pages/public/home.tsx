@@ -12,7 +12,7 @@ export default function Home() {
     <PublicLayout>
       {/* Hero */}
       <section className="relative overflow-hidden bg-gradient-to-b from-primary/5 to-background">
-        <div className="max-w-6xl mx-auto px-4 md:px-8 py-20 md:py-28">
+        <div className="max-w-6xl mx-auto px-4 md:px-8 py-12 md:py-16">
           <div className="max-w-3xl">
             <span className="inline-block text-xs font-semibold uppercase tracking-wider text-primary bg-primary/10 rounded-full px-3 py-1 mb-6">
               Institutional Trust for a Growing Economy
@@ -21,7 +21,7 @@ export default function Home() {
               Property management and traveler services,
               <span className="text-primary"> built for Africa.</span>
             </h1>
-            <p className="text-lg text-muted-foreground leading-relaxed mb-8 max-w-2xl">
+            <p className="text-lg text-muted-foreground leading-relaxed mb-6 max-w-2xl">
               Legacy Rental Management Consortium (LRMC) is a consortium of African
               business professionals that helps property owners manage their rentals
               and helps travelers — especially those coming from abroad — find their
@@ -42,7 +42,7 @@ export default function Home() {
       </section>
 
       {/* Core service */}
-      <section className="max-w-6xl mx-auto px-4 md:px-8 py-16 md:py-24">
+      <section className="max-w-6xl mx-auto px-4 md:px-8 py-12 md:py-16">
         <div className="grid md:grid-cols-2 gap-12 items-center">
           <div>
             <h2 className="font-serif text-3xl font-bold mb-4">
@@ -85,7 +85,7 @@ export default function Home() {
 
       {/* Ususu callout */}
       <section className="bg-card border-y border-border/60">
-        <div className="max-w-6xl mx-auto px-4 md:px-8 py-16 md:py-24 grid md:grid-cols-2 gap-12 items-center">
+        <div className="max-w-6xl mx-auto px-4 md:px-8 py-12 md:py-16 grid md:grid-cols-2 gap-12 items-center">
           <div className="order-2 md:order-1 grid grid-cols-1 gap-4">
             {[
               "Fair, transparent pricing — no airport overcharging",
@@ -121,7 +121,7 @@ export default function Home() {
       </section>
 
       {/* Services grid */}
-      <section className="max-w-6xl mx-auto px-4 md:px-8 py-16 md:py-24">
+      <section className="max-w-6xl mx-auto px-4 md:px-8 py-12 md:py-16">
         <div className="text-center max-w-2xl mx-auto mb-12">
           <h2 className="font-serif text-3xl font-bold mb-3">One consortium, every service a property owner or traveler needs</h2>
           <p className="text-muted-foreground">From the moment a property is listed to the moment a renter walks through the door.</p>
@@ -157,10 +157,10 @@ export default function Home() {
 
       {/* CTA */}
       <section className="bg-primary text-primary-foreground">
-        <div className="max-w-6xl mx-auto px-4 md:px-8 py-16 text-center">
+        <div className="max-w-6xl mx-auto px-4 md:px-8 py-14 text-center">
           <ShieldCheck className="h-10 w-10 mx-auto mb-4 opacity-90" />
           <h2 className="font-serif text-3xl font-bold mb-3">Join the Consortium</h2>
-          <p className="opacity-90 max-w-xl mx-auto mb-8">
+          <p className="opacity-90 max-w-xl mx-auto mb-6">
             Whether you own property, sell land, drive for Ususu, or need a place
             to land — LRMC membership gives you a trusted institution behind you.
           </p>

@@ -7,7 +7,7 @@ import { XCircle } from "lucide-react"
 export default function StoreCancel() {
   return (
     <PublicLayout>
-      <section className="max-w-2xl mx-auto px-4 md:px-8 py-24">
+      <section className="max-w-2xl mx-auto px-4 md:px-8 py-16">
         <Card>
           <CardContent className="pt-10 pb-10 text-center space-y-4">
             <XCircle className="w-12 h-12 text-muted-foreground mx-auto" />

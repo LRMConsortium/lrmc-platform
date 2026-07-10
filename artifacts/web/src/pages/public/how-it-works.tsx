@@ -8,7 +8,7 @@ export default function HowItWorks() {
   return (
     <PublicLayout>
       <section className="bg-gradient-to-b from-primary/5 to-background">
-        <div className="max-w-4xl mx-auto px-4 md:px-8 py-16 md:py-24 text-center">
+        <div className="max-w-4xl mx-auto px-4 md:px-8 py-12 md:py-14 text-center">
           <span className="inline-block text-xs font-semibold uppercase tracking-wider text-primary bg-primary/10 rounded-full px-3 py-1 mb-6">
             How It Works
           </span>
@@ -115,10 +115,10 @@ export default function HowItWorks() {
       </section>
 
       <section className="bg-primary text-primary-foreground">
-        <div className="max-w-6xl mx-auto px-4 md:px-8 py-16 text-center">
+        <div className="max-w-6xl mx-auto px-4 md:px-8 py-14 text-center">
           <ShieldCheck className="h-10 w-10 mx-auto mb-4 opacity-90" />
           <h2 className="font-serif text-3xl font-bold mb-3">It starts with one membership</h2>
-          <p className="opacity-90 max-w-xl mx-auto mb-8">
+          <p className="opacity-90 max-w-xl mx-auto mb-6">
             Whichever path applies to you, it begins the same way — join LRMC.
           </p>
           <Link href="/register">

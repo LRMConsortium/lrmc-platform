@@ -71,7 +71,7 @@ export default function Services() {
   return (
     <PublicLayout>
       <section className="bg-gradient-to-b from-primary/5 to-background">
-        <div className="max-w-4xl mx-auto px-4 md:px-8 py-16 md:py-24 text-center">
+        <div className="max-w-4xl mx-auto px-4 md:px-8 py-12 md:py-14 text-center">
           <span className="inline-block text-xs font-semibold uppercase tracking-wider text-primary bg-primary/10 rounded-full px-3 py-1 mb-6">
             Our Services
           </span>
@@ -86,7 +86,7 @@ export default function Services() {
         </div>
       </section>
 
-      <section className="max-w-6xl mx-auto px-4 md:px-8 py-16 md:py-24 space-y-6">
+      <section className="max-w-6xl mx-auto px-4 md:px-8 py-12 md:py-16 space-y-4">
         {services.map((s) => (
           <Card key={s.title} className="overflow-hidden">
             <CardContent className="p-6 md:p-8 flex flex-col md:flex-row gap-6">
@@ -109,9 +109,9 @@ export default function Services() {
       </section>
 
       <section className="bg-primary text-primary-foreground">
-        <div className="max-w-6xl mx-auto px-4 md:px-8 py-16 text-center">
+        <div className="max-w-6xl mx-auto px-4 md:px-8 py-14 text-center">
           <h2 className="font-serif text-3xl font-bold mb-3">Ready to work with LRMC?</h2>
-          <p className="opacity-90 max-w-xl mx-auto mb-8">
+          <p className="opacity-90 max-w-xl mx-auto mb-6">
             Membership starts at 1,000 Dalasi and gives you access to the full
             consortium — dashboards, verification, and support built for your role.
           </p>

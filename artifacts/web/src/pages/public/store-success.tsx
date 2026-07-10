@@ -7,7 +7,7 @@ import { CheckCircle2 } from "lucide-react"
 export default function StoreSuccess() {
   return (
     <PublicLayout>
-      <section className="max-w-2xl mx-auto px-4 md:px-8 py-24">
+      <section className="max-w-2xl mx-auto px-4 md:px-8 py-16">
         <Card>
           <CardContent className="pt-10 pb-10 text-center space-y-4">
             <CheckCircle2 className="w-12 h-12 text-primary mx-auto" />
