@@ -21,7 +21,7 @@ import { isOwnerOrAdmin } from "../middlewares/authz";
 
 const router: IRouter = Router();
 
-router.get("/construction-contractors", async (_req, res): Promise<void> => {
+router.get("/construction-contractors", requireAuth, requireApprovedMembership, async (_req, res): Promise<void> => {
   const rows = await db.select().from(constructionContractorsTable);
   res.json(ListConstructionContractorsResponse.parse(rows));
 });
@@ -47,7 +47,7 @@ router.post(
   },
 );
 
-router.get("/construction-projects", async (_req, res): Promise<void> => {
+router.get("/construction-projects", requireAuth, requireApprovedMembership, async (_req, res): Promise<void> => {
   const rows = await db.select().from(constructionProjectsTable);
   res.json(ListConstructionProjectsResponse.parse(rows));
 });
@@ -59,6 +59,16 @@ router.post(
     const parsed = CreateConstructionProjectBody.safeParse(req.body);
     if (!parsed.success) {
       res.status(400).json({ error: parsed.error.message });
+      return;
+    }
+
+    const [contractor] = await db
+      .select()
+      .from(constructionContractorsTable)
+      .where(eq(constructionContractorsTable.id, parsed.data.contractorId));
+
+    if (!isOwnerOrAdmin(req, contractor?.userId)) {
+      res.status(403).json({ error: "Forbidden" });
       return;
     }
 
@@ -102,7 +112,12 @@ router.patch(
       .from(constructionContractorsTable)
       .where(eq(constructionContractorsTable.id, existing.contractorId));
 
-    if (!isOwnerOrAdmin(req, contractor?.userId)) {
+    if (!contractor) {
+      res.status(404).json({ error: "Construction contractor not found" });
+      return;
+    }
+
+    if (!isOwnerOrAdmin(req, contractor.userId)) {
       res.status(403).json({ error: "Forbidden" });
       return;
     }

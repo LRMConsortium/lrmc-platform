@@ -5,7 +5,8 @@
  * LRMC / Ususu institution API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { RiskEventUpdateStatus } from './riskEventUpdateStatus';
 
 export interface RiskEventUpdate {
-  status: string;
+  status: RiskEventUpdateStatus;
 }

@@ -549,8 +549,18 @@ export interface YouthEmploymentRecordInput {
   placementCompany?: string;
 }
 
+export type YouthEmploymentRecordUpdateStatus = typeof YouthEmploymentRecordUpdateStatus[keyof typeof YouthEmploymentRecordUpdateStatus];
+
+
+export const YouthEmploymentRecordUpdateStatus = {
+  enrolled: 'enrolled',
+  training: 'training',
+  placed: 'placed',
+  completed: 'completed',
+} as const;
+
 export interface YouthEmploymentRecordUpdate {
-  status?: string;
+  status?: YouthEmploymentRecordUpdateStatus;
   placementCompany?: string;
 }
 
@@ -574,8 +584,19 @@ export interface ProspectLeadInput {
   notes?: string;
 }
 
+export type ProspectLeadUpdateStatus = typeof ProspectLeadUpdateStatus[keyof typeof ProspectLeadUpdateStatus];
+
+
+export const ProspectLeadUpdateStatus = {
+  new: 'new',
+  contacted: 'contacted',
+  qualified: 'qualified',
+  converted: 'converted',
+  lost: 'lost',
+} as const;
+
 export interface ProspectLeadUpdate {
-  status?: string;
+  status?: ProspectLeadUpdateStatus;
   notes?: string;
 }
 
@@ -632,8 +653,17 @@ export interface RiskEvent {
   createdAt: string;
 }
 
+export type RiskEventUpdateStatus = typeof RiskEventUpdateStatus[keyof typeof RiskEventUpdateStatus];
+
+
+export const RiskEventUpdateStatus = {
+  open: 'open',
+  monitoring: 'monitoring',
+  resolved: 'resolved',
+} as const;
+
 export interface RiskEventUpdate {
-  status: string;
+  status: RiskEventUpdateStatus;
 }
 
 export interface SettlementObligation {
@@ -645,8 +675,17 @@ export interface SettlementObligation {
   createdAt: string;
 }
 
+export type SettlementObligationUpdateStatus = typeof SettlementObligationUpdateStatus[keyof typeof SettlementObligationUpdateStatus];
+
+
+export const SettlementObligationUpdateStatus = {
+  pending: 'pending',
+  settled: 'settled',
+  overdue: 'overdue',
+} as const;
+
 export interface SettlementObligationUpdate {
-  status: string;
+  status: SettlementObligationUpdateStatus;
 }
 
 export interface InternalMessage {

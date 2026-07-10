@@ -5,8 +5,9 @@
  * LRMC / Ususu institution API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { YouthEmploymentRecordUpdateStatus } from './youthEmploymentRecordUpdateStatus';
 
 export interface YouthEmploymentRecordUpdate {
-  status?: string;
+  status?: YouthEmploymentRecordUpdateStatus;
   placementCompany?: string;
 }

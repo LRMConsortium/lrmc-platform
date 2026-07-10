@@ -18,7 +18,7 @@ import { or, eq as eqOp } from "drizzle-orm";
 
 const router: IRouter = Router();
 
-router.get("/land-listings", async (_req, res): Promise<void> => {
+router.get("/land-listings", requireAuth, requireApprovedMembership, async (_req, res): Promise<void> => {
   const rows = await db.select().from(landListingsTable);
   res.json(ListLandListingsResponse.parse(rows));
 });

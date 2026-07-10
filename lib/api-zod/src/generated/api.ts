@@ -991,7 +991,7 @@ export const UpdateYouthEmploymentRecordParams = zod.object({
 })
 
 export const UpdateYouthEmploymentRecordBody = zod.object({
-  "status": zod.string().optional(),
+  "status": zod.enum(['enrolled', 'training', 'placed', 'completed']).optional(),
   "placementCompany": zod.string().optional()
 })
 
@@ -1045,7 +1045,7 @@ export const UpdateProspectLeadParams = zod.object({
 })
 
 export const UpdateProspectLeadBody = zod.object({
-  "status": zod.string().optional(),
+  "status": zod.enum(['new', 'contacted', 'qualified', 'converted', 'lost']).optional(),
   "notes": zod.string().optional()
 })
 
@@ -1142,7 +1142,7 @@ export const UpdateRiskEventParams = zod.object({
 })
 
 export const UpdateRiskEventBody = zod.object({
-  "status": zod.string()
+  "status": zod.enum(['open', 'monitoring', 'resolved'])
 })
 
 export const UpdateRiskEventResponse = zod.object({
@@ -1171,7 +1171,7 @@ export const UpdateSettlementObligationParams = zod.object({
 })
 
 export const UpdateSettlementObligationBody = zod.object({
-  "status": zod.string()
+  "status": zod.enum(['pending', 'settled', 'overdue'])
 })
 
 export const UpdateSettlementObligationResponse = zod.object({

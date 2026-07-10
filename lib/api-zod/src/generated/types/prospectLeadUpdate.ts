@@ -5,8 +5,9 @@
  * LRMC / Ususu institution API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { ProspectLeadUpdateStatus } from './prospectLeadUpdateStatus';
 
 export interface ProspectLeadUpdate {
-  status?: string;
+  status?: ProspectLeadUpdateStatus;
   notes?: string;
 }

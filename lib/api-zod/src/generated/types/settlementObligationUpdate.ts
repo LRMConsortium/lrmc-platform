@@ -5,7 +5,8 @@
  * LRMC / Ususu institution API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { SettlementObligationUpdateStatus } from './settlementObligationUpdateStatus';
 
 export interface SettlementObligationUpdate {
-  status: string;
+  status: SettlementObligationUpdateStatus;
 }

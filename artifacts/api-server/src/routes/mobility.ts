@@ -20,7 +20,7 @@ import { isOwnerOrAdmin } from "../middlewares/authz";
 
 const router: IRouter = Router();
 
-router.get("/drivers", async (_req, res): Promise<void> => {
+router.get("/drivers", requireAuth, requireApprovedMembership, async (_req, res): Promise<void> => {
   const rows = await db.select().from(driversTable);
   res.json(ListDriversResponse.parse(rows));
 });
@@ -123,9 +123,28 @@ router.patch("/rides/:id", requireAuth, requireApprovedMembership, async (req, r
     return;
   }
 
+  const isAdmin = req.session.role === "admin";
   if (!isOwnerOrAdmin(req, existing.riderId)) {
     res.status(403).json({ error: "Forbidden" });
     return;
+  }
+
+  // Riders may only cancel their own ride while it hasn't started yet.
+  // Every other transition (acceptance, progress, completion, driver
+  // assignment) must be driven by a driver/dispatcher or an admin.
+  if (!isAdmin) {
+    const isSelfCancel =
+      parsed.data.status === "cancelled" &&
+      (existing.status === "requested" || existing.status === "accepted") &&
+      parsed.data.driverId === undefined;
+
+    if (!isSelfCancel || Object.keys(parsed.data).length !== 1) {
+      res.status(403).json({
+        error:
+          "Riders may only cancel a ride that has not yet started; other updates require a driver or admin",
+      });
+      return;
+    }
   }
 
   const [ride] = await db

@@ -16,7 +16,7 @@ import { isOwnerOrAdmin } from "../middlewares/authz";
 
 const router: IRouter = Router();
 
-router.get("/property-listings", async (req, res): Promise<void> => {
+router.get("/property-listings", requireAuth, requireApprovedMembership, async (req, res): Promise<void> => {
   const query = ListPropertyListingsQueryParams.safeParse(req.query);
   if (!query.success) {
     res.status(400).json({ error: query.error.message });

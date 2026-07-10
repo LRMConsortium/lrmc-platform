@@ -1774,7 +1774,11 @@ components:
     YouthEmploymentRecordUpdate:
       type: object
       properties:
-        status: { type: string }
+        status:
+          {
+            type: string,
+            enum: [enrolled, training, placed, completed],
+          }
         placementCompany: { type: string }
 
     # ---------- PROSPECTING ----------
@@ -1800,7 +1804,11 @@ components:
     ProspectLeadUpdate:
       type: object
       properties:
-        status: { type: string }
+        status:
+          {
+            type: string,
+            enum: [new, contacted, qualified, converted, lost],
+          }
         notes: { type: string }
 
     # ---------- TREASURY ----------
@@ -1881,7 +1889,7 @@ components:
       type: object
       required: [status]
       properties:
-        status: { type: string }
+        status: { type: string, enum: [open, monitoring, resolved] }
 
     # ---------- SETTLEMENT ----------
     SettlementObligation:
@@ -1898,7 +1906,7 @@ components:
       type: object
       required: [status]
       properties:
-        status: { type: string }
+        status: { type: string, enum: [pending, settled, overdue] }
 
     # ---------- INTERNAL ----------
     InternalMessage:
