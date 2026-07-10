@@ -515,12 +515,30 @@ export interface AdInput {
   replacesAdId?: number;
 }
 
+export type AdStatusUpdateStatus = typeof AdStatusUpdateStatus[keyof typeof AdStatusUpdateStatus];
+
+
+export const AdStatusUpdateStatus = {
+  pending: 'pending',
+  active: 'active',
+  rejected: 'rejected',
+} as const;
+
 export interface AdStatusUpdate {
-  status: string;
+  status: AdStatusUpdateStatus;
 }
 
+export type AdContentUpdateStatus = typeof AdContentUpdateStatus[keyof typeof AdContentUpdateStatus];
+
+
+export const AdContentUpdateStatus = {
+  pending: 'pending',
+  active: 'active',
+  rejected: 'rejected',
+} as const;
+
 /**
- * Fields a seller can edit on their own pending ad. rejectionNote is admin-only on write.
+ * Fields a seller can edit on their own pending ad. status and rejectionNote are admin-only on write and constrained to known values.
  */
 export interface AdContentUpdate {
   /** @minLength 1 */
@@ -529,7 +547,7 @@ export interface AdContentUpdate {
   content?: string;
   /** @minLength 1 */
   placement?: string;
-  status?: string;
+  status?: AdContentUpdateStatus;
   rejectionNote?: string | null;
 }
 

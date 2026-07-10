@@ -5,9 +5,10 @@
  * LRMC / Ususu institution API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { AdContentUpdateStatus } from './adContentUpdateStatus';
 
 /**
- * Fields a seller can edit on their own pending ad. rejectionNote is admin-only on write.
+ * Fields a seller can edit on their own pending ad. status and rejectionNote are admin-only on write and constrained to known values.
  */
 export interface AdContentUpdate {
   /** @minLength 1 */
@@ -16,6 +17,6 @@ export interface AdContentUpdate {
   content?: string;
   /** @minLength 1 */
   placement?: string;
-  status?: string;
+  status?: AdContentUpdateStatus;
   rejectionNote?: string | null;
 }

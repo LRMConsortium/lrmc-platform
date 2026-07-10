@@ -8,11 +8,13 @@
 
 export * from './ad';
 export * from './adContentUpdate';
+export * from './adContentUpdateStatus';
 export * from './adDetail';
 export * from './adInput';
 export * from './adminDashboard';
 export * from './adRejectionChainItem';
 export * from './adStatusUpdate';
+export * from './adStatusUpdateStatus';
 export * from './constructionContractor';
 export * from './constructionContractorInput';
 export * from './constructionProject';

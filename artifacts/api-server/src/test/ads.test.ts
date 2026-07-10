@@ -8,7 +8,7 @@ async function createAd(agent: Awaited<ReturnType<typeof createMemberUser>>["age
     placement: "marketplace",
   });
   expect(res.status).toBe(201);
-  return res.body as { id: number; status: string };
+  return res.body as { id: number; status: string; rejectionNote?: string | null };
 }
 
 describe("ads authorization", () => {

@@ -103,17 +103,18 @@ describe("digital-products purchase visibility boundary", () => {
     expect(res.status).toBe(410);
   });
 
-  it("a product reactivated to active can be purchased again after being non-active", async () => {
+  it("a product reactivated by an admin can be purchased again after being non-active", async () => {
     // Confirms the purchase gate correctly opens again once visibility is restored.
     const seller = await createMemberUser("dp-vis-reactivate-seller");
+    const admin = await createAdminUser("dp-vis-reactivate-admin");
     const buyer = await createMemberUser("dp-vis-reactivate-buyer");
     const product = await createProduct(seller.agent);
 
     // Archive it
     await seller.agent.delete(`/api/digital-products/${product.id}`);
 
-    // Reactivate via PATCH
-    await seller.agent
+    // Reactivate via PATCH -- only an admin can move status
+    await admin.agent
       .patch(`/api/digital-products/${product.id}`)
       .send({ status: "active" });
 
@@ -205,20 +206,28 @@ describe("digital-products archive flow", () => {
     expect(row.status).toBe("archived");
   });
 
-  it("PATCH by owner can reactivate an archived product", async () => {
+  it("PATCH by owner cannot reactivate an archived product (admin-only); admin PATCH can", async () => {
     const seller = await createMemberUser("dp-lc-reactivate");
+    const admin = await createAdminUser("dp-lc-reactivate-admin");
     const product = await createProduct(seller.agent);
 
     // Archive it first
     await seller.agent.delete(`/api/digital-products/${product.id}`);
 
-    // Reactivate via PATCH
-    const res = await seller.agent
+    // Owner attempts to reactivate via PATCH -- status field is ignored
+    const ownerRes = await seller.agent
+      .patch(`/api/digital-products/${product.id}`)
+      .send({ status: "active" });
+    expect(ownerRes.status).toBe(200);
+    expect(ownerRes.body.status).toBe("archived");
+
+    // Admin reactivates via PATCH
+    const adminRes = await admin.agent
       .patch(`/api/digital-products/${product.id}`)
       .send({ status: "active" });
 
-    expect(res.status).toBe(200);
-    expect(res.body.status).toBe("active");
+    expect(adminRes.status).toBe(200);
+    expect(adminRes.body.status).toBe("active");
   });
 
   it("non-owner cannot archive (DELETE) someone else's product — returns 403", async () => {

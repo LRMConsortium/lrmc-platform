@@ -1743,15 +1743,15 @@ components:
       type: object
       required: [status]
       properties:
-        status: { type: string }
+        status: { type: string, enum: [pending, active, rejected] }
     AdContentUpdate:
       type: object
-      description: Fields a seller can edit on their own pending ad. rejectionNote is admin-only on write.
+      description: Fields a seller can edit on their own pending ad. status and rejectionNote are admin-only on write and constrained to known values.
       properties:
         title: { type: string, minLength: 1 }
         content: { type: string, minLength: 1 }
         placement: { type: string, minLength: 1 }
-        status: { type: string }
+        status: { type: string, enum: [pending, active, rejected] }
         rejectionNote: { type: string, nullable: true }
 
     # ---------- YOUTH ----------

@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { and, eq, ne } from "drizzle-orm";
+import { and, desc, eq, ne } from "drizzle-orm";
 import {
   db,
   marketplaceListingsTable,
@@ -50,7 +50,7 @@ import { getWebBaseUrl } from "../lib/urls";
 
 // Public ad schemas: strip admin-only moderation fields from non-admin responses.
 // Add new admin-only fields here so they are never accidentally leaked.
-const ListAdsPublicResponseItem = ListAdsResponseItem.omit({ parentAdId: true, advertiserId: true });
+const ListAdsPublicResponseItem = ListAdsResponseItem.omit({ parentAdId: true, advertiserId: true, rejectionNote: true });
 const ListAdsPublicResponse = ListAdsPublicResponseItem.array();
 // Single-ad public schema: omit parentAdId, advertiserId, and rejectionChain so
 // non-admins cannot traverse the moderation chain or enumerate user IDs.
@@ -60,8 +60,21 @@ import { isOwnerOrAdmin } from "../middlewares/authz";
 
 const router: IRouter = Router();
 
+// Hard cap on how many ancestors we'll walk when computing a rejection chain
+// or resubmission count. Prevents an attacker (or a misconfigured
+// AD_RESUBMISSION_LIMIT) from turning a single request into hundreds of
+// sequential DB round-trips.
+const MAX_ANCESTOR_CHAIN_DEPTH = 25;
+
+const MAX_LISTING_PAGE_SIZE = 100;
+
 router.get("/marketplace-listings", async (_req, res): Promise<void> => {
-  const rows = await db.select().from(marketplaceListingsTable);
+  const rows = await db
+    .select()
+    .from(marketplaceListingsTable)
+    .where(eq(marketplaceListingsTable.status, "active"))
+    .orderBy(desc(marketplaceListingsTable.createdAt))
+    .limit(MAX_LISTING_PAGE_SIZE);
   res.json(ListMarketplaceListingsResponse.parse(rows));
 });
 
@@ -115,9 +128,25 @@ router.patch(
       return;
     }
 
+    const isAdmin = req.session.role === "admin";
+    // Only admins may change the status state machine (e.g. marking a listing
+    // "sold" or reactivating it). Owners can only edit content fields --
+    // otherwise a seller could fraudulently mark a listing "sold" without a
+    // real sale, or flip a sold listing back to "active" to evade tracking.
+    const { status: _status, ...contentFields } = parsed.data;
+    const update = isAdmin ? parsed.data : contentFields;
+
+    if (Object.keys(update).length === 0) {
+      // Owner sent only a status change, which is admin-only -- nothing left
+      // to apply. Return the listing unchanged rather than issuing an empty
+      // (and invalid) SQL update.
+      res.json(UpdateMarketplaceListingResponse.parse(existing));
+      return;
+    }
+
     const [listing] = await db
       .update(marketplaceListingsTable)
-      .set(parsed.data)
+      .set(update)
       .where(eq(marketplaceListingsTable.id, params.data.id))
       .returning();
 
@@ -158,9 +187,19 @@ router.delete(
   },
 );
 
+const MAX_PRODUCT_PAGE_SIZE = 100;
+
 router.get("/digital-products", async (req, res): Promise<void> => {
   const query = ListDigitalProductsQueryParams.safeParse(req.query);
-  const statusFilter = query.success && query.data.status ? query.data.status : "active";
+  // If the caller sent a status value that fails validation (i.e. anything
+  // outside the ['active', 'archived'] enum), reject the request instead of
+  // silently falling back to "active" -- falling back would let a malformed
+  // query slip through as if it were valid input.
+  if (!query.success) {
+    res.status(400).json({ error: query.error.message });
+    return;
+  }
+  const statusFilter = query.data.status ?? "active";
 
   if (statusFilter === "archived") {
     if (!req.session.userId) {
@@ -180,7 +219,9 @@ router.get("/digital-products", async (req, res): Promise<void> => {
               eq(digitalProductsTable.status, "archived"),
               eq(digitalProductsTable.sellerId, req.session.userId),
             ),
-      );
+      )
+      .orderBy(desc(digitalProductsTable.createdAt))
+      .limit(MAX_PRODUCT_PAGE_SIZE);
     res.json(ListDigitalProductsResponse.parse(rows));
     return;
   }
@@ -188,7 +229,9 @@ router.get("/digital-products", async (req, res): Promise<void> => {
   const rows = await db
     .select()
     .from(digitalProductsTable)
-    .where(eq(digitalProductsTable.status, statusFilter));
+    .where(eq(digitalProductsTable.status, statusFilter))
+    .orderBy(desc(digitalProductsTable.createdAt))
+    .limit(MAX_PRODUCT_PAGE_SIZE);
   res.json(ListDigitalProductsResponse.parse(rows));
 });
 
@@ -257,6 +300,13 @@ router.patch(
         return { status: 403 as const, body: { error: "Forbidden" } };
       }
 
+      const isAdmin = req.session.role === "admin";
+      // Only admins may change status. Otherwise an owner could use DELETE
+      // (soft-archive) followed by PATCH { status: "active" } to reactivate
+      // their own product without any admin involvement.
+      const { status: _status, ...contentOnly } = parsed.data;
+      const effectiveData = isAdmin ? parsed.data : contentOnly;
+
       let stripePriceId = existing.stripePriceId;
       if (
         parsed.data.priceCents !== undefined &&
@@ -280,7 +330,7 @@ router.patch(
 
       const [product] = await tx
         .update(digitalProductsTable)
-        .set({ ...parsed.data, stripePriceId })
+        .set({ ...effectiveData, stripePriceId })
         .where(eq(digitalProductsTable.id, params.data.id))
         .returning();
 
@@ -361,6 +411,33 @@ router.post(
 
     if (!product.stripePriceId) {
       res.status(409).json({ error: "This product isn't ready for purchase yet" });
+      return;
+    }
+
+    // Prevent duplicate purchases: if this buyer (by email, or by account for
+    // logged-in members) already has a paid purchase for this product, don't
+    // let them buy it again. We also block starting a second checkout while
+    // one is already pending, so a buyer can't flood Stripe with duplicate
+    // open sessions for the same product.
+    const buyerId = req.session.userId ?? null;
+    const existingPurchases = await db
+      .select()
+      .from(digitalProductPurchasesTable)
+      .where(
+        and(
+          eq(digitalProductPurchasesTable.productId, product.id),
+          buyerId !== null
+            ? eq(digitalProductPurchasesTable.buyerId, buyerId)
+            : eq(digitalProductPurchasesTable.buyerEmail, parsed.data.buyerEmail),
+        ),
+      );
+
+    if (existingPurchases.some((p) => p.status === "paid")) {
+      res.status(409).json({ error: "You already own this product" });
+      return;
+    }
+    if (existingPurchases.some((p) => p.status === "pending")) {
+      res.status(409).json({ error: "A checkout for this product is already in progress" });
       return;
     }
 
@@ -464,17 +541,25 @@ router.post(
   },
 );
 
+const MAX_ADS_PAGE_SIZE = 100;
+
 router.get("/ads", async (req, res): Promise<void> => {
   const isAdmin = req.session?.role === "admin";
   if (isAdmin) {
-    const rows = await db.select().from(adsTable);
+    const rows = await db
+      .select()
+      .from(adsTable)
+      .orderBy(desc(adsTable.createdAt))
+      .limit(MAX_ADS_PAGE_SIZE);
     res.json(ListAdsResponse.parse(rows));
   } else {
     // Non-admins only see approved ads — pending and rejected are moderation-only.
     const rows = await db
       .select()
       .from(adsTable)
-      .where(eq(adsTable.status, "active"));
+      .where(eq(adsTable.status, "active"))
+      .orderBy(desc(adsTable.createdAt))
+      .limit(MAX_ADS_PAGE_SIZE);
     res.json(ListAdsPublicResponse.parse(rows));
   }
 });
@@ -521,7 +606,8 @@ router.get("/ads/:id", async (req, res): Promise<void> => {
   // newest ancestor first (immediate parent → grandparent → … → original).
   const rejectionChain: Array<{ id: number; title: string; status: string; createdAt: Date }> = [];
   let ancestorId: number | null = ad.parentAdId;
-  while (ancestorId !== null) {
+  let ancestorDepth = 0;
+  while (ancestorId !== null && ancestorDepth < MAX_ANCESTOR_CHAIN_DEPTH) {
     const [ancestor] = await db
       .select()
       .from(adsTable)
@@ -534,6 +620,7 @@ router.get("/ads/:id", async (req, res): Promise<void> => {
       createdAt: ancestor.createdAt,
     });
     ancestorId = ancestor.parentAdId;
+    ancestorDepth++;
   }
 
   res.json(GetAdResponse.parse({ ...ad, rejectionChain }));
@@ -581,7 +668,8 @@ router.post("/ads", requireAuth, requireApprovedMembership, async (req, res): Pr
     );
     let rejectedCount = 1; // parentAd is already confirmed rejected
     let ancestorId: number | null = parentAd.parentAdId;
-    while (ancestorId !== null) {
+    let ancestorDepth = 0;
+    while (ancestorId !== null && ancestorDepth < MAX_ANCESTOR_CHAIN_DEPTH) {
       const [ancestor] = await db
         .select()
         .from(adsTable)
@@ -589,6 +677,7 @@ router.post("/ads", requireAuth, requireApprovedMembership, async (req, res): Pr
       if (!ancestor) break;
       if (ancestor.status === "rejected") rejectedCount++;
       ancestorId = ancestor.parentAdId;
+      ancestorDepth++;
     }
 
     if (rejectedCount >= resubmissionLimit) {

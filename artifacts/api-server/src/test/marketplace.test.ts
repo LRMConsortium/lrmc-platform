@@ -89,11 +89,27 @@ describe("marketplace-listings authorization", () => {
     expect(res.status).toBe(400);
   });
 
-  it("accepts a valid status value", async () => {
+  it("does not let the owner change status directly (admin-only)", async () => {
     const seller = await createMemberUser("seller");
     const listingId = await createListing(seller.agent);
 
     const res = await seller.agent
+      .patch(`/api/marketplace-listings/${listingId}`)
+      .send({ status: "sold" });
+
+    // Request is well-formed (valid enum value) so it's accepted, but the
+    // status field is silently ignored for non-admins -- only an admin can
+    // move a listing through the sold/active/inactive state machine.
+    expect(res.status).toBe(200);
+    expect(res.body.status).toBe("active");
+  });
+
+  it("lets an admin change a listing's status", async () => {
+    const seller = await createMemberUser("seller-status-admin");
+    const admin = await createAdminUser("admin-status");
+    const listingId = await createListing(seller.agent);
+
+    const res = await admin.agent
       .patch(`/api/marketplace-listings/${listingId}`)
       .send({ status: "sold" });
 

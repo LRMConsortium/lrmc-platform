@@ -241,7 +241,7 @@ describe("digital-products status validation", () => {
     expect(res.status).toBe(400);
   });
 
-  it("accepts PATCH with a valid status value 'archived'", async () => {
+  it("owner PATCH with status 'archived' is well-formed but ignored (admin-only)", async () => {
     const seller = await createMemberUser("dp-valid-status-seller");
     const product = await createDigitalProduct(seller.agent);
 
@@ -250,19 +250,20 @@ describe("digital-products status validation", () => {
       .send({ status: "archived" });
 
     expect(res.status).toBe(200);
-    expect(res.body.status).toBe("archived");
+    expect(res.body.status).toBe("active");
   });
 
-  it("accepts PATCH with a valid status value 'active'", async () => {
+  it("admin PATCH with a valid status value 'archived' then 'active' takes effect", async () => {
     const seller = await createMemberUser("dp-valid-status-active-seller");
+    const admin = await createAdminUser("dp-valid-status-active-admin");
     const product = await createDigitalProduct(seller.agent);
 
-    // Archive first, then re-activate
-    await seller.agent
+    // Archive first, then re-activate -- both performed by an admin
+    await admin.agent
       .patch(`/api/digital-products/${product.id}`)
       .send({ status: "archived" });
 
-    const res = await seller.agent
+    const res = await admin.agent
       .patch(`/api/digital-products/${product.id}`)
       .send({ status: "active" });
 
@@ -274,6 +275,7 @@ describe("digital-products status validation", () => {
 describe("digital-products status-only PATCH field preservation", () => {
   it("does not overwrite title, description, priceCents, or category when PATCH body contains only status", async () => {
     const seller = await createMemberUser("dp-statusonly-seller");
+    const admin = await createAdminUser("dp-statusonly-admin");
 
     const createRes = await seller.agent.post("/api/digital-products").send({
       title: "Status-Only PATCH Product",
@@ -284,8 +286,9 @@ describe("digital-products status-only PATCH field preservation", () => {
     expect(createRes.status).toBe(201);
     const product = createRes.body as { id: number };
 
-    // Send a PATCH that contains ONLY the status field — no content fields
-    const patchRes = await seller.agent
+    // Send a PATCH that contains ONLY the status field — no content fields.
+    // Only an admin can move the status, so use an admin session here.
+    const patchRes = await admin.agent
       .patch(`/api/digital-products/${product.id}`)
       .send({ status: "archived" });
 
@@ -303,6 +306,7 @@ describe("digital-products status-only PATCH field preservation", () => {
 describe("digital-products archive → reactivate data preservation", () => {
   it("preserves all original fields (title, description, priceCents, category) after a full archive → reactivate cycle", async () => {
     const seller = await createMemberUser("dp-preserve-seller");
+    const admin = await createAdminUser("dp-preserve-admin");
 
     // Create a product with known field values
     const createRes = await seller.agent.post("/api/digital-products").send({
@@ -318,8 +322,8 @@ describe("digital-products archive → reactivate data preservation", () => {
     const archiveRes = await seller.agent.delete(`/api/digital-products/${product.id}`);
     expect(archiveRes.status).toBe(204);
 
-    // Reactivate the product
-    const reactivateRes = await seller.agent
+    // Reactivate the product (admin-only)
+    const reactivateRes = await admin.agent
       .patch(`/api/digital-products/${product.id}`)
       .send({ status: "active" });
     expect(reactivateRes.status).toBe(200);
@@ -369,7 +373,7 @@ describe("digital-products reactivation", () => {
     expect(purchase.body).toHaveProperty("productId", product.id);
   });
 
-  it("reactivated product reappears in the default listing and can be purchased", async () => {
+  it("seller cannot self-reactivate an archived product (status is admin-only)", async () => {
     const seller = await createMemberUser("dp-reactivate-seller");
     const buyer = await createMemberUser("dp-reactivate-buyer");
 
@@ -384,22 +388,24 @@ describe("digital-products reactivation", () => {
     expect(archivedCheck.status).toBe(200);
     expect(archivedCheck.body).not.toContainEqual(expect.objectContaining({ id: product.id }));
 
-    // Seller reactivates the product
+    // Seller attempts to reactivate their own product -- request succeeds
+    // (well-formed body) but the status field is silently ignored, since
+    // only an admin can move a digital product through the status state
+    // machine.
     const reactivate = await seller.agent
       .patch(`/api/digital-products/${product.id}`)
       .send({ status: "active" });
     expect(reactivate.status).toBe(200);
-    expect(reactivate.body.status).toBe("active");
+    expect(reactivate.body.status).toBe("archived");
 
-    // Product should now appear in the default (active) listing
+    // Product must still be absent from the default (active) listing
     const listing = await buyer.agent.get("/api/digital-products");
     expect(listing.status).toBe(200);
-    expect(listing.body).toContainEqual(expect.objectContaining({ id: product.id }));
+    expect(listing.body).not.toContainEqual(expect.objectContaining({ id: product.id }));
 
-    // Buyer should be able to purchase the reactivated product
+    // Buyer cannot purchase the still-archived product
     const purchase = await buyer.agent.post(`/api/digital-products/${product.id}/purchase`);
-    expect(purchase.status).toBe(200);
-    expect(purchase.body).toHaveProperty("productId", product.id);
+    expect(purchase.status).toBe(410);
   });
 });
 
