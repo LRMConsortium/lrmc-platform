@@ -138,7 +138,7 @@ export default function Ususu() {
               </Button>
             </Link>
             <a href="mailto:drivers@africaususu.com">
-              <Button size="lg" variant="outline" className="gap-2 border-primary-foreground/30 text-primary-foreground hover:bg-primary-foreground/10">
+              <Button size="lg" variant="outline" className="gap-2 border-primary-foreground/30 bg-transparent text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground">
                 Drive for Ususu
               </Button>
             </a>
