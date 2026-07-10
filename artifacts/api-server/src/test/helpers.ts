@@ -66,6 +66,60 @@ export async function createMemberUser(prefix = "member"): Promise<TestUser> {
   return { id: res.body.id, email, password, agent };
 }
 
+/**
+ * Registers a fresh member user with a specific membership payment/KYC state,
+ * for exercising the requireApprovedMembership gate directly. Pass
+ * `paymentStatus: "unpaid"` and omit the membership row entirely by using
+ * `withMembership: false` to simulate a member who never even started
+ * checkout.
+ */
+export async function createMemberUserWithMembership(
+  prefix: string,
+  opts: {
+    paymentStatus?: "unpaid" | "paid";
+    kycStatus?: "not_submitted" | "pending" | "approved" | "rejected";
+    withMembership?: boolean;
+  },
+): Promise<TestUser> {
+  const email = uniqueEmail(prefix);
+  const password = "Test-Password-123!";
+
+  const registerAgent = request.agent(app);
+  const res = await registerAgent.post("/api/auth/register").send({
+    email,
+    password,
+    fullName: `Test User ${email}`,
+    phone: "+220 000 0000",
+  });
+
+  if (res.status !== 201) {
+    throw new Error(`Failed to register test user: ${res.status} ${JSON.stringify(res.body)}`);
+  }
+
+  await db
+    .update(usersTable)
+    .set({ emailVerifiedAt: new Date() })
+    .where(eq(usersTable.id, res.body.id));
+
+  if (opts.withMembership !== false) {
+    await db.insert(membershipsTable).values({
+      userId: res.body.id,
+      type: "renter",
+      status: "active",
+      paymentStatus: opts.paymentStatus ?? "unpaid",
+      kycStatus: opts.kycStatus ?? "not_submitted",
+    });
+  }
+
+  const agent = request.agent(app);
+  const loginRes = await agent.post("/api/auth/login").send({ email, password });
+  if (loginRes.status !== 200) {
+    throw new Error(`Failed to log in test user: ${loginRes.status} ${JSON.stringify(loginRes.body)}`);
+  }
+
+  return { id: res.body.id, email, password, agent };
+}
+
 /** Registers a fresh user and promotes it to admin directly in the DB, then logs in. */
 export async function createAdminUser(prefix = "admin"): Promise<TestUser> {
   const email = uniqueEmail(prefix);
