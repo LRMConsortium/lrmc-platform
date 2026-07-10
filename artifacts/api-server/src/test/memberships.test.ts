@@ -1,5 +1,9 @@
 import { describe, it, expect } from "vitest";
+import { eq } from "drizzle-orm";
+import { db, membershipsTable } from "@workspace/db";
+import type Stripe from "stripe";
 import { createMemberUser, createAdminUser } from "./helpers";
+import { fulfillMembershipCheckout } from "../lib/membershipFulfillment";
 
 async function createMembership(agent: Awaited<ReturnType<typeof createMemberUser>>["agent"]) {
   const res = await agent.post("/api/memberships").send({ type: "property_owner" });
@@ -44,5 +48,63 @@ describe("memberships status validation", () => {
 
     expect(res.status).toBe(200);
     expect(res.body.status).toBe("rejected");
+  });
+});
+
+function fakeCheckoutSession(overrides: Partial<Stripe.Checkout.Session>): Stripe.Checkout.Session {
+  return {
+    id: "cs_test_placeholder",
+    object: "checkout.session",
+    amount_total: 5000,
+    metadata: {},
+    ...overrides,
+  } as Stripe.Checkout.Session;
+}
+
+describe("membership checkout fulfillment", () => {
+  it("ignores a completed webhook for a stale/abandoned checkout session", async () => {
+    const member = await createMemberUser("member");
+    const membershipId = await createMembership(member.agent);
+
+    // Simulate two checkout attempts: an older, abandoned session followed
+    // by a newer one that the membership row currently points at.
+    const staleSessionId = "cs_test_stale_abandoned";
+    const currentSessionId = "cs_test_current";
+
+    await db
+      .update(membershipsTable)
+      .set({ stripeCheckoutSessionId: currentSessionId })
+      .where(eq(membershipsTable.id, membershipId));
+
+    // The stale session (from the first, abandoned attempt) completes late.
+    await fulfillMembershipCheckout(
+      fakeCheckoutSession({
+        id: staleSessionId,
+        metadata: { membershipId: String(membershipId) },
+      }),
+    );
+
+    const [afterStale] = await db
+      .select()
+      .from(membershipsTable)
+      .where(eq(membershipsTable.id, membershipId));
+    expect(afterStale.paymentStatus).toBe("unpaid");
+    expect(afterStale.stripeCheckoutSessionId).toBe(currentSessionId);
+
+    // The current session completing should be the only one allowed to mark
+    // the membership as paid.
+    await fulfillMembershipCheckout(
+      fakeCheckoutSession({
+        id: currentSessionId,
+        metadata: { membershipId: String(membershipId) },
+      }),
+    );
+
+    const [afterCurrent] = await db
+      .select()
+      .from(membershipsTable)
+      .where(eq(membershipsTable.id, membershipId));
+    expect(afterCurrent.paymentStatus).toBe("paid");
+    expect(afterCurrent.stripeCheckoutSessionId).toBe(currentSessionId);
   });
 });
