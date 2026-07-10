@@ -12,7 +12,7 @@ export default function Home() {
     <PublicLayout>
       {/* Hero */}
       <section className="relative overflow-hidden bg-gradient-to-b from-primary/5 to-background">
-        <div className="max-w-6xl mx-auto px-4 md:px-8 py-10 md:py-14">
+        <div className="max-w-6xl mx-auto px-4 md:px-8 pt-10 md:pt-14 pb-6 md:pb-8">
           <div className="max-w-3xl">
             <span className="inline-block text-xs font-semibold uppercase tracking-wider text-primary bg-primary/10 rounded-full px-3 py-1 mb-6">
               Institutional Trust for a Growing Economy
@@ -42,7 +42,7 @@ export default function Home() {
       </section>
 
       {/* Core service */}
-      <section className="max-w-6xl mx-auto px-4 md:px-8 py-10 md:py-14">
+      <section className="max-w-6xl mx-auto px-4 md:px-8 pt-6 md:pt-8 pb-10 md:pb-14">
         <div className="grid md:grid-cols-2 gap-10 items-center">
           <div>
             <h2 className="font-serif text-3xl font-bold mb-4">

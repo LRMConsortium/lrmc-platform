@@ -8,7 +8,7 @@ export default function HowItWorks() {
   return (
     <PublicLayout>
       <section className="bg-gradient-to-b from-primary/5 to-background">
-        <div className="max-w-4xl mx-auto px-4 md:px-8 py-10 md:py-12 text-center">
+        <div className="max-w-4xl mx-auto px-4 md:px-8 pt-10 md:pt-12 pb-6 md:pb-8 text-center">
           <span className="inline-block text-xs font-semibold uppercase tracking-wider text-primary bg-primary/10 rounded-full px-3 py-1 mb-6">
             How It Works
           </span>
@@ -23,7 +23,7 @@ export default function HowItWorks() {
       </section>
 
       {/* Step 0: membership */}
-      <section className="max-w-4xl mx-auto px-4 md:px-8 py-12">
+      <section className="max-w-4xl mx-auto px-4 md:px-8 pt-6 md:pt-8 pb-12">
         <Card className="border-primary/20 bg-primary/5">
           <CardContent className="p-8 flex flex-col md:flex-row items-start md:items-center gap-6">
             <div className="bg-primary/10 p-3 rounded-lg">

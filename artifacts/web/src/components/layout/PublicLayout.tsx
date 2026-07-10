@@ -1,8 +1,11 @@
 import { Link, useLocation } from "wouter"
-import { ShieldCheck, Menu, X } from "lucide-react"
+import { ShieldCheck, Menu, X, Mail } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
 import { useState } from "react"
+import { useToast } from "@/hooks/use-toast"
+import logo from "@/assets/logo.png"
 
 const navItems = [
   { href: "/", label: "Home" },
@@ -17,15 +20,25 @@ const navItems = [
 export function PublicLayout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation()
   const [open, setOpen] = useState(false)
+  const [email, setEmail] = useState("")
+  const { toast } = useToast()
+
+  const handleNewsletterSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!email.trim()) return
+    toast({
+      title: "You're subscribed to Ageli",
+      description: "We'll send LRMC news and updates to " + email + ".",
+    })
+    setEmail("")
+  }
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <header className="sticky top-0 z-50 bg-background/90 backdrop-blur border-b border-border/60">
         <div className="max-w-6xl mx-auto flex items-center justify-between px-4 md:px-8 h-16">
           <Link href="/" className="flex items-center gap-2.5">
-            <div className="bg-primary/10 p-1.5 rounded-lg">
-              <ShieldCheck className="h-5 w-5 text-primary" />
-            </div>
+            <img src={logo} alt="LRMC" className="h-10 w-10 object-contain shrink-0" />
             <div className="leading-none">
               <div className="font-serif font-bold text-lg tracking-tight text-primary">LRMC</div>
               <div className="text-[9px] uppercase tracking-wider text-muted-foreground font-semibold">Legacy Rental Management Consortium</div>
@@ -93,6 +106,32 @@ export function PublicLayout({ children }: { children: React.ReactNode }) {
       <main className="flex-1">{children}</main>
 
       <footer className="border-t border-border/60 bg-card">
+        <div className="border-b border-border/60">
+          <div className="max-w-6xl mx-auto px-4 md:px-8 py-10 flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+            <div>
+              <div className="flex items-center gap-2 mb-1.5">
+                <Mail className="h-4 w-4 text-primary" />
+                <h4 className="font-serif font-bold text-foreground">Ageli — the LRMC Newsletter</h4>
+              </div>
+              <p className="text-sm text-muted-foreground max-w-md">
+                Get news on properties, land listings, and Ususu straight to your inbox.
+              </p>
+            </div>
+            <form onSubmit={handleNewsletterSubmit} className="flex w-full max-w-sm gap-2">
+              <label htmlFor="ageli-newsletter-email" className="sr-only">Email address</label>
+              <Input
+                id="ageli-newsletter-email"
+                type="email"
+                required
+                placeholder="you@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="bg-background"
+              />
+              <Button type="submit" className="shrink-0">Subscribe</Button>
+            </form>
+          </div>
+        </div>
         <div className="max-w-6xl mx-auto px-4 md:px-8 py-12 grid grid-cols-2 md:grid-cols-4 gap-8">
           <div className="col-span-2 md:col-span-1">
             <div className="flex items-center gap-2 mb-3">

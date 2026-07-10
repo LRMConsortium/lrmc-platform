@@ -11,7 +11,7 @@ export default function Ususu() {
   return (
     <PublicLayout>
       <section className="bg-gradient-to-b from-primary/5 to-background">
-        <div className="max-w-4xl mx-auto px-4 md:px-8 py-10 md:py-12 text-center">
+        <div className="max-w-4xl mx-auto px-4 md:px-8 pt-10 md:pt-12 pb-6 md:pb-8 text-center">
           <span className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-primary bg-primary/10 rounded-full px-3 py-1 mb-6">
             <Car className="h-3.5 w-3.5" /> A Mobility Product of LRMC
           </span>
@@ -28,7 +28,7 @@ export default function Ususu() {
       </section>
 
       {/* The problem */}
-      <section className="max-w-6xl mx-auto px-4 md:px-8 py-10 md:py-14">
+      <section className="max-w-6xl mx-auto px-4 md:px-8 pt-6 md:pt-8 pb-10 md:pb-14">
         <div className="grid md:grid-cols-2 gap-10 items-center">
           <div>
             <h2 className="font-serif text-2xl font-bold mb-4">The problem we built Ususu to solve</h2>

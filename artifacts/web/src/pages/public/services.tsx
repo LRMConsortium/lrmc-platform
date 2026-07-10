@@ -71,7 +71,7 @@ export default function Services() {
   return (
     <PublicLayout>
       <section className="bg-gradient-to-b from-primary/5 to-background">
-        <div className="max-w-4xl mx-auto px-4 md:px-8 py-10 md:py-12 text-center">
+        <div className="max-w-4xl mx-auto px-4 md:px-8 pt-10 md:pt-12 pb-6 md:pb-8 text-center">
           <span className="inline-block text-xs font-semibold uppercase tracking-wider text-primary bg-primary/10 rounded-full px-3 py-1 mb-6">
             Our Services
           </span>
@@ -86,7 +86,7 @@ export default function Services() {
         </div>
       </section>
 
-      <section className="max-w-6xl mx-auto px-4 md:px-8 py-10 md:py-14 space-y-4">
+      <section className="max-w-6xl mx-auto px-4 md:px-8 pt-6 md:pt-8 pb-10 md:pb-14 space-y-4">
         {services.map((s) => (
           <Card key={s.title} className="overflow-hidden">
             <CardContent className="p-6 md:p-8 flex flex-col md:flex-row gap-6">
