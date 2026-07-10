@@ -4,3 +4,4 @@
 - [Authz test suite gotchas](authz-test-schema-gotchas.md) — api-server authz tests hit the real dev DB (no test DB); orval Update*Body schemas silently drop unknown fields, causing 500s that look like authz bugs.
 - [stripe-replit-sync bundling breaks migrations](stripe-esbuild-migrations-bundling.md) — esbuild must externalize `stripe-replit-sync` or its `__dirname`-relative migrations silently no-op.
 - [stripe-replit-sync managed webhook secret location](stripe-webhook-secret-location.md) — managed webhook secret lives in `stripe._managed_webhooks`, not the connection settings API.
+- [SendGrid connector needs direct API calls](sendgrid-connector-direct-api.md) — `connectors.proxy("sendgrid", ...)` returns 400; fetch api_key/from_email from the connection API and call SendGrid's REST endpoint directly instead.

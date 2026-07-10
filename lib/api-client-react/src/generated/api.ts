@@ -70,6 +70,7 @@ import type {
   ProspectLead,
   ProspectLeadInput,
   ProspectLeadUpdate,
+  PurchaseReceipt,
   RegisterInput,
   ResendVerificationInput,
   ResetPasswordInput,
@@ -2963,6 +2964,74 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
         TContext
       > => {
       return useMutation(getCheckoutDigitalProductMutationOptions(options));
+    }
+
+export const getPurchaseDigitalProductUrl = (id: number,) => {
+
+
+
+
+  return `/api/digital-products/${id}/purchase`
+}
+
+/**
+ * Legacy member-only purchase confirmation (no real payment). Distinct from POST /digital-products/{id}/checkout, which creates a real Stripe Checkout session and is open to guests.
+ */
+export const purchaseDigitalProduct = async (id: number, options?: RequestInit): Promise<PurchaseReceipt> => {
+
+  return customFetch<PurchaseReceipt>(getPurchaseDigitalProductUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getPurchaseDigitalProductMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof purchaseDigitalProduct>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof purchaseDigitalProduct>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['purchaseDigitalProduct'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof purchaseDigitalProduct>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  purchaseDigitalProduct(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type PurchaseDigitalProductMutationResult = NonNullable<Awaited<ReturnType<typeof purchaseDigitalProduct>>>
+
+    export type PurchaseDigitalProductMutationError = ErrorType<void>
+
+    export const usePurchaseDigitalProduct = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof purchaseDigitalProduct>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof purchaseDigitalProduct>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getPurchaseDigitalProductMutationOptions(options));
     }
 
 export const getListAdsUrl = () => {

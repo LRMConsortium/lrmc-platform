@@ -66,6 +66,7 @@ export * from './propertyListingUpdateStatus';
 export * from './prospectLead';
 export * from './prospectLeadInput';
 export * from './prospectLeadUpdate';
+export * from './purchaseReceipt';
 export * from './registerInput';
 export * from './resendVerificationInput';
 export * from './resetPasswordInput';

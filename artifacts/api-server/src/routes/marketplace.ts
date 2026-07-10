@@ -26,6 +26,8 @@ import {
   CheckoutDigitalProductParams,
   CheckoutDigitalProductBody,
   CheckoutDigitalProductResponse,
+  PurchaseDigitalProductParams,
+  PurchaseDigitalProductResponse,
   ListAdsResponse,
   ListAdsResponseItem,
   CreateAdBody,
@@ -406,6 +408,59 @@ router.post(
     }
 
     res.json(CheckoutDigitalProductResponse.parse({ checkoutUrl: session.url }));
+  },
+);
+
+// Legacy member-only purchase confirmation (no real payment) -- distinct from
+// POST /digital-products/:id/checkout above, which creates a real Stripe
+// Checkout session and is open to guests.
+router.post(
+  "/digital-products/:id/purchase",
+  requireAuth,
+  async (req, res): Promise<void> => {
+    const params = PurchaseDigitalProductParams.safeParse(req.params);
+    if (!params.success) {
+      res.status(400).json({ error: params.error.message });
+      return;
+    }
+
+    const result = await db.transaction(async (tx) => {
+      // Lock the product row for the duration of the transaction so a
+      // concurrent PATCH updating priceCents must wait until this purchase
+      // commits (or is rolled back), preventing a price change from being
+      // applied between our read and the purchase being finalized.
+      const [product] = await tx
+        .select()
+        .from(digitalProductsTable)
+        .where(eq(digitalProductsTable.id, params.data.id))
+        .for("update");
+
+      if (!product) {
+        return { status: 404 as const, body: { error: "Digital product not found" } };
+      }
+
+      // Only "active" products are visible to buyers in the default listing.
+      // Reject purchase of any non-active product so the purchase gate always
+      // mirrors the visibility rules -- regardless of how many statuses are
+      // added in the future.
+      if (product.status !== "active") {
+        return {
+          status: 410 as const,
+          body: { error: "This product is no longer available" },
+        };
+      }
+
+      return {
+        status: 200 as const,
+        body: PurchaseDigitalProductResponse.parse({
+          productId: product.id,
+          amountCents: product.priceCents,
+          message: `Purchase of "${product.title}" confirmed.`,
+        }),
+      };
+    });
+
+    res.status(result.status).json(result.body);
   },
 );
 

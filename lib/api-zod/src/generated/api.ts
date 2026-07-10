@@ -723,6 +723,20 @@ export const CheckoutDigitalProductResponse = zod.object({
 })
 
 
+/**
+ * Legacy member-only purchase confirmation (no real payment). Distinct from POST /digital-products/{id}/checkout, which creates a real Stripe Checkout session and is open to guests.
+ */
+export const PurchaseDigitalProductParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const PurchaseDigitalProductResponse = zod.object({
+  "productId": zod.number().int(),
+  "amountCents": zod.number().int(),
+  "message": zod.string()
+})
+
+
 export const ListAdsResponseItem = zod.object({
   "id": zod.number().int(),
   "advertiserId": zod.number().int(),

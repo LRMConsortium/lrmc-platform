@@ -404,6 +404,12 @@ export interface DigitalProductCheckoutSession {
   checkoutUrl: string;
 }
 
+export interface PurchaseReceipt {
+  productId: number;
+  amountCents: number;
+  message: string;
+}
+
 export interface Ad {
   id: number;
   advertiserId: number;

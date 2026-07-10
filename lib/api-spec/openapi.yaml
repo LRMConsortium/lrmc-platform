@@ -744,8 +744,35 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/DigitalProductCheckoutSession"
+        "404":
+          description: >
+            Product does not exist, or exists but is not active. Both cases return
+            404 (rather than a distinct code for "exists but archived") so this
+            public, unauthenticated endpoint can't be used to enumerate product IDs
+            by comparing status codes.
         "409":
-          description: Product isn't ready for purchase yet
+          description: Product isn't ready for purchase yet (no Stripe price configured)
+  /digital-products/{id}/purchase:
+    post:
+      operationId: purchaseDigitalProduct
+      tags: [marketplace]
+      description: >
+        Legacy member-only purchase confirmation (no real payment). Distinct from
+        POST /digital-products/{id}/checkout, which creates a real Stripe Checkout
+        session and is open to guests.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Purchase confirmation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PurchaseReceipt"
         "410":
           description: Product is no longer available
   /ads:
@@ -1530,6 +1557,13 @@ components:
         checkoutUrl:
           type: string
           description: Stripe-hosted checkout URL to redirect the buyer to.
+    PurchaseReceipt:
+      type: object
+      required: [productId, amountCents, message]
+      properties:
+        productId: { type: integer }
+        amountCents: { type: integer }
+        message: { type: string }
     Ad:
       type: object
       required: [id, advertiserId, title, content, placement, status, createdAt]

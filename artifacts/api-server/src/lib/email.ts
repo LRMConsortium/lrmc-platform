@@ -1,7 +1,4 @@
-import { ReplitConnectors } from "@replit/connectors-sdk";
 import { logger } from "./logger";
-
-const FROM_ADDRESS = "no-reply@africalrmc.com";
 
 export interface SendEmailInput {
   to: string;
@@ -11,33 +8,93 @@ export interface SendEmailInput {
 }
 
 /**
- * Sends a transactional email via the Resend connector.
- * Fails loudly (throws) if the Resend connection isn't wired up or the send fails,
+ * Fetches SendGrid credentials (API key + verified sender address) from the
+ * Replit connection API. Not cached -- tokens can rotate, so fetch fresh
+ * each time. The SendGrid connector doesn't support generic proxy requests
+ * (`connectors.proxy("sendgrid", ...)` returns a 400 "does not support proxy
+ * requests"), so we call the SendGrid API directly with these credentials
+ * instead, mirroring the pattern used for Stripe in stripeClient.ts.
+ */
+async function getSendGridCredentials(): Promise<{
+  apiKey: string;
+  fromEmail: string;
+}> {
+  const hostname = process.env.REPLIT_CONNECTORS_HOSTNAME;
+  const xReplitToken = process.env.REPL_IDENTITY
+    ? "repl " + process.env.REPL_IDENTITY
+    : process.env.WEB_REPL_RENEWAL
+      ? "depl " + process.env.WEB_REPL_RENEWAL
+      : null;
+
+  if (!hostname || !xReplitToken) {
+    throw new Error(
+      "Missing Replit environment variables. " +
+        "Ensure the SendGrid integration is connected via the Integrations tab.",
+    );
+  }
+
+  const resp = await fetch(
+    `https://${hostname}/api/v2/connection?include_secrets=true&connector_names=sendgrid`,
+    {
+      headers: { Accept: "application/json", X_REPLIT_TOKEN: xReplitToken },
+      signal: AbortSignal.timeout(10_000),
+    },
+  );
+
+  if (!resp.ok) {
+    throw new Error(
+      `Failed to fetch SendGrid credentials: ${resp.status} ${resp.statusText}`,
+    );
+  }
+
+  const data = (await resp.json()) as {
+    items?: Array<{ settings?: { api_key?: string; from_email?: string } }>;
+  };
+  const settings = data.items?.[0]?.settings;
+
+  if (!settings?.api_key || !settings?.from_email) {
+    throw new Error(
+      "SendGrid integration not connected or missing api_key/from_email. " +
+        "Connect SendGrid via the Integrations tab first.",
+    );
+  }
+
+  return { apiKey: settings.api_key, fromEmail: settings.from_email };
+}
+
+/**
+ * Sends a transactional email via the SendGrid API.
+ * Fails loudly (throws) if the SendGrid connection isn't wired up or the send fails,
  * so callers can surface a clear 500 rather than silently dropping the email.
  */
 export async function sendEmail(input: SendEmailInput): Promise<void> {
-  const connectors = new ReplitConnectors();
+  const { apiKey, fromEmail } = await getSendGridCredentials();
 
-  const response = await connectors.proxy("resend", "/emails", {
+  const response = await fetch("https://api.sendgrid.com/v3/mail/send", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: {
-      from: `LRMC Consortium <${FROM_ADDRESS}>`,
-      to: [input.to],
-      subject: input.subject,
-      html: input.html,
-      text: input.text,
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`,
     },
+    body: JSON.stringify({
+      personalizations: [{ to: [{ email: input.to }] }],
+      from: { email: fromEmail, name: "LRMC Consortium" },
+      subject: input.subject,
+      content: [
+        { type: "text/plain", value: input.text },
+        { type: "text/html", value: input.html },
+      ],
+    }),
   });
 
   if (!response.ok) {
     const body = await response.text().catch(() => "");
     logger.error(
       { status: response.status, body },
-      "Failed to send email via Resend",
+      "Failed to send email via SendGrid",
     );
     throw new Error(
-      `Failed to send email via Resend (status ${response.status})`,
+      `Failed to send email via SendGrid (status ${response.status})`,
     );
   }
 }
