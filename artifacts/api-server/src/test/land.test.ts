@@ -60,10 +60,13 @@ describe("land-listings authorization", () => {
   });
 
   it("accepts a valid status value", async () => {
+    const admin = await createAdminUser("listing-status-admin");
     const seller = await createMemberUser("seller");
     const listingId = await createLandListing(seller.agent);
 
-    const res = await seller.agent
+    // Only admins may change listing status directly (sellers are blocked);
+    // use an admin agent to confirm the valid value is accepted by the route.
+    const res = await admin.agent
       .patch(`/api/land-listings/${listingId}`)
       .send({ status: "sold" });
 

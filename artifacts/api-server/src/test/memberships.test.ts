@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { eq } from "drizzle-orm";
 import { db, membershipsTable } from "@workspace/db";
 import type Stripe from "stripe";
-import { createMemberUser, createAdminUser } from "./helpers";
+import { createMemberUser, createMemberUserWithMembership, createAdminUser } from "./helpers";
 import { fulfillMembershipCheckout } from "../lib/membershipFulfillment";
 
 async function createMembership(agent: Awaited<ReturnType<typeof createMemberUser>>["agent"]) {
@@ -14,7 +14,8 @@ async function createMembership(agent: Awaited<ReturnType<typeof createMemberUse
 describe("memberships status validation", () => {
   it("rejects an invalid status value with 400", async () => {
     const admin = await createAdminUser("admin");
-    const member = await createMemberUser("member");
+    // Use a user with no pre-existing membership so POST /api/memberships succeeds.
+    const member = await createMemberUserWithMembership("member", { withMembership: false });
     const membershipId = await createMembership(member.agent);
 
     const res = await admin.agent
@@ -26,7 +27,7 @@ describe("memberships status validation", () => {
 
   it("accepts a valid status value (active)", async () => {
     const admin = await createAdminUser("admin");
-    const member = await createMemberUser("member");
+    const member = await createMemberUserWithMembership("member", { withMembership: false });
     const membershipId = await createMembership(member.agent);
 
     const res = await admin.agent
@@ -39,7 +40,7 @@ describe("memberships status validation", () => {
 
   it("accepts a valid status value (rejected)", async () => {
     const admin = await createAdminUser("admin");
-    const member = await createMemberUser("member");
+    const member = await createMemberUserWithMembership("member", { withMembership: false });
     const membershipId = await createMembership(member.agent);
 
     const res = await admin.agent
@@ -63,7 +64,8 @@ function fakeCheckoutSession(overrides: Partial<Stripe.Checkout.Session>): Strip
 
 describe("membership checkout fulfillment", () => {
   it("ignores a completed webhook for a stale/abandoned checkout session", async () => {
-    const member = await createMemberUser("member");
+    // Use a user with no pre-existing membership so POST /api/memberships succeeds.
+    const member = await createMemberUserWithMembership("member", { withMembership: false });
     const membershipId = await createMembership(member.agent);
 
     // Simulate two checkout attempts: an older, abandoned session followed

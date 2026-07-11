@@ -137,7 +137,7 @@ describe("member-area membership gate", () => {
 
   describe("POST /api/property-listings (property-listings.ts)", () => {
     const body = {
-      category: "apartment",
+      category: "property",
       title: "Test listing",
       location: "Banjul",
       priceCents: 10_000,

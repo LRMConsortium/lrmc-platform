@@ -54,15 +54,19 @@ describe("drivers authorization", () => {
     expect(res.status).toBe(403);
   });
 
-  it("allows the owner to PATCH their own driver profile", async () => {
+  it("owner's status-change attempt returns 403, not 401 or 404", async () => {
     const owner = await createMemberUser("driver-owner");
     const driverId = await createDriver(owner.agent);
 
+    // The only patchable field on a driver profile is `status`, which is
+    // admin-only.  The route must still correctly identify the owner before
+    // reaching the admin guard — so the response must be 403, not 401 (auth
+    // failure) or 404 (resource not found or wrong-owner masking).
     const res = await owner.agent
       .patch(`/api/drivers/${driverId}`)
       .send({ status: "approved" });
 
-    expect(res.status).toBe(200);
+    expect(res.status).toBe(403);
   });
 
   it("allows an admin to PATCH someone else's driver profile", async () => {
@@ -138,9 +142,12 @@ describe("drivers status validation", () => {
 
   it("accepts a valid driver status value (approved)", async () => {
     const owner = await createMemberUser("driver-owner");
+    const admin = await createAdminUser("driver-status-admin");
     const driverId = await createDriver(owner.agent);
 
-    const res = await owner.agent
+    // Only admins may change driver status; use an admin agent to confirm
+    // the valid value is accepted by the route.
+    const res = await admin.agent
       .patch(`/api/drivers/${driverId}`)
       .send({ status: "approved" });
 

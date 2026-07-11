@@ -1,5 +1,5 @@
 import type { RequestHandler } from "express";
-import { eq } from "drizzle-orm";
+import { eq, desc } from "drizzle-orm";
 import { db, usersTable, membershipsTable } from "@workspace/db";
 
 /**
@@ -12,11 +12,21 @@ async function isSessionStillValid(req: Parameters<RequestHandler>[0]) {
   if (!req.session.userId) return false;
 
   const [user] = await db
-    .select({ sessionVersion: usersTable.sessionVersion })
+    .select({ sessionVersion: usersTable.sessionVersion, role: usersTable.role })
     .from(usersTable)
     .where(eq(usersTable.id, req.session.userId));
 
-  return !!user && user.sessionVersion === req.session.sessionVersion;
+  if (!user || user.sessionVersion !== req.session.sessionVersion) return false;
+
+  // Re-sync the cached role on every request so that a role change (e.g. admin
+  // demotion) takes effect immediately rather than waiting for the session to
+  // expire.  The session is already saved by express-session after the
+  // response, so mutating req.session here is sufficient.
+  if (user.role !== req.session.role) {
+    req.session.role = user.role as "admin" | "member";
+  }
+
+  return true;
 }
 
 export const requireAuth: RequestHandler = async (req, res, next) => {
@@ -73,7 +83,9 @@ export const requireApprovedMembership: RequestHandler = async (
       kycStatus: membershipsTable.kycStatus,
     })
     .from(membershipsTable)
-    .where(eq(membershipsTable.userId, req.session.userId!));
+    .where(eq(membershipsTable.userId, req.session.userId!))
+    .orderBy(desc(membershipsTable.id))
+    .limit(1);
 
   if (
     !membership ||

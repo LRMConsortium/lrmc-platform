@@ -64,18 +64,48 @@ router.post("/memberships", requireAuth, async (req, res): Promise<void> => {
     return;
   }
 
+  // Enforce one membership per user.  The schema also has a UNIQUE constraint
+  // on user_id as a backstop, but we check here first so we can return a
+  // clean 409 rather than a database constraint error.
+  const [existingMembership] = await db
+    .select({ id: membershipsTable.id })
+    .from(membershipsTable)
+    .where(eq(membershipsTable.userId, req.session.userId!));
+
+  if (existingMembership) {
+    res.status(409).json({ error: "A membership already exists for this account" });
+    return;
+  }
+
   // Free tiers have nothing to charge, so mark them paid immediately --
   // they skip straight to the KYC step instead of a $0 checkout session.
   const feeCents = getMembershipFeeCents(parsed.data.type);
 
-  const [membership] = await db
-    .insert(membershipsTable)
-    .values({
-      ...parsed.data,
-      userId: req.session.userId!,
-      paymentStatus: feeCents === 0 ? "paid" : "unpaid",
-    })
-    .returning();
+  let membership: typeof membershipsTable.$inferSelect;
+  try {
+    const [row] = await db
+      .insert(membershipsTable)
+      .values({
+        ...parsed.data,
+        userId: req.session.userId!,
+        paymentStatus: feeCents === 0 ? "paid" : "unpaid",
+      })
+      .returning();
+    membership = row;
+  } catch (err: unknown) {
+    // PostgreSQL unique-constraint violation (user already has a membership).
+    // This is the race-safe backstop for the pre-check above.
+    if (
+      typeof err === "object" &&
+      err !== null &&
+      "code" in err &&
+      (err as { code: string }).code === "23505"
+    ) {
+      res.status(409).json({ error: "A membership already exists for this account" });
+      return;
+    }
+    throw err;
+  }
 
   res.status(201).json(CreateMembershipResponse.parse(membership));
 });
@@ -84,7 +114,9 @@ router.get("/memberships/me", requireAuth, async (req, res): Promise<void> => {
   const [membership] = await db
     .select()
     .from(membershipsTable)
-    .where(eq(membershipsTable.userId, req.session.userId!));
+    .where(eq(membershipsTable.userId, req.session.userId!))
+    .orderBy(membershipsTable.id)
+    .limit(1);
 
   if (!membership) {
     res.status(404).json({ error: "No membership found" });
