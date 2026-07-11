@@ -66,6 +66,11 @@ router.patch("/land-listings/:id", requireAuth, requireApprovedMembership, async
     return;
   }
 
+  if (parsed.data.status !== undefined && req.session.role !== "admin") {
+    res.status(403).json({ error: "Only admins can change land listing status directly" });
+    return;
+  }
+
   const [listing] = await db
     .update(landListingsTable)
     .set(parsed.data)

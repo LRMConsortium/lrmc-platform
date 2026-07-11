@@ -68,6 +68,11 @@ router.patch("/drivers/:id", requireAuth, requireApprovedMembership, async (req,
     return;
   }
 
+  if (parsed.data.status !== undefined && req.session.role !== "admin") {
+    res.status(403).json({ error: "Only admins can change driver status" });
+    return;
+  }
+
   const [driver] = await db
     .update(driversTable)
     .set(parsed.data)

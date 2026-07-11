@@ -1462,7 +1462,7 @@ components:
       type: object
       required: [category, title, location, priceCents]
       properties:
-        category: { type: string }
+        category: { type: string, enum: [property, vehicle, airbnb, resort] }
         title: { type: string, minLength: 1 }
         location: { type: string, minLength: 1 }
         priceCents: { type: integer, minimum: 1 }

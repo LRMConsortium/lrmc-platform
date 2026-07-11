@@ -333,7 +333,7 @@ export const ListPropertyListingsResponse = zod.array(ListPropertyListingsRespon
 
 
 export const CreatePropertyListingBody = zod.object({
-  "category": zod.string(),
+  "category": zod.enum(['property', 'vehicle', 'airbnb', 'resort']),
   "title": zod.string().min(1),
   "location": zod.string().min(1),
   "priceCents": zod.number().int().min(1)
