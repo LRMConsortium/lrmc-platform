@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq } from "drizzle-orm";
+import { eq, desc } from "drizzle-orm";
 import { db, youthEmploymentRecordsTable } from "@workspace/db";
 import {
   ListYouthEmploymentRecordsResponse,
@@ -17,11 +17,17 @@ const router: IRouter = Router();
 router.get("/youth-employment-records", requireAuth, requireApprovedMembership, async (req, res): Promise<void> => {
   const rows =
     req.session.role === "admin"
-      ? await db.select().from(youthEmploymentRecordsTable)
+      ? await db
+          .select()
+          .from(youthEmploymentRecordsTable)
+          .orderBy(desc(youthEmploymentRecordsTable.id))
+          .limit(100)
       : await db
           .select()
           .from(youthEmploymentRecordsTable)
-          .where(eq(youthEmploymentRecordsTable.userId, req.session.userId!));
+          .where(eq(youthEmploymentRecordsTable.userId, req.session.userId!))
+          .orderBy(desc(youthEmploymentRecordsTable.id))
+          .limit(100);
   res.json(ListYouthEmploymentRecordsResponse.parse(rows));
 });
 

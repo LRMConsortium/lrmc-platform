@@ -29,7 +29,8 @@ router.get("/internal-messages", requireAuth, requireApprovedMembership, async (
         eq(internalMessagesTable.recipientId, userId),
       ),
     )
-    .orderBy(desc(internalMessagesTable.createdAt));
+    .orderBy(desc(internalMessagesTable.createdAt))
+    .limit(100);
   res.json(ListInternalMessagesResponse.parse(rows));
 });
 
@@ -124,11 +125,13 @@ router.get("/internal-tickets", requireAuth, requireApprovedMembership, async (r
           .select()
           .from(internalTicketsTable)
           .orderBy(desc(internalTicketsTable.createdAt))
+          .limit(100)
       : await db
           .select()
           .from(internalTicketsTable)
           .where(eq(internalTicketsTable.createdById, req.session.userId!))
-          .orderBy(desc(internalTicketsTable.createdAt));
+          .orderBy(desc(internalTicketsTable.createdAt))
+          .limit(100);
 
   res.json(ListInternalTicketsResponse.parse(rows));
 });

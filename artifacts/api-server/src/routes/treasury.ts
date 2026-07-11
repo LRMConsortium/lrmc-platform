@@ -21,7 +21,11 @@ import { requireAdmin } from "../middlewares/auth";
 const router: IRouter = Router();
 
 router.get("/treasury/accounts", requireAdmin, async (_req, res): Promise<void> => {
-  const rows = await db.select().from(treasuryAccountsTable);
+  const rows = await db
+    .select()
+    .from(treasuryAccountsTable)
+    .orderBy(desc(treasuryAccountsTable.id))
+    .limit(100);
   res.json(ListTreasuryAccountsResponse.parse(rows));
 });
 
@@ -32,7 +36,8 @@ router.get(
     const rows = await db
       .select()
       .from(treasuryTransactionsTable)
-      .orderBy(desc(treasuryTransactionsTable.createdAt));
+      .orderBy(desc(treasuryTransactionsTable.createdAt))
+      .limit(100);
     res.json(ListTreasuryTransactionsResponse.parse(rows));
   },
 );
@@ -44,7 +49,8 @@ router.get(
     const rows = await db
       .select()
       .from(liquiditySnapshotsTable)
-      .orderBy(desc(liquiditySnapshotsTable.createdAt));
+      .orderBy(desc(liquiditySnapshotsTable.createdAt))
+      .limit(100);
     res.json(ListLiquiditySnapshotsResponse.parse(rows));
   },
 );
@@ -53,7 +59,11 @@ router.get(
   "/treasury/currency-rates",
   requireAdmin,
   async (_req, res): Promise<void> => {
-    const rows = await db.select().from(currencyRatesTable);
+    const rows = await db
+      .select()
+      .from(currencyRatesTable)
+      .orderBy(desc(currencyRatesTable.id))
+      .limit(100);
     res.json(ListCurrencyRatesResponse.parse(rows));
   },
 );

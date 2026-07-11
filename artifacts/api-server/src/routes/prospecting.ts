@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq } from "drizzle-orm";
+import { eq, desc } from "drizzle-orm";
 import { db, prospectLeadsTable } from "@workspace/db";
 import {
   ListProspectLeadsResponse,
@@ -14,7 +14,11 @@ import { requireAdmin } from "../middlewares/auth";
 const router: IRouter = Router();
 
 router.get("/prospect-leads", requireAdmin, async (_req, res): Promise<void> => {
-  const rows = await db.select().from(prospectLeadsTable);
+  const rows = await db
+    .select()
+    .from(prospectLeadsTable)
+    .orderBy(desc(prospectLeadsTable.id))
+    .limit(100);
   res.json(ListProspectLeadsResponse.parse(rows));
 });
 

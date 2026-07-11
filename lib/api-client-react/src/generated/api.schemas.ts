@@ -740,6 +740,16 @@ export interface InternalTicket {
   createdAt: string;
 }
 
+export type InternalTicketInputPriority = typeof InternalTicketInputPriority[keyof typeof InternalTicketInputPriority];
+
+
+export const InternalTicketInputPriority = {
+  low: 'low',
+  normal: 'normal',
+  high: 'high',
+  urgent: 'urgent',
+} as const;
+
 export interface InternalTicketInput {
   /** @minLength 1 */
   department: string;
@@ -747,12 +757,32 @@ export interface InternalTicketInput {
   subject: string;
   /** @minLength 1 */
   description: string;
-  priority: string;
+  priority: InternalTicketInputPriority;
 }
 
+export type InternalTicketUpdateStatus = typeof InternalTicketUpdateStatus[keyof typeof InternalTicketUpdateStatus];
+
+
+export const InternalTicketUpdateStatus = {
+  open: 'open',
+  in_progress: 'in_progress',
+  resolved: 'resolved',
+  closed: 'closed',
+} as const;
+
+export type InternalTicketUpdatePriority = typeof InternalTicketUpdatePriority[keyof typeof InternalTicketUpdatePriority];
+
+
+export const InternalTicketUpdatePriority = {
+  low: 'low',
+  normal: 'normal',
+  high: 'high',
+  urgent: 'urgent',
+} as const;
+
 export interface InternalTicketUpdate {
-  status?: string;
-  priority?: string;
+  status?: InternalTicketUpdateStatus;
+  priority?: InternalTicketUpdatePriority;
 }
 
 export interface AdminDashboard {

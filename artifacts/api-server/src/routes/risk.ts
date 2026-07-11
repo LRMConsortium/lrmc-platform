@@ -15,7 +15,8 @@ router.get("/risk-events", requireAdmin, async (_req, res): Promise<void> => {
   const rows = await db
     .select()
     .from(riskEventsTable)
-    .orderBy(desc(riskEventsTable.createdAt));
+    .orderBy(desc(riskEventsTable.createdAt))
+    .limit(100);
   res.json(ListRiskEventsResponse.parse(rows));
 });
 

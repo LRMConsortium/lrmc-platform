@@ -1262,7 +1262,7 @@ export const CreateInternalTicketBody = zod.object({
   "department": zod.string().min(1),
   "subject": zod.string().min(1),
   "description": zod.string().min(1),
-  "priority": zod.string()
+  "priority": zod.enum(['low', 'normal', 'high', 'urgent'])
 })
 
 export const CreateInternalTicketResponse = zod.object({
@@ -1282,8 +1282,8 @@ export const UpdateInternalTicketParams = zod.object({
 })
 
 export const UpdateInternalTicketBody = zod.object({
-  "status": zod.string().optional(),
-  "priority": zod.string().optional()
+  "status": zod.enum(['open', 'in_progress', 'resolved', 'closed']).optional(),
+  "priority": zod.enum(['low', 'normal', 'high', 'urgent']).optional()
 })
 
 export const UpdateInternalTicketResponse = zod.object({

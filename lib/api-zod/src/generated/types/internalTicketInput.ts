@@ -5,6 +5,7 @@
  * LRMC / Ususu institution API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { InternalTicketInputPriority } from './internalTicketInputPriority';
 
 export interface InternalTicketInput {
   /** @minLength 1 */
@@ -13,5 +14,5 @@ export interface InternalTicketInput {
   subject: string;
   /** @minLength 1 */
   description: string;
-  priority: string;
+  priority: InternalTicketInputPriority;
 }

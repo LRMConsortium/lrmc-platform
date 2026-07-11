@@ -1950,12 +1950,12 @@ components:
         department: { type: string, minLength: 1 }
         subject: { type: string, minLength: 1 }
         description: { type: string, minLength: 1 }
-        priority: { type: string }
+        priority: { type: string, enum: [low, normal, high, urgent] }
     InternalTicketUpdate:
       type: object
       properties:
-        status: { type: string }
-        priority: { type: string }
+        status: { type: string, enum: [open, in_progress, resolved, closed] }
+        priority: { type: string, enum: [low, normal, high, urgent] }
 
     # ---------- DASHBOARDS ----------
     AdminDashboard:

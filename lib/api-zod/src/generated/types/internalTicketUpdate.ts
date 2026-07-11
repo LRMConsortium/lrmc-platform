@@ -5,8 +5,10 @@
  * LRMC / Ususu institution API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { InternalTicketUpdatePriority } from './internalTicketUpdatePriority';
+import type { InternalTicketUpdateStatus } from './internalTicketUpdateStatus';
 
 export interface InternalTicketUpdate {
-  status?: string;
-  priority?: string;
+  status?: InternalTicketUpdateStatus;
+  priority?: InternalTicketUpdatePriority;
 }
