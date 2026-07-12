@@ -4,6 +4,7 @@ import { eq } from "drizzle-orm";
 import { db, usersTable, authTokensTable } from "@workspace/db";
 import { createMemberUser, createAdminUser, anonymousAgent, app } from "./helpers";
 
+
 describe("risk-events routes — forged / invalid session cookie", () => {
   it("returns 401 on GET /risk-events when the session cookie is forged", async () => {
     const res = await request(app)
@@ -123,6 +124,42 @@ describe("risk-events routes — expired session (user row deleted)", () => {
         patchRes.status,
         "PATCH /risk-events/:id must return 401 after user row deleted (not a 500 crash)",
       ).toBe(401);
+    },
+  );
+});
+
+// ---------------------------------------------------------------------------
+// Session role re-sync — demotion guard
+//
+// requireAdmin calls isSessionStillValid() on every request, which re-reads
+// the user's role from the DB and syncs it onto req.session.role.  An admin
+// demoted in the DB must therefore lose access on their very next request —
+// no grace period, no need to invalidate the session cookie.
+// ---------------------------------------------------------------------------
+
+describe("risk-events routes — session role re-sync (demotion guard)", () => {
+  it(
+    "an admin demoted to member in the DB immediately loses access to GET /risk-events",
+    async () => {
+      const admin = await createAdminUser("risk-demotion");
+
+      // Confirm access while still an admin.
+      const before = await admin.agent.get("/api/risk-events");
+      expect(before.status, "admin should have access before demotion").toBe(200);
+
+      // Revoke admin role directly in the DB (simulates demotion by another
+      // admin or a security response action, without touching the session cookie).
+      await db
+        .update(usersTable)
+        .set({ role: "member" })
+        .where(eq(usersTable.id, admin.id));
+
+      // Same session cookie, same agent — role re-sync must now return 403.
+      const after = await admin.agent.get("/api/risk-events");
+      expect(
+        after.status,
+        "demoted admin's existing session must be rejected immediately on GET /risk-events",
+      ).toBe(403);
     },
   );
 });

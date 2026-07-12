@@ -1,5 +1,7 @@
 import { describe, it, expect } from "vitest";
 import request from "supertest";
+import { eq } from "drizzle-orm";
+import { db, usersTable } from "@workspace/db";
 import { createMemberUser, createAdminUser, anonymousAgent, app } from "./helpers";
 
 describe("settlement-obligations routes — forged / invalid session cookie", () => {
@@ -78,4 +80,40 @@ describe("settlement-obligations routes — access control", () => {
     expect(res.status).not.toBe(401);
     expect(res.status).not.toBe(403);
   });
+});
+
+// ---------------------------------------------------------------------------
+// Session role re-sync — demotion guard
+//
+// requireAdmin calls isSessionStillValid() on every request, which re-reads
+// the user's role from the DB and syncs it onto req.session.role.  An admin
+// demoted in the DB must therefore lose access on their very next request —
+// no grace period, no need to invalidate the session cookie.
+// ---------------------------------------------------------------------------
+
+describe("settlement-obligations routes — session role re-sync (demotion guard)", () => {
+  it(
+    "an admin demoted to member in the DB immediately loses access to GET /settlement-obligations",
+    async () => {
+      const admin = await createAdminUser("settlement-demotion");
+
+      // Confirm access while still an admin.
+      const before = await admin.agent.get("/api/settlement-obligations");
+      expect(before.status, "admin should have access before demotion").toBe(200);
+
+      // Revoke admin role directly in the DB (simulates demotion by another
+      // admin or a security response action, without touching the session cookie).
+      await db
+        .update(usersTable)
+        .set({ role: "member" })
+        .where(eq(usersTable.id, admin.id));
+
+      // Same session cookie, same agent — role re-sync must now return 403.
+      const after = await admin.agent.get("/api/settlement-obligations");
+      expect(
+        after.status,
+        "demoted admin's existing session must be rejected immediately on GET /settlement-obligations",
+      ).toBe(403);
+    },
+  );
 });
