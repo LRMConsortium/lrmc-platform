@@ -1,5 +1,7 @@
 import { describe, it, expect } from "vitest";
 import request from "supertest";
+import { eq } from "drizzle-orm";
+import { db, usersTable } from "@workspace/db";
 import { createMemberUser, createAdminUser, anonymousAgent, app } from "./helpers";
 
 const TREASURY_ROUTES = [
@@ -88,4 +90,121 @@ describe("treasury routes — access control", () => {
     expect(res.status).not.toBe(401);
     expect(res.status).not.toBe(403);
   });
+});
+
+// ---------------------------------------------------------------------------
+// Session privilege-escalation tests
+//
+// The requireAdmin middleware calls isSessionStillValid() on every request.
+// That helper re-reads the user's role from the DB and syncs it back onto
+// req.session.role before the role check runs.  The role therefore always
+// reflects the current DB value, not whatever the session cookie carried in.
+//
+// Security properties verified below:
+//  • A member cannot escalate to admin by replaying their existing session
+//    after directly promoting their own DB row — re-sync picks up the new
+//    role, so DB-level write access would be required (a separate, deeper
+//    breach).  When that write access IS granted legitimately the change takes
+//    effect immediately without requiring a fresh login (tested here too).
+//  • An admin whose DB role is reverted to member loses access on their very
+//    next request — no grace period, no need to invalidate the session cookie.
+// ---------------------------------------------------------------------------
+
+describe("treasury routes — session role re-sync (privilege escalation guard)", () => {
+  it("a member session cannot access treasury routes before any role change (baseline)", async () => {
+    const member = await createMemberUser("escalation-baseline");
+    const res = await member.agent.get("/api/treasury/accounts");
+    expect(res.status).toBe(403);
+  });
+
+  it(
+    "an admin demoted to member in the DB immediately loses access on their existing session",
+    async () => {
+      const admin = await createAdminUser("escalation-demotion");
+
+      // Confirm access while still an admin.
+      const before = await admin.agent.get("/api/treasury/accounts");
+      expect(before.status, "admin should have access before demotion").toBe(200);
+
+      // Revoke admin role directly in the DB (simulates demotion by another admin
+      // or a security response action, without touching the session cookie).
+      await db
+        .update(usersTable)
+        .set({ role: "member" })
+        .where(eq(usersTable.id, admin.id));
+
+      // Same session cookie, same agent — role re-sync must now return 403.
+      const after = await admin.agent.get("/api/treasury/accounts");
+      expect(
+        after.status,
+        "demoted admin's existing session must be rejected immediately",
+      ).toBe(403);
+    },
+  );
+
+  it(
+    "a member promoted to admin in the DB gains access on their existing session via role re-sync",
+    async () => {
+      const member = await createMemberUser("escalation-promotion");
+
+      // Confirm no access while still a member.
+      const before = await member.agent.get("/api/treasury/accounts");
+      expect(before.status, "member should be denied before promotion").toBe(403);
+
+      // Promote directly in the DB (as an admin panel action would).
+      await db
+        .update(usersTable)
+        .set({ role: "admin" })
+        .where(eq(usersTable.id, member.id));
+
+      // Existing session picks up the new role via re-sync — access must be
+      // granted without requiring a fresh login.
+      const after = await member.agent.get("/api/treasury/accounts");
+      expect(
+        after.status,
+        "promoted member's existing session must gain access immediately via role re-sync",
+      ).toBe(200);
+    },
+  );
+
+  it(
+    "a fresh login after DB promotion grants admin access",
+    async () => {
+      const member = await createMemberUser("escalation-fresh-login");
+
+      // Promote in DB before the second login.
+      await db
+        .update(usersTable)
+        .set({ role: "admin" })
+        .where(eq(usersTable.id, member.id));
+
+      // Log in again with a brand-new session (simulates a user who closes the
+      // browser and signs back in after being promoted).
+      const freshAgent = request.agent(app);
+      const loginRes = await freshAgent
+        .post("/api/auth/login")
+        .send({ email: member.email, password: member.password });
+      expect(loginRes.status).toBe(200);
+
+      const res = await freshAgent.get("/api/treasury/accounts");
+      expect(res.status, "fresh session minted as admin must have access").toBe(200);
+    },
+  );
+
+  it(
+    "a session belonging to a non-promoted member cannot access admin treasury routes even after many requests",
+    async () => {
+      // Regression guard: ensure repeated requests do not accidentally accumulate
+      // a stale-role escalation across multiple role re-syncs.
+      const member = await createMemberUser("escalation-repeat");
+
+      for (let i = 0; i < 3; i++) {
+        const res = await member.agent.get("/api/treasury/accounts");
+        expect(
+          res.status,
+          `request ${i + 1}: member must still be denied`,
+        ).toBe(403);
+      }
+    },
+  );
 });
