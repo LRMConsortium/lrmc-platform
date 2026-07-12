@@ -22,3 +22,4 @@ export const pool = new Pool({ connectionString });
 export const db = drizzle(pool, { schema });
 
 export * from "./schema";
+export { testDatabaseUrl } from "./test-db-url";

@@ -21,6 +21,20 @@ if (!process.env.DATABASE_URL) {
 export { testDatabaseUrl };
 
 const baseUrl = process.env.DATABASE_URL;
+const derivedTestUrl = testDatabaseUrl(baseUrl);
+
+// Safety guard: the test DB URL must differ from the dev DB URL.
+// If they are the same, testDatabaseUrl() failed to find a replaceable database
+// name in the connection string (e.g. the URL format is unexpected), which means
+// push-force-test would target the dev database — an unrecoverable data loss.
+if (derivedTestUrl === baseUrl) {
+  throw new Error(
+    `setup-test-schema: the derived test database URL is identical to the dev ` +
+      `DATABASE_URL ("${baseUrl}"). ` +
+      `This means the test schema would be pushed to the dev database. Aborting. ` +
+      `Ensure DATABASE_URL ends with a recognisable database name, e.g. .../heliumdb.`
+  );
+}
 
 // Connect to the default DB to drop/create the test DB.
 const adminPool = new Pool({ connectionString: baseUrl });
