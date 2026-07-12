@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import request from "supertest";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { db, usersTable } from "@workspace/db";
 import { createMemberUser, createAdminUser, anonymousAgent, app } from "./helpers";
 
@@ -205,6 +205,113 @@ describe("treasury routes — session role re-sync (privilege escalation guard)"
           `request ${i + 1}: member must still be denied`,
         ).toBe(403);
       }
+    },
+  );
+});
+
+// ---------------------------------------------------------------------------
+// Session invalidation after password change
+//
+// When a user changes their password the server bumps sessionVersion in the
+// users table.  requireAuth calls isSessionStillValid() on every request,
+// which compares the DB's current sessionVersion against the value stored in
+// the session cookie.  A mismatch means the session was minted before the
+// password change and must be treated as expired (401), closing the replay-
+// attack vector where a stolen pre-change cookie could still access the
+// account.
+// ---------------------------------------------------------------------------
+
+describe("session invalidation — password change bumps sessionVersion", () => {
+  it(
+    "an old session cookie is rejected (401) after sessionVersion is bumped in the DB",
+    async () => {
+      const member = await createMemberUser("session-replay");
+
+      // Confirm the session is valid before any password change.
+      const before = await member.agent.get("/api/auth/me");
+      expect(before.status, "session must be valid before password change").toBe(200);
+
+      // Simulate a password change by bumping sessionVersion directly in the
+      // DB.  This is exactly what the /auth/reset-password endpoint does; we
+      // bypass the token flow here because tests have no way to intercept the
+      // emailed reset link.
+      await db
+        .update(usersTable)
+        .set({ sessionVersion: sql`${usersTable.sessionVersion} + 1` })
+        .where(eq(usersTable.id, member.id));
+
+      // Replay the old cookie — the session's stored sessionVersion no longer
+      // matches the DB value, so requireAuth must return 401.
+      const after = await member.agent.get("/api/auth/me");
+      expect(
+        after.status,
+        "old session cookie must be rejected after password change (sessionVersion mismatch)",
+      ).toBe(401);
+    },
+  );
+
+  it(
+    "a fresh login after a password change is accepted",
+    async () => {
+      const member = await createMemberUser("session-replay-fresh");
+
+      // Bump sessionVersion to simulate a password change.
+      await db
+        .update(usersTable)
+        .set({ sessionVersion: sql`${usersTable.sessionVersion} + 1` })
+        .where(eq(usersTable.id, member.id));
+
+      // Re-read the new sessionVersion so the fresh login stores the correct value.
+      const [updated] = await db
+        .select({ sessionVersion: usersTable.sessionVersion })
+        .from(usersTable)
+        .where(eq(usersTable.id, member.id));
+
+      // Log in again — the new session is minted with the updated sessionVersion.
+      const freshAgent = request.agent(app);
+      const loginRes = await freshAgent
+        .post("/api/auth/login")
+        .send({ email: member.email, password: member.password });
+      expect(loginRes.status, "fresh login must succeed after password change").toBe(200);
+
+      // The new session must be valid.
+      const meRes = await freshAgent.get("/api/auth/me");
+      expect(meRes.status, "fresh session must be accepted after password change").toBe(200);
+
+      // The old session must still be rejected.
+      const oldRes = await member.agent.get("/api/auth/me");
+      expect(
+        oldRes.status,
+        "old session cookie must remain invalid after a fresh login",
+      ).toBe(401);
+    },
+  );
+
+  it(
+    "bumping sessionVersion multiple times keeps all pre-change sessions invalid",
+    async () => {
+      const member = await createMemberUser("session-replay-multi");
+
+      // Confirm baseline.
+      const baseline = await member.agent.get("/api/auth/me");
+      expect(baseline.status).toBe(200);
+
+      // Simulate two consecutive password changes.
+      await db
+        .update(usersTable)
+        .set({ sessionVersion: sql`${usersTable.sessionVersion} + 1` })
+        .where(eq(usersTable.id, member.id));
+      await db
+        .update(usersTable)
+        .set({ sessionVersion: sql`${usersTable.sessionVersion} + 1` })
+        .where(eq(usersTable.id, member.id));
+
+      // The original session must be rejected regardless of the number of bumps.
+      const after = await member.agent.get("/api/auth/me");
+      expect(
+        after.status,
+        "session issued before multiple password changes must be rejected",
+      ).toBe(401);
     },
   );
 });
