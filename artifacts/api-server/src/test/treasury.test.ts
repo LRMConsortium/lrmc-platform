@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { createMemberUser, createAdminUser, anonymousAgent } from "./helpers";
+import request from "supertest";
+import { createMemberUser, createAdminUser, anonymousAgent, app } from "./helpers";
 
 const TREASURY_ROUTES = [
   "/api/treasury/accounts",
@@ -8,6 +9,29 @@ const TREASURY_ROUTES = [
   "/api/treasury/currency-rates",
   "/api/treasury/summary",
 ];
+
+/** A syntactically valid-looking session cookie that carries a forged/tampered value. */
+const FORGED_COOKIE = "lrmc.sid=s%3Aforged-session-id-that-does-not-exist.invalidsignaturexyz";
+
+describe("treasury routes — forged / invalid session cookie", () => {
+  it("returns 401 for every treasury route when the session cookie is forged", async () => {
+    for (const route of TREASURY_ROUTES) {
+      const res = await request(app)
+        .get(route)
+        .set("Cookie", FORGED_COOKIE);
+      expect(res.status, `expected 401 on ${route} with forged cookie`).toBe(401);
+    }
+  });
+
+  it("returns 401 for every treasury route when the session cookie value is arbitrary garbage", async () => {
+    for (const route of TREASURY_ROUTES) {
+      const res = await request(app)
+        .get(route)
+        .set("Cookie", "lrmc.sid=totallynotavalidsessiontoken");
+      expect(res.status, `expected 401 on ${route} with garbage cookie`).toBe(401);
+    }
+  });
+});
 
 describe("treasury routes — access control", () => {
   it("returns 401 for anonymous requests on every treasury route", async () => {

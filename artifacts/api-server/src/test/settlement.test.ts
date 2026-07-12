@@ -1,5 +1,38 @@
 import { describe, it, expect } from "vitest";
-import { createMemberUser, createAdminUser, anonymousAgent } from "./helpers";
+import request from "supertest";
+import { createMemberUser, createAdminUser, anonymousAgent, app } from "./helpers";
+
+describe("settlement-obligations routes — forged / invalid session cookie", () => {
+  it("returns 401 on GET /settlement-obligations when the session cookie is forged", async () => {
+    const res = await request(app)
+      .get("/api/settlement-obligations")
+      .set("Cookie", "lrmc.sid=s%3Aforged-session-id-that-does-not-exist.invalidsignaturexyz");
+    expect(res.status).toBe(401);
+  });
+
+  it("returns 401 on GET /settlement-obligations when the session cookie value is arbitrary garbage", async () => {
+    const res = await request(app)
+      .get("/api/settlement-obligations")
+      .set("Cookie", "lrmc.sid=totallynotavalidsessiontoken");
+    expect(res.status).toBe(401);
+  });
+
+  it("returns 401 on PATCH /settlement-obligations/:id when the session cookie is forged", async () => {
+    const res = await request(app)
+      .patch("/api/settlement-obligations/1")
+      .set("Cookie", "lrmc.sid=s%3Aforged-session-id-that-does-not-exist.invalidsignaturexyz")
+      .send({ status: "completed" });
+    expect(res.status).toBe(401);
+  });
+
+  it("returns 401 on PATCH /settlement-obligations/:id when the session cookie value is arbitrary garbage", async () => {
+    const res = await request(app)
+      .patch("/api/settlement-obligations/1")
+      .set("Cookie", "lrmc.sid=totallynotavalidsessiontoken")
+      .send({ status: "completed" });
+    expect(res.status).toBe(401);
+  });
+});
 
 describe("settlement-obligations routes — access control", () => {
   it("returns 401 for an anonymous GET /settlement-obligations", async () => {
