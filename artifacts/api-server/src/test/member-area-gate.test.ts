@@ -1,4 +1,6 @@
 import { describe, it, expect } from "vitest";
+import { eq } from "drizzle-orm";
+import { db, membershipsTable } from "@workspace/db";
 import {
   createMemberUser,
   createMemberUserWithMembership,
@@ -256,4 +258,132 @@ describe("member-area membership gate", () => {
     const res = await anonymousAgent().get("/api/land-transactions");
     expect(res.status).toBe(401);
   });
+});
+
+// ---------------------------------------------------------------------------
+// Mid-session KYC revocation and payment reversal
+//
+// requireApprovedMembership reads the membership row fresh from the DB on
+// every request, so revoking KYC approval or reversing a payment must
+// immediately block the member's existing session — just like the admin
+// demotion test in treasury.test.ts.  No session cookie invalidation or
+// re-login should be required.
+// ---------------------------------------------------------------------------
+
+describe("member-area gate — mid-session membership status change", () => {
+  it(
+    "a KYC-approved member immediately loses access when their kycStatus is revoked to 'rejected'",
+    async () => {
+      // Start with a fully approved member and confirm access.
+      const member = await createMemberUser("kyc-revocation");
+      const before = await member.agent.get("/api/land-transactions");
+      expect(before.status, "approved member must have access before revocation").toBe(200);
+
+      // Simulate an admin revoking KYC approval directly in the DB (no new login).
+      await db
+        .update(membershipsTable)
+        .set({ kycStatus: "rejected" })
+        .where(eq(membershipsTable.userId, member.id));
+
+      // Same session cookie — the middleware re-reads the row on every request,
+      // so the revocation must take effect immediately.
+      const after = await member.agent.get("/api/land-transactions");
+      expect(
+        after.status,
+        "member's existing session must be blocked immediately after KYC revocation",
+      ).toBe(403);
+    },
+  );
+
+  it(
+    "a KYC-approved member immediately loses access when their kycStatus is revoked to 'pending'",
+    async () => {
+      const member = await createMemberUser("kyc-revocation-pending");
+      const before = await member.agent.get("/api/land-transactions");
+      expect(before.status, "approved member must have access before revocation").toBe(200);
+
+      await db
+        .update(membershipsTable)
+        .set({ kycStatus: "pending" })
+        .where(eq(membershipsTable.userId, member.id));
+
+      const after = await member.agent.get("/api/land-transactions");
+      expect(
+        after.status,
+        "member's existing session must be blocked immediately after KYC set to pending",
+      ).toBe(403);
+    },
+  );
+
+  it(
+    "a paid member immediately loses access when their paymentStatus is reversed to 'unpaid'",
+    async () => {
+      // Start with a fully approved member and confirm access.
+      const member = await createMemberUser("payment-reversal");
+      const before = await member.agent.get("/api/land-transactions");
+      expect(before.status, "approved member must have access before payment reversal").toBe(200);
+
+      // Simulate a chargeback / payment reversal directly in the DB.
+      await db
+        .update(membershipsTable)
+        .set({ paymentStatus: "unpaid" })
+        .where(eq(membershipsTable.userId, member.id));
+
+      // Same session — access must be blocked immediately.
+      const after = await member.agent.get("/api/land-transactions");
+      expect(
+        after.status,
+        "member's existing session must be blocked immediately after payment reversal",
+      ).toBe(403);
+    },
+  );
+
+  it(
+    "revocation blocks access across multiple member-area routes, not just one",
+    async () => {
+      const member = await createMemberUser("kyc-revocation-multi-route");
+
+      // Revoke KYC.
+      await db
+        .update(membershipsTable)
+        .set({ kycStatus: "rejected" })
+        .where(eq(membershipsTable.userId, member.id));
+
+      // The gate covers every protected route; spot-check a few.
+      const routes = ["/api/land-transactions", "/api/rides", "/api/internal-messages"];
+      for (const route of routes) {
+        const res = await member.agent.get(route);
+        expect(
+          res.status,
+          `existing session must be blocked on ${route} after KYC revocation`,
+        ).toBe(403);
+      }
+    },
+  );
+
+  it(
+    "a member re-approved after revocation can access member-area data on their existing session",
+    async () => {
+      const member = await createMemberUser("kyc-reapproval");
+
+      // Revoke and confirm lockout.
+      await db
+        .update(membershipsTable)
+        .set({ kycStatus: "rejected" })
+        .where(eq(membershipsTable.userId, member.id));
+      const revoked = await member.agent.get("/api/land-transactions");
+      expect(revoked.status, "must be blocked after revocation").toBe(403);
+
+      // Re-approve and confirm immediate access is restored.
+      await db
+        .update(membershipsTable)
+        .set({ kycStatus: "approved" })
+        .where(eq(membershipsTable.userId, member.id));
+      const restored = await member.agent.get("/api/land-transactions");
+      expect(
+        restored.status,
+        "access must be restored immediately after re-approval, without a fresh login",
+      ).toBe(200);
+    },
+  );
 });
