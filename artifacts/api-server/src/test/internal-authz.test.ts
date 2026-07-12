@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { createMemberUser, createAdminUser, anonymousAgent } from "./helpers";
+import { createMemberUser, createAdminUser, createMemberUserWithMembership, anonymousAgent } from "./helpers";
 
 // ---------------------------------------------------------------------------
 // Internal messages — authentication, authorisation, and scoping
@@ -21,6 +21,38 @@ describe("internal-messages — access control", () => {
   it("returns 401 for anonymous PATCH /internal-messages/:id/read", async () => {
     const res = await anonymousAgent().patch("/api/internal-messages/1/read");
     expect(res.status).toBe(401);
+  });
+
+  it("sending to a non-existent user ID returns 404", async () => {
+    const sender = await createMemberUser("msg-nonexistent-sender");
+    // Use a large numeric ID that is extremely unlikely to exist in the test DB.
+    const ghostId = 999_999_999;
+    const res = await sender.agent
+      .post("/api/internal-messages")
+      .send({ recipientId: ghostId, subject: "Ghost", body: "You there?" });
+    expect(res.status).toBe(404);
+  });
+
+  it("sending to an unapproved (pending KYC) user returns 404", async () => {
+    const sender = await createMemberUser("msg-unapproved-sender");
+    const unapproved = await createMemberUserWithMembership("msg-unapproved-recipient", {
+      paymentStatus: "paid",
+      kycStatus: "pending",
+    });
+    const res = await sender.agent
+      .post("/api/internal-messages")
+      .send({ recipientId: unapproved.id, subject: "Hi", body: "Can you see this?" });
+    expect(res.status).toBe(404);
+  });
+
+  it("sending to a fully approved member returns 201", async () => {
+    const sender = await createMemberUser("msg-approved-sender");
+    const recipient = await createMemberUser("msg-approved-recipient");
+    const res = await sender.agent
+      .post("/api/internal-messages")
+      .send({ recipientId: recipient.id, subject: "Hello", body: "Happy path" });
+    expect(res.status).toBe(201);
+    expect(res.body).toHaveProperty("id");
   });
 
   it("a member can only see messages they sent or received", async () => {

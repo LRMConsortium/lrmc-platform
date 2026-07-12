@@ -19,6 +19,13 @@ const connectionString =
     : process.env.DATABASE_URL;
 
 export const pool = new Pool({ connectionString });
+
+// Prevent "terminating connection due to administrator command" (and similar
+// server-initiated disconnections) from becoming an unhandled 'error' event
+// that crashes the process.  The pg Pool already reconnects automatically on
+// the next query; we just need to stop the event from propagating uncaught.
+pool.on("error", (_err) => { /* swallow pool-level connection errors */ });
+
 export const db = drizzle(pool, { schema });
 
 export * from "./schema";
