@@ -5,6 +5,8 @@ import {
   ListInternalMessagesResponse,
   CreateInternalMessageBody,
   CreateInternalMessageResponse,
+  GetInternalMessageParams,
+  GetInternalMessageResponse,
   MarkInternalMessageReadParams,
   MarkInternalMessageReadResponse,
   ListInternalTicketsResponse,
@@ -76,6 +78,36 @@ router.post("/internal-messages", requireAuth, requireApprovedMembership, async 
     .returning();
 
   res.status(201).json(CreateInternalMessageResponse.parse(message));
+});
+
+router.get("/internal-messages/:id", requireAuth, requireApprovedMembership, async (req, res): Promise<void> => {
+  const params = GetInternalMessageParams.safeParse(req.params);
+  if (!params.success) {
+    res.status(400).json({ error: params.error.message });
+    return;
+  }
+
+  const [existing] = await db
+    .select()
+    .from(internalMessagesTable)
+    .where(eq(internalMessagesTable.id, params.data.id));
+
+  if (!existing) {
+    res.status(404).json({ error: "Internal message not found" });
+    return;
+  }
+
+  const userId = req.session.userId!;
+  if (
+    req.session.role !== "admin" &&
+    existing.recipientId !== userId &&
+    existing.senderId !== userId
+  ) {
+    res.status(403).json({ error: "Forbidden" });
+    return;
+  }
+
+  res.json(GetInternalMessageResponse.parse(existing));
 });
 
 router.patch(

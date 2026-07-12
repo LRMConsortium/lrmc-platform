@@ -1225,6 +1225,20 @@ export const CreateInternalMessageResponse = zod.object({
 })
 
 
+export const GetInternalMessageParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const GetInternalMessageResponse = zod.object({
+  "id": zod.number().int(),
+  "senderId": zod.number().int(),
+  "recipientId": zod.number().int(),
+  "subject": zod.string(),
+  "body": zod.string(),
+  "readAt": zod.coerce.date().nullable(),
+  "createdAt": zod.coerce.date()
+})
+
 export const MarkInternalMessageReadParams = zod.object({
   "id": zod.coerce.number().int()
 })

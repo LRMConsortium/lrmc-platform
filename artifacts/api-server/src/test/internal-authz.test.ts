@@ -48,6 +48,58 @@ describe("internal-messages — access control", () => {
     expect(cIds).not.toContain(messageId);
   });
 
+  it("returns 401 for anonymous GET /internal-messages/:id", async () => {
+    const res = await anonymousAgent().get("/api/internal-messages/1");
+    expect(res.status).toBe(401);
+  });
+
+  it("a non-party member gets 403 when fetching a message by ID they did not send or receive", async () => {
+    const sender = await createMemberUser("msg-get-sender");
+    const recipient = await createMemberUser("msg-get-recipient");
+    const outsider = await createMemberUser("msg-get-outsider");
+
+    // Sender posts a private message to recipient.
+    const sendRes = await sender.agent
+      .post("/api/internal-messages")
+      .send({ recipientId: recipient.id, subject: "Secret", body: "Eyes only" });
+    expect(sendRes.status).toBe(201);
+    const messageId: number = sendRes.body.id;
+
+    // Outsider guesses the message ID — must receive 403, not the message body.
+    const res = await outsider.agent.get(`/api/internal-messages/${messageId}`);
+    expect(res.status).toBe(403);
+  });
+
+  it("the sender can fetch their own message by ID", async () => {
+    const sender = await createMemberUser("msg-get-self-sender");
+    const recipient = await createMemberUser("msg-get-self-recipient");
+
+    const sendRes = await sender.agent
+      .post("/api/internal-messages")
+      .send({ recipientId: recipient.id, subject: "Hi", body: "Hello" });
+    expect(sendRes.status).toBe(201);
+    const messageId: number = sendRes.body.id;
+
+    const res = await sender.agent.get(`/api/internal-messages/${messageId}`);
+    expect(res.status).toBe(200);
+    expect(res.body.id).toBe(messageId);
+  });
+
+  it("the recipient can fetch a message sent to them by ID", async () => {
+    const sender = await createMemberUser("msg-get-recv-sender");
+    const recipient = await createMemberUser("msg-get-recv-recipient");
+
+    const sendRes = await sender.agent
+      .post("/api/internal-messages")
+      .send({ recipientId: recipient.id, subject: "For you", body: "Read me" });
+    expect(sendRes.status).toBe(201);
+    const messageId: number = sendRes.body.id;
+
+    const res = await recipient.agent.get(`/api/internal-messages/${messageId}`);
+    expect(res.status).toBe(200);
+    expect(res.body.id).toBe(messageId);
+  });
+
   it("a member cannot mark a message they are not party to as read", async () => {
     const sender = await createMemberUser("msg-read-sender");
     const recipient = await createMemberUser("msg-read-recipient");
