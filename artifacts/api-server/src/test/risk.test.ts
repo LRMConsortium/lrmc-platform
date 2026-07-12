@@ -1,5 +1,7 @@
 import { describe, it, expect } from "vitest";
 import request from "supertest";
+import { eq } from "drizzle-orm";
+import { db, usersTable, authTokensTable } from "@workspace/db";
 import { createMemberUser, createAdminUser, anonymousAgent, app } from "./helpers";
 
 describe("risk-events routes — forged / invalid session cookie", () => {
@@ -78,4 +80,49 @@ describe("risk-events routes — access control", () => {
     expect(res.status).not.toBe(401);
     expect(res.status).not.toBe(403);
   });
+});
+
+// ---------------------------------------------------------------------------
+// Expired session — user row deleted from DB
+//
+// A cryptographically valid cookie whose userId no longer exists in the DB
+// must be treated as expired (401) rather than causing a 500 crash.
+// isSessionStillValid() returns false when the DB query returns no user row,
+// so requireAdmin must reject these requests cleanly.
+// ---------------------------------------------------------------------------
+
+describe("risk-events routes — expired session (user row deleted)", () => {
+  it(
+    "returns 401 on risk-events routes when the session owner's user row has been deleted",
+    async () => {
+      const admin = await createAdminUser("risk-deleted-user");
+
+      // Confirm the session is valid before deletion.
+      const before = await admin.agent.get("/api/risk-events");
+      expect(before.status, "session must be valid before user deletion").toBe(200);
+
+      // Hard-delete the user row from the DB. This simulates an account
+      // deletion while the user still holds a valid, signed session cookie.
+      // auth_tokens has a FK on users.id, so clean that up first.
+      await db.delete(authTokensTable).where(eq(authTokensTable.userId, admin.id));
+      await db.delete(usersTable).where(eq(usersTable.id, admin.id));
+
+      // Replay the still-signed cookie against risk-events routes. The
+      // session signature is cryptographically valid but the userId no longer
+      // maps to any DB row, so isSessionStillValid() returns false → 401.
+      const listRes = await admin.agent.get("/api/risk-events");
+      expect(
+        listRes.status,
+        "GET /risk-events must return 401 after user row deleted (not a 500 crash)",
+      ).toBe(401);
+
+      const patchRes = await admin.agent
+        .patch("/api/risk-events/1")
+        .send({ status: "resolved" });
+      expect(
+        patchRes.status,
+        "PATCH /risk-events/:id must return 401 after user row deleted (not a 500 crash)",
+      ).toBe(401);
+    },
+  );
 });

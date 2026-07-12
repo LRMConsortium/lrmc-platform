@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import request from "supertest";
 import { eq, sql } from "drizzle-orm";
-import { db, usersTable } from "@workspace/db";
+import { db, usersTable, authTokensTable } from "@workspace/db";
 import { createMemberUser, createAdminUser, anonymousAgent, app } from "./helpers";
 
 const TREASURY_ROUTES = [
@@ -33,6 +33,45 @@ describe("treasury routes — forged / invalid session cookie", () => {
       expect(res.status, `expected 401 on ${route} with garbage cookie`).toBe(401);
     }
   });
+});
+
+// ---------------------------------------------------------------------------
+// Expired session — user row deleted from DB
+//
+// A cryptographically valid cookie whose userId no longer exists in the DB
+// must be treated as expired (401) rather than causing a 500 crash.
+// isSessionStillValid() returns false when the DB query returns no user row,
+// so requireAdmin must reject these requests cleanly.
+// ---------------------------------------------------------------------------
+
+describe("treasury routes — expired session (user row deleted)", () => {
+  it(
+    "returns 401 on every treasury route when the session owner's user row has been deleted",
+    async () => {
+      const admin = await createAdminUser("treasury-deleted-user");
+
+      // Confirm the session is valid before deletion.
+      const before = await admin.agent.get("/api/treasury/accounts");
+      expect(before.status, "session must be valid before user deletion").toBe(200);
+
+      // Hard-delete the user row from the DB. This simulates an account
+      // deletion while the user still holds a valid, signed session cookie.
+      // auth_tokens has a FK on users.id, so clean that up first.
+      await db.delete(authTokensTable).where(eq(authTokensTable.userId, admin.id));
+      await db.delete(usersTable).where(eq(usersTable.id, admin.id));
+
+      // Replay the still-signed cookie against every treasury route. The
+      // session signature is cryptographically valid but the userId no longer
+      // maps to any DB row, so isSessionStillValid() returns false → 401.
+      for (const route of TREASURY_ROUTES) {
+        const res = await admin.agent.get(route);
+        expect(
+          res.status,
+          `expected 401 on ${route} after user row deleted (not a 500 crash)`,
+        ).toBe(401);
+      }
+    },
+  );
 });
 
 describe("treasury routes — access control", () => {
