@@ -12,6 +12,7 @@
     "push-force": "drizzle-kit push --force --config ./drizzle.config.ts",
     "setup-test-schema": "tsx src/setup-test-schema.ts",
     "push-force-test": "drizzle-kit push --force --config ./drizzle.test.config.ts",
+    "verify-test-schema": "tsx src/verify-test-schema.ts",
     "seed": "tsx src/seed.ts"
   },
   "dependencies": {
