@@ -25,27 +25,131 @@ describe("test database URL isolation", () => {
     expect(derived).not.toBe(realDevUrl);
   });
 
-  it("testDatabaseUrl replaces the database name with heliumdb_test", () => {
-    const cases = [
-      // plain host/db path
-      "postgresql://user:pass@localhost/heliumdb",
-      // with query params
-      "postgresql://user:pass@localhost/heliumdb?sslmode=disable",
-      // with port
-      "postgresql://user:pass@localhost:5432/heliumdb",
-      // with port and query params
-      "postgresql://user:pass@localhost:5432/heliumdb?sslmode=disable&connect_timeout=10",
+  /**
+   * Full parametrised matrix: every entry must satisfy all three invariants:
+   *   1. Result path segment is /heliumdb_test
+   *   2. Result does NOT contain the original database name in the path
+   *   3. Host (including port) is preserved unchanged
+   */
+  describe("parametrised URL format matrix", () => {
+    interface Case {
+      url: string;
+      /** The database name that must NOT appear in the result's path. */
+      originalDbName: string;
+      label: string;
+    }
+
+    const cases: Case[] = [
+      // ── postgresql:// scheme ──────────────────────────────────────────────
+      {
+        label: "plain host/db, no port, no params",
+        url: "postgresql://user:pass@localhost/heliumdb",
+        originalDbName: "heliumdb",
+      },
+      {
+        label: "with port, no params",
+        url: "postgresql://user:pass@localhost:5432/heliumdb",
+        originalDbName: "heliumdb",
+      },
+      {
+        label: "with query params (sslmode)",
+        url: "postgresql://user:pass@localhost/heliumdb?sslmode=disable",
+        originalDbName: "heliumdb",
+      },
+      {
+        label: "with port and multiple query params",
+        url: "postgresql://user:pass@localhost:5432/heliumdb?sslmode=disable&connect_timeout=10",
+        originalDbName: "heliumdb",
+      },
+      {
+        label: "with sslmode=require",
+        url: "postgresql://user:pass@localhost:5432/heliumdb?sslmode=require",
+        originalDbName: "heliumdb",
+      },
+      {
+        label: "SSL + application_name param",
+        url: "postgresql://user:pass@host.db.svc/heliumdb?sslmode=verify-full&application_name=api",
+        originalDbName: "heliumdb",
+      },
+      // ── postgres:// scheme ────────────────────────────────────────────────
+      {
+        label: "postgres:// scheme, plain",
+        url: "postgres://user:pass@localhost/heliumdb",
+        originalDbName: "heliumdb",
+      },
+      {
+        label: "postgres:// scheme, with port and params",
+        url: "postgres://user:pass@localhost:5432/heliumdb?sslmode=disable",
+        originalDbName: "heliumdb",
+      },
+      // ── no password ───────────────────────────────────────────────────────
+      {
+        label: "no password in credentials",
+        url: "postgresql://admin@db.example.com/heliumdb",
+        originalDbName: "heliumdb",
+      },
+      {
+        label: "no credentials at all",
+        url: "postgresql://localhost/heliumdb",
+        originalDbName: "heliumdb",
+      },
+      {
+        label: "no credentials, with port",
+        url: "postgresql://localhost:5432/heliumdb",
+        originalDbName: "heliumdb",
+      },
+      // ── different original database names ─────────────────────────────────
+      {
+        label: "original DB name: myapp",
+        url: "postgresql://user:pass@host/myapp",
+        originalDbName: "myapp",
+      },
+      {
+        label: "original DB name: production_db",
+        url: "postgres://admin@db.example.com/production_db",
+        originalDbName: "production_db",
+      },
+      {
+        label: "original DB name: my_app_prod, with params",
+        url: "postgresql://user:pass@host:5432/my_app_prod?sslmode=require",
+        originalDbName: "my_app_prod",
+      },
+      {
+        label: "original DB name: appdb123",
+        url: "postgresql://user:pass@host/appdb123",
+        originalDbName: "appdb123",
+      },
+      // ── remote host ───────────────────────────────────────────────────────
+      {
+        label: "remote host with subdomain, with port and params",
+        url: "postgresql://user:pass@db.internal.example.com:5432/heliumdb?sslmode=disable",
+        originalDbName: "heliumdb",
+      },
     ];
 
-    for (const url of cases) {
-      const derived = testDatabaseUrl(url);
-      expect(derived).toContain("heliumdb_test");
-      expect(derived).not.toContain("/heliumdb?");
-      expect(derived).not.toMatch(/\/heliumdb$/);
-      // Host and credentials must be unchanged.
-      const origOrigin = new URL(url).host;
-      const derivedOrigin = new URL(derived).host;
-      expect(derivedOrigin).toBe(origOrigin);
+    for (const { label, url, originalDbName } of cases) {
+      it(`[${label}] path is /heliumdb_test and original name is absent`, () => {
+        const derived = testDatabaseUrl(url);
+
+        // 1. The result must differ from the input.
+        expect(derived).not.toBe(url);
+
+        // 2. Path segment must be exactly /heliumdb_test (verified via URL parser).
+        const parsedDerived = new URL(derived);
+        expect(parsedDerived.pathname).toBe("/heliumdb_test");
+
+        // 3. Original database name must not be the path segment in the result.
+        //    We check inequality of the whole segment, not substring containment,
+        //    because the target name "heliumdb_test" legitimately starts with "heliumdb".
+        expect(parsedDerived.pathname).not.toBe(`/${originalDbName}`);
+
+        // 4. Host (including port) is preserved unchanged.
+        const parsedOrig = new URL(url);
+        expect(parsedDerived.host).toBe(parsedOrig.host);
+
+        // 5. Query params are preserved unchanged.
+        expect(parsedDerived.search).toBe(parsedOrig.search);
+      });
     }
   });
 
