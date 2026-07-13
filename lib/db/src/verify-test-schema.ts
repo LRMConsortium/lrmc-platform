@@ -21,6 +21,7 @@ import { getTableName, Table } from "drizzle-orm";
 import pg from "pg";
 import * as schema from "./schema/index.js";
 import { testDatabaseUrl } from "./test-db-url.js";
+import { runVerifyTestSchema } from "./verify-test-schema-core.js";
 
 const { Pool } = pg;
 
@@ -128,61 +129,17 @@ const expectedColumns: Array<[table: string, column: string]> = [
 const pool = new Pool({ connectionString: testUrl });
 
 try {
-  // ── 1. TABLE CHECK ──────────────────────────────────────────────────────────
-  const tableResult = await pool.query<{ tablename: string }>(`
-    SELECT tablename
-    FROM pg_tables
-    WHERE schemaname = 'public'
-  `);
-
-  const presentTables = new Set(tableResult.rows.map((r) => r.tablename));
-  const missingTables = expectedTables.filter((t) => !presentTables.has(t));
-
-  if (missingTables.length > 0) {
-    console.error(
-      `\nverify-test-schema: FAILED — the following ${missingTables.length} table(s) are ` +
-        `missing from heliumdb_test after drizzle-kit push:\n` +
-        missingTables.map((t) => `  • ${t}`).join("\n") +
-        `\n\nThis usually means the migration did not apply cleanly.  ` +
-        `Fix the schema error and re-run the pretest step.\n`
-    );
-    process.exit(1);
-  }
+  await runVerifyTestSchema(pool, { expectedTables, expectedColumns });
 
   console.log(
     `verify-test-schema: tables OK — all ${expectedTables.length} expected tables are present in heliumdb_test.`
   );
-
-  // ── 2. COLUMN CHECK ─────────────────────────────────────────────────────────
-  // Query information_schema once and build a Set of "table.column" keys.
-  const colResult = await pool.query<{ table_name: string; column_name: string }>(`
-    SELECT table_name, column_name
-    FROM information_schema.columns
-    WHERE table_schema = 'public'
-  `);
-
-  const presentColumns = new Set(
-    colResult.rows.map((r) => `${r.table_name}.${r.column_name}`)
-  );
-
-  const missingColumns = expectedColumns.filter(
-    ([table, col]) => !presentColumns.has(`${table}.${col}`)
-  );
-
-  if (missingColumns.length > 0) {
-    console.error(
-      `\nverify-test-schema: FAILED — the following ${missingColumns.length} column(s) are ` +
-        `missing from heliumdb_test after drizzle-kit push:\n` +
-        missingColumns.map(([t, c]) => `  • ${t}.${c}`).join("\n") +
-        `\n\nThis usually means a migration applied only partially.  ` +
-        `Check the drizzle-kit push output for errors and re-run the pretest step.\n`
-    );
-    process.exit(1);
-  }
-
   console.log(
     `verify-test-schema: columns OK — all ${expectedColumns.length} spot-checked columns are present in heliumdb_test.`
   );
+} catch (err) {
+  console.error(String(err instanceof Error ? err.message : err));
+  process.exit(1);
 } finally {
   await pool.end();
 }
