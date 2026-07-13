@@ -176,6 +176,22 @@ describe("internal-messages — access control", () => {
     const res = await admin.agent.patch(`/api/internal-messages/${messageId}/read`);
     expect(res.status).toBe(200);
   });
+
+  it("an admin can fetch any private message by ID without being a party to it", async () => {
+    const sender = await createMemberUser("msg-admin-get-sender");
+    const recipient = await createMemberUser("msg-admin-get-recipient");
+    const admin = await createAdminUser("msg-admin-get-admin");
+
+    const sendRes = await sender.agent
+      .post("/api/internal-messages")
+      .send({ recipientId: recipient.id, subject: "Private", body: "Admin eyes only" });
+    expect(sendRes.status).toBe(201);
+    const messageId: number = sendRes.body.id;
+
+    const res = await admin.agent.get(`/api/internal-messages/${messageId}`);
+    expect(res.status).toBe(200);
+    expect(res.body.id).toBe(messageId);
+  });
 });
 
 // ---------------------------------------------------------------------------
