@@ -93,7 +93,11 @@ router.post("/auth/register", registerRateLimiter, async (req, res): Promise<voi
     return;
   }
 
-  const passwordHash = await bcrypt.hash(password, 10);
+  // Use a lower bcrypt cost in test mode so the suite doesn't spend hundreds
+  // of seconds on password hashing across hundreds of throwaway registrations.
+  // The cost is still high enough to exercise the code path correctly.
+  const bcryptRounds = process.env.NODE_ENV === "test" ? 4 : 10;
+  const passwordHash = await bcrypt.hash(password, bcryptRounds);
 
   const [user] = await db
     .insert(usersTable)

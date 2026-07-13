@@ -354,3 +354,92 @@ describe("session invalidation — password change bumps sessionVersion", () => 
     },
   );
 });
+
+// ---------------------------------------------------------------------------
+// Session invalidation after explicit logout
+//
+// When a user calls POST /auth/logout the server destroys the session record
+// in the store (req.session.destroy) and clears the cookie.  An attacker who
+// captured the cookie before logout must receive 401 — not 200 — when
+// replaying it against any protected endpoint.  This test captures the raw
+// Set-Cookie value from a direct login so it can be replayed as a "stolen"
+// cookie after the legitimate user has logged out.
+// ---------------------------------------------------------------------------
+
+describe("session invalidation — logout fully destroys the session", () => {
+  it(
+    "a replayed session cookie returns 401 on GET /auth/me after the user logs out",
+    async () => {
+      const member = await createMemberUser("logout-replay-me");
+
+      // Capture the raw cookie from a direct login (bypassing the agent's
+      // internal jar so we can replay the exact header value later).
+      const directLoginRes = await request(app)
+        .post("/api/auth/login")
+        .send({ email: member.email, password: member.password });
+      expect(directLoginRes.status, "direct login must succeed").toBe(200);
+
+      const rawCookie = (directLoginRes.headers["set-cookie"] as string[] | undefined)?.[0];
+      expect(rawCookie, "login response must set a session cookie").toBeTruthy();
+
+      // Confirm the captured cookie is valid before logout.
+      const before = await request(app)
+        .get("/api/auth/me")
+        .set("Cookie", rawCookie!);
+      expect(before.status, "captured cookie must be valid before logout").toBe(200);
+
+      // Log out using that exact cookie — the session is destroyed server-side.
+      const logoutRes = await request(app)
+        .post("/api/auth/logout")
+        .set("Cookie", rawCookie!);
+      expect(logoutRes.status, "logout must succeed with 204").toBe(204);
+
+      // Replay the cookie — session store no longer has it; requireAuth must
+      // return 401.
+      const after = await request(app)
+        .get("/api/auth/me")
+        .set("Cookie", rawCookie!);
+      expect(
+        after.status,
+        "stolen session cookie must be rejected (401) after the user logs out",
+      ).toBe(401);
+    },
+  );
+
+  it(
+    "a stolen admin session cookie returns 401 on treasury routes after logout",
+    async () => {
+      const admin = await createAdminUser("logout-replay-treasury");
+
+      // Capture a fresh session cookie via a direct login.
+      const directLoginRes = await request(app)
+        .post("/api/auth/login")
+        .send({ email: admin.email, password: admin.password });
+      expect(directLoginRes.status, "direct admin login must succeed").toBe(200);
+
+      const rawCookie = (directLoginRes.headers["set-cookie"] as string[] | undefined)?.[0];
+      expect(rawCookie, "login response must set a session cookie").toBeTruthy();
+
+      // Confirm the captured cookie grants treasury access before logout.
+      const before = await request(app)
+        .get("/api/treasury/accounts")
+        .set("Cookie", rawCookie!);
+      expect(before.status, "captured admin cookie must grant treasury access before logout").toBe(200);
+
+      // Log out — session is destroyed.
+      const logoutRes = await request(app)
+        .post("/api/auth/logout")
+        .set("Cookie", rawCookie!);
+      expect(logoutRes.status, "logout must succeed with 204").toBe(204);
+
+      // Replay the "stolen" cookie against the treasury — must be 401, not 200 or 403.
+      const after = await request(app)
+        .get("/api/treasury/accounts")
+        .set("Cookie", rawCookie!);
+      expect(
+        after.status,
+        "stolen admin cookie must be fully invalidated (401) after logout",
+      ).toBe(401);
+    },
+  );
+});
