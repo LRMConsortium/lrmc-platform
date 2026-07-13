@@ -74,6 +74,18 @@ describe("internal-messages — access control", () => {
     expect(res.body).toHaveProperty("id");
   });
 
+  it("an approved member can send a message to an admin who has no membership row", async () => {
+    // Admins are eligible recipients purely by role — no membership row is
+    // required or consulted for them (see route lines 54–68).
+    const sender = await createMemberUser("msg-admin-recip-sender");
+    const admin = await createAdminUser("msg-admin-recip-admin");
+    const res = await sender.agent
+      .post("/api/internal-messages")
+      .send({ recipientId: admin.id, subject: "Hey admin", body: "Can you help?" });
+    expect(res.status).toBe(201);
+    expect(res.body).toHaveProperty("id");
+  });
+
   it("a member can only see messages they sent or received", async () => {
     const memberA = await createMemberUser("msg-scope-a");
     const memberB = await createMemberUser("msg-scope-b");
