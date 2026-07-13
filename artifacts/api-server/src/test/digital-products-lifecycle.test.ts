@@ -1,7 +1,8 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { db, digitalProductsTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { createMemberUser, createAdminUser, anonymousAgent } from "./helpers";
+import { getUncachableStripeClient } from "../lib/stripeClient";
 
 async function createProduct(
   agent: Awaited<ReturnType<typeof createMemberUser>>["agent"],
@@ -294,5 +295,56 @@ describe("digital-products checkout — missing Stripe price ID guard", () => {
 
     expect(res.status).toBe(409);
     expect(res.body.error).toMatch(/ready for purchase/i);
+  });
+});
+
+describe("digital-products checkout — failed DB insert expires Stripe session", () => {
+  it("expires the Stripe session and returns 500 when the purchase record insert fails", async () => {
+    // Safety guard test: after Stripe creates a checkout session, the handler
+    // tries to insert a purchase row so the webhook has a fulfillment target.
+    // If that insert fails the handler must immediately expire the Stripe
+    // session so the buyer cannot complete a payment with no fulfillment path.
+    const seller = await createMemberUser("dp-co-expire-seller");
+    const product = await createProduct(seller.agent);
+
+    const mockSessionId = "cs_test_expire_guard_xyz";
+    const expireSpy = vi.fn().mockResolvedValue({});
+
+    // Override the default stub with a stripe client whose session.create
+    // returns a known session ID, and whose expire method is a spy we can assert on.
+    vi.mocked(getUncachableStripeClient).mockResolvedValueOnce({
+      checkout: {
+        sessions: {
+          create: vi.fn().mockResolvedValue({
+            id: mockSessionId,
+            url: "https://checkout.stripe.com/test/expire-guard",
+          }),
+          expire: expireSpy,
+        },
+      },
+    } as never);
+
+    // Force the DB insert to throw after Stripe has already created the session.
+    // db.insert(table) returns a query builder; mock its .values() to reject.
+    const insertSpy = vi.spyOn(db, "insert").mockImplementationOnce(
+      () =>
+        ({
+          values: vi.fn().mockRejectedValueOnce(new Error("DB insert failed")),
+        }) as never,
+    );
+
+    try {
+      const res = await anonymousAgent()
+        .post(`/api/digital-products/${product.id}/checkout`)
+        .send({ buyerEmail: "buyer@example.com" });
+
+      // The handler re-throws after expiring the session, so the caller gets 500.
+      expect(res.status).toBe(500);
+      // The Stripe session must have been expired with the session ID that was
+      // returned by stripe.checkout.sessions.create -- the critical safety invariant.
+      expect(expireSpy).toHaveBeenCalledWith(mockSessionId);
+    } finally {
+      insertSpy.mockRestore();
+    }
   });
 });

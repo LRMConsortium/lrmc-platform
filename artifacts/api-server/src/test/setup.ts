@@ -13,6 +13,28 @@
  */
 import { vi } from "vitest";
 
+// ── stripeClient ─────────────────────────────────────────────────────────
+// The /checkout endpoint calls getUncachableStripeClient() to create a real
+// Stripe Checkout session.  Stub it globally so checkout-touching tests never
+// hit the live Stripe network.  Individual tests can override the resolved
+// value (or specific session methods) via vi.mocked(...).mockResolvedValueOnce.
+vi.mock("../lib/stripeClient", () => ({
+  getUncachableStripeClient: vi.fn().mockResolvedValue({
+    checkout: {
+      sessions: {
+        create: vi.fn().mockResolvedValue({
+          id: "cs_test_default_stubbed",
+          url: "https://checkout.stripe.com/test/default",
+        }),
+        expire: vi.fn().mockResolvedValue({}),
+      },
+    },
+  }),
+  // getStripeSync is used by the webhook handler; keep it mockable but don't
+  // provide a default implementation — tests that need it must stub explicitly.
+  getStripeSync: vi.fn(),
+}));
+
 // ── digitalProductStripeSync ─────────────────────────────────────────────
 // Routes that create / update digital products call these helpers.
 // Return plausible-looking fake IDs so downstream code that reads
