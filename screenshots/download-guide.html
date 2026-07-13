@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>How to Download Your Asset Manager Code</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0e1117; color: #e2e8f0; min-height: 100vh; padding: 40px 24px; }
+  h1 { text-align: center; font-size: 22px; font-weight: 700; color: #fff; margin-bottom: 8px; }
+  .subtitle { text-align: center; color: #94a3b8; font-size: 14px; margin-bottom: 40px; }
+  .steps { max-width: 700px; margin: 0 auto; display: flex; flex-direction: column; gap: 24px; }
+
+  .step { background: #1a1f2e; border: 1px solid #2d3748; border-radius: 12px; overflow: hidden; }
+  .step-header { display: flex; align-items: center; gap: 14px; padding: 16px 20px; background: #1e2535; border-bottom: 1px solid #2d3748; }
+  .step-number { width: 32px; height: 32px; border-radius: 50%; background: #3b82f6; color: #fff; font-weight: 700; font-size: 15px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .step-title { font-weight: 600; font-size: 15px; color: #f1f5f9; }
+  .step-body { padding: 20px; }
+  .step-desc { font-size: 13px; color: #94a3b8; margin-bottom: 16px; line-height: 1.6; }
+
+  /* Mock Replit UI */
+  .mock-ui { background: #0d1117; border: 1px solid #30363d; border-radius: 8px; overflow: hidden; font-size: 12px; }
+  .mock-topbar { background: #161b22; padding: 8px 12px; display: flex; align-items: center; gap: 8px; border-bottom: 1px solid #30363d; }
+  .mock-dot { width: 10px; height: 10px; border-radius: 50%; }
+  .mock-title { color: #8b949e; font-size: 11px; margin-left: 4px; }
+  .mock-body { display: flex; height: 200px; }
+  .mock-sidebar { width: 200px; background: #0d1117; border-right: 1px solid #30363d; padding: 8px 0; flex-shrink: 0; }
+  .mock-sidebar-header { display: flex; align-items: center; justify-content: space-between; padding: 4px 12px 8px; color: #8b949e; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+  .mock-dots-btn { background: transparent; border: none; color: #8b949e; cursor: pointer; font-size: 16px; letter-spacing: 1px; padding: 2px 4px; border-radius: 4px; }
+  .mock-file { display: flex; align-items: center; gap: 6px; padding: 3px 12px; color: #c9d1d9; }
+  .mock-file.folder { color: #e3b341; font-weight: 500; }
+  .mock-file .icon { font-size: 11px; }
+  .mock-main { flex: 1; display: flex; align-items: center; justify-content: center; color: #30363d; font-size: 11px; }
+
+  /* Highlight pulse */
+  .highlight { position: relative; display: inline-block; }
+  .highlight::after { content: ''; position: absolute; inset: -3px; border-radius: 6px; border: 2px solid #f59e0b; animation: pulse 1.5s ease-in-out infinite; }
+  @keyframes pulse { 0%,100% { opacity: 1; box-shadow: 0 0 0 0 rgba(245,158,11,0.4); } 50% { opacity: 0.8; box-shadow: 0 0 0 6px rgba(245,158,11,0); } }
+
+  .arrow-label { display: flex; align-items: flex-start; gap: 10px; margin-top: 14px; }
+  .arrow { font-size: 20px; color: #f59e0b; flex-shrink: 0; margin-top: 2px; }
+  .arrow-text { font-size: 13px; color: #fbbf24; font-weight: 500; line-height: 1.5; }
+
+  /* Dropdown mock */
+  .mock-dropdown { background: #1c2128; border: 1px solid #30363d; border-radius: 6px; overflow: hidden; width: 180px; margin-top: 6px; margin-left: 120px; }
+  .mock-dropdown-item { padding: 7px 14px; font-size: 12px; color: #c9d1d9; display: flex; align-items: center; gap: 8px; }
+  .mock-dropdown-item:hover { background: #2d333b; }
+  .mock-dropdown-item.active { background: #1f6feb22; color: #58a6ff; }
+  .mock-dropdown-item .di-icon { font-size: 13px; }
+  .mock-dropdown-divider { height: 1px; background: #30363d; }
+
+  /* Upload zone */
+  .upload-zone { border: 2px dashed #3b82f6; border-radius: 8px; padding: 24px; text-align: center; color: #60a5fa; margin-top: 4px; }
+  .upload-zone .upload-icon { font-size: 32px; margin-bottom: 8px; }
+  .upload-zone p { font-size: 13px; }
+  .upload-zone .note { font-size: 11px; color: #94a3b8; margin-top: 6px; }
+
+  .badge { display: inline-block; background: #065f46; color: #6ee7b7; font-size: 11px; padding: 2px 8px; border-radius: 10px; font-weight: 600; margin-left: 8px; vertical-align: middle; }
+  .step-number.green { background: #059669; }
+
+  .divider { display: flex; align-items: center; gap: 12px; margin: 8px 0; }
+  .divider hr { flex: 1; border: none; border-top: 1px solid #2d3748; }
+  .divider span { color: #4b5563; font-size: 12px; }
+
+  .note-box { background: #1e3a5f; border: 1px solid #1d4ed8; border-radius: 8px; padding: 12px 16px; margin-top: 12px; font-size: 13px; color: #93c5fd; line-height: 1.6; }
+  .note-box strong { color: #bfdbfe; }
+</style>
+</head>
+<body>
+
+<h1>📦 How to Get the Asset Manager Code</h1>
+<p class="subtitle">Do these steps in your <strong style="color:#f1f5f9">Asset Manager Replit project</strong>, then come back here</p>
+
+<div class="steps">
+
+  <!-- Step 1 -->
+  <div class="step">
+    <div class="step-header">
+      <div class="step-number">1</div>
+      <div class="step-title">Open the Asset Manager project & find the Files panel</div>
+    </div>
+    <div class="step-body">
+      <p class="step-desc">In the left sidebar, you'll see a Files panel listing all your project files and folders. Look for the <strong style="color:#f1f5f9">three dots "⋯"</strong> button at the top right of that panel.</p>
+      <div class="mock-ui">
+        <div class="mock-topbar">
+          <div class="mock-dot" style="background:#ff5f57"></div>
+          <div class="mock-dot" style="background:#febc2e"></div>
+          <div class="mock-dot" style="background:#28c840"></div>
+          <div class="mock-title">Asset Manager — Replit</div>
+        </div>
+        <div class="mock-body">
+          <div class="mock-sidebar">
+            <div class="mock-sidebar-header">
+              Files
+              <div class="highlight">
+                <button class="mock-dots-btn">⋯</button>
+              </div>
+            </div>
+            <div class="mock-file folder"><span class="icon">📁</span> artifacts</div>
+            <div class="mock-file folder"><span class="icon">📁</span> lib</div>
+            <div class="mock-file"><span class="icon">📄</span> package.json</div>
+            <div class="mock-file"><span class="icon">📄</span> pnpm-workspace.yaml</div>
+            <div class="mock-file"><span class="icon">📄</span> tsconfig.json</div>
+          </div>
+          <div class="mock-main">← File editor area</div>
+        </div>
+      </div>
+      <div class="arrow-label">
+        <div class="arrow">☝️</div>
+        <div class="arrow-text">Click the <strong>"⋯"</strong> button highlighted in yellow at the top of the Files panel</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 2 -->
+  <div class="step">
+    <div class="step-header">
+      <div class="step-number">2</div>
+      <div class="step-title">Click "Download as zip"</div>
+    </div>
+    <div class="step-body">
+      <p class="step-desc">A small dropdown menu will appear. Click <strong style="color:#f1f5f9">"Download as zip"</strong> — it will download the entire project to your computer.</p>
+      <div class="mock-ui" style="padding: 8px;">
+        <div class="mock-dropdown" style="margin-left: 100px; margin-top: 0;">
+          <div class="mock-dropdown-item"><span class="di-icon">📁</span> New folder</div>
+          <div class="mock-dropdown-item"><span class="di-icon">📄</span> New file</div>
+          <div class="mock-dropdown-divider"></div>
+          <div class="mock-dropdown-item"><span class="di-icon">📤</span> Upload file</div>
+          <div class="mock-dropdown-item active highlight" style="display:flex"><span class="di-icon">⬇️</span> <strong>Download as zip</strong></div>
+        </div>
+      </div>
+      <div class="arrow-label">
+        <div class="arrow">☝️</div>
+        <div class="arrow-text">Select <strong>"Download as zip"</strong> — a file will download to your computer (usually goes to your Downloads folder)</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 3 -->
+  <div class="step">
+    <div class="step-header">
+      <div class="step-number">3</div>
+      <div class="step-title">Come back to THIS project (LRMC)</div>
+    </div>
+    <div class="step-body">
+      <p class="step-desc">Switch back to this Replit project. Then do the same thing — click the <strong style="color:#f1f5f9">"⋯"</strong> in the Files panel — but this time choose <strong style="color:#f1f5f9">"Upload file"</strong> and select the ZIP you just downloaded.</p>
+
+      <div class="divider"><hr><span>OR even easier</span><hr></div>
+
+      <div class="upload-zone">
+        <div class="upload-icon">📂</div>
+        <p><strong>Drag & drop the ZIP file</strong> directly into the Files panel</p>
+        <p class="note">Just drag it from your Downloads folder straight into the left sidebar here</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Step 4 -->
+  <div class="step">
+    <div class="step-header">
+      <div class="step-number green">4</div>
+      <div class="step-title">Tell me it's uploaded <span class="badge">✓ Done</span></div>
+    </div>
+    <div class="step-body">
+      <p class="step-desc">Once the ZIP appears in the file list here, just say <strong style="color:#f1f5f9">"it's uploaded"</strong> and I'll take over — unzip it, pull the code into the right place in this monorepo, and clean everything up.</p>
+      <div class="note-box">
+        <strong>Note:</strong> The ZIP won't affect the Asset Manager project at all — it stays exactly as it is. You're just making a copy of the code to bring it here.
+      </div>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

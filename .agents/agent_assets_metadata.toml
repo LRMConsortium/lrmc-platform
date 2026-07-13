@@ -1,0 +1,8 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "_WwQqrBSJ3R4KYvVAJZfL"
+uri = "file://screenshots/download-guide.html"
+type = "unspecified"
+title = "How to Get the Asset Manager Code — Step by Step"
