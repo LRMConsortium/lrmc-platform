@@ -397,6 +397,120 @@ describe("member-area gate — mid-session membership status change", () => {
 // out on their very next request, without requiring a fresh login.
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// Dashboard stats reflect membership status changes mid-session
+//
+// /api/dashboard/member sits behind requireApprovedMembership, which reads
+// the membership row fresh from the DB on every request. A status change
+// (e.g. payment reversed, KYC revoked) must be visible immediately — either
+// the response body shows the updated values or the gate returns 403. No
+// re-login should be required in either direction.
+// ---------------------------------------------------------------------------
+
+describe("member dashboard — live membership status reflection", () => {
+  it(
+    "dashboard initially shows paid + approved status for a fully-approved member",
+    async () => {
+      const member = await createMemberUser("dashboard-stat-initial");
+      const res = await member.agent.get("/api/dashboard/member");
+      expect(res.status).toBe(200);
+      expect(res.body.membership.paymentStatus).toBe("paid");
+      expect(res.body.membership.kycStatus).toBe("approved");
+    },
+  );
+
+  it(
+    "after paymentStatus is set to 'unpaid', the same session gets 403 on /api/dashboard/member (no re-login needed)",
+    async () => {
+      const member = await createMemberUser("dashboard-stat-payment-reversal");
+
+      // Confirm the member sees paid status before the change.
+      const before = await member.agent.get("/api/dashboard/member");
+      expect(before.status).toBe(200);
+      expect(before.body.membership.paymentStatus).toBe("paid");
+
+      // Simulate a payment reversal directly in the DB.
+      await db
+        .update(membershipsTable)
+        .set({ paymentStatus: "unpaid" })
+        .where(eq(membershipsTable.userId, member.id));
+
+      // The gate re-reads the row on every request — either 403 (gate blocks)
+      // or 200 with the updated unpaid status is acceptable; stale "paid" is not.
+      const after = await member.agent.get("/api/dashboard/member");
+      if (after.status === 200) {
+        expect(
+          after.body.membership.paymentStatus,
+          "if the handler runs, it must return the updated (unpaid) status — not the stale cached value",
+        ).toBe("unpaid");
+      } else {
+        expect(
+          after.status,
+          "gate must block with 403 after payment reversal",
+        ).toBe(403);
+      }
+    },
+  );
+
+  it(
+    "after kycStatus is set to 'rejected', the same session gets 403 on /api/dashboard/member (no re-login needed)",
+    async () => {
+      const member = await createMemberUser("dashboard-stat-kyc-revocation");
+
+      const before = await member.agent.get("/api/dashboard/member");
+      expect(before.status).toBe(200);
+      expect(before.body.membership.kycStatus).toBe("approved");
+
+      // Simulate an admin revoking KYC approval directly in the DB.
+      await db
+        .update(membershipsTable)
+        .set({ kycStatus: "rejected" })
+        .where(eq(membershipsTable.userId, member.id));
+
+      const after = await member.agent.get("/api/dashboard/member");
+      if (after.status === 200) {
+        expect(
+          after.body.membership.kycStatus,
+          "if the handler runs, it must return the updated (rejected) kycStatus — not the stale cached value",
+        ).toBe("rejected");
+      } else {
+        expect(
+          after.status,
+          "gate must block with 403 after KYC revocation",
+        ).toBe(403);
+      }
+    },
+  );
+
+  it(
+    "a member re-approved after payment reversal sees paid status restored on the same session",
+    async () => {
+      const member = await createMemberUser("dashboard-stat-reapproval");
+
+      // Reverse payment, confirm lockout.
+      await db
+        .update(membershipsTable)
+        .set({ paymentStatus: "unpaid" })
+        .where(eq(membershipsTable.userId, member.id));
+      const revoked = await member.agent.get("/api/dashboard/member");
+      expect(revoked.status).toBe(403);
+
+      // Restore payment status.
+      await db
+        .update(membershipsTable)
+        .set({ paymentStatus: "paid" })
+        .where(eq(membershipsTable.userId, member.id));
+
+      const restored = await member.agent.get("/api/dashboard/member");
+      expect(restored.status).toBe(200);
+      expect(
+        restored.body.membership.paymentStatus,
+        "restored payment must appear immediately without a fresh login",
+      ).toBe("paid");
+    },
+  );
+});
+
 describe("member-area gate — membership row deletion", () => {
   it(
     "a paid + KYC-approved member immediately loses access when their membership row is deleted",
