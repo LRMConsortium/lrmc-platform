@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { db, digitalProductsTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
-import { createMemberUser, createAdminUser } from "./helpers";
+import { createMemberUser, createAdminUser, anonymousAgent } from "./helpers";
 
 async function createProduct(
   agent: Awaited<ReturnType<typeof createMemberUser>>["agent"],
@@ -269,5 +269,30 @@ describe("digital-products archive flow", () => {
       .from(digitalProductsTable)
       .where(eq(digitalProductsTable.id, product.id));
     expect(row.status).toBe("archived");
+  });
+});
+
+describe("digital-products checkout — missing Stripe price ID guard", () => {
+  it("POST /checkout returns 409 when the product's stripePriceId is null", async () => {
+    // Guard: a product can exist without a valid Stripe price ID (e.g. if the
+    // Stripe catalog call failed after the DB row was written, or a migration
+    // left the field null). The checkout endpoint must reject such products
+    // with 409 rather than forwarding a null price ID to Stripe.
+    const seller = await createMemberUser("dp-co-noprice-seller");
+    const product = await createProduct(seller.agent);
+
+    // Null out the Stripe price ID directly in the DB to simulate the broken state.
+    await db
+      .update(digitalProductsTable)
+      .set({ stripePriceId: null })
+      .where(eq(digitalProductsTable.id, product.id));
+
+    // The checkout endpoint is intentionally public (guests can buy).
+    const res = await anonymousAgent()
+      .post(`/api/digital-products/${product.id}/checkout`)
+      .send({ buyerEmail: "buyer@example.com" });
+
+    expect(res.status).toBe(409);
+    expect(res.body.error).toMatch(/ready for purchase/i);
   });
 });
