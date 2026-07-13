@@ -103,7 +103,9 @@ router.get("/internal-messages/:id", requireAuth, requireApprovedMembership, asy
     existing.recipientId !== userId &&
     existing.senderId !== userId
   ) {
-    res.status(403).json({ error: "Forbidden" });
+    // Return 404 (not 403) to prevent non-party members from probing whether a
+    // message ID exists — a 403 would confirm the ID is valid.
+    res.status(404).json({ error: "Internal message not found" });
     return;
   }
 

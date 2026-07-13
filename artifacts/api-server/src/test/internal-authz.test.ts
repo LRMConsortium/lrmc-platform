@@ -85,7 +85,7 @@ describe("internal-messages — access control", () => {
     expect(res.status).toBe(401);
   });
 
-  it("a non-party member gets 403 when fetching a message by ID they did not send or receive", async () => {
+  it("a non-party member gets 404 when fetching a message by ID they did not send or receive", async () => {
     const sender = await createMemberUser("msg-get-sender");
     const recipient = await createMemberUser("msg-get-recipient");
     const outsider = await createMemberUser("msg-get-outsider");
@@ -97,9 +97,10 @@ describe("internal-messages — access control", () => {
     expect(sendRes.status).toBe(201);
     const messageId: number = sendRes.body.id;
 
-    // Outsider guesses the message ID — must receive 403, not the message body.
+    // Outsider guesses the message ID — must receive 404 (not 403 or the body)
+    // so the endpoint cannot be used to confirm whether a message ID exists.
     const res = await outsider.agent.get(`/api/internal-messages/${messageId}`);
-    expect(res.status).toBe(403);
+    expect(res.status).toBe(404);
   });
 
   it("the sender can fetch their own message by ID", async () => {
