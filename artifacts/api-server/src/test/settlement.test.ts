@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import request from "supertest";
 import { eq } from "drizzle-orm";
-import { db, usersTable } from "@workspace/db";
+import { db, usersTable, authTokensTable } from "@workspace/db";
 import { createMemberUser, createAdminUser, anonymousAgent, app } from "./helpers";
 
 describe("settlement-obligations routes — forged / invalid session cookie", () => {
@@ -114,6 +114,65 @@ describe("settlement-obligations routes — session role re-sync (demotion guard
         after.status,
         "demoted admin's existing session must be rejected immediately on GET /settlement-obligations",
       ).toBe(403);
+    },
+  );
+});
+
+// ---------------------------------------------------------------------------
+// Deleted-user session guard
+//
+// isSessionStillValid() queries the DB for the user row on every request.
+// If the row no longer exists the query returns nothing, the function returns
+// false, and requireAdmin must respond with 401 — not 500 or a stale 200.
+// ---------------------------------------------------------------------------
+
+describe("settlement-obligations routes — deleted-user session guard", () => {
+  it(
+    "returns 401 on GET /settlement-obligations when the admin's user row has been deleted",
+    async () => {
+      const admin = await createAdminUser("settlement-deleted-get");
+
+      // Confirm access while the user row still exists.
+      const before = await admin.agent.get("/api/settlement-obligations");
+      expect(before.status, "admin should have access before deletion").toBe(200);
+
+      // Hard-delete the user row (simulates account deletion or a security
+      // response action). Auth tokens must be removed first to satisfy the FK
+      // constraint; the session cookie itself is unaffected and still signed.
+      await db.delete(authTokensTable).where(eq(authTokensTable.userId, admin.id));
+      await db.delete(usersTable).where(eq(usersTable.id, admin.id));
+
+      // Same session cookie — isSessionStillValid must return false → 401.
+      const after = await admin.agent.get("/api/settlement-obligations");
+      expect(
+        after.status,
+        "deleted admin's session must be rejected with 401 on GET /settlement-obligations",
+      ).toBe(401);
+    },
+  );
+
+  it(
+    "returns 401 on PATCH /settlement-obligations/:id when the admin's user row has been deleted",
+    async () => {
+      const admin = await createAdminUser("settlement-deleted-patch");
+
+      // Confirm access while the user row still exists (non-existent ID → 404,
+      // which proves the request reached the route handler as an authorised admin).
+      const before = await admin.agent
+        .patch("/api/settlement-obligations/999999999")
+        .send({ status: "settled" });
+      expect(before.status, "admin should reach the route (404) before deletion").toBe(404);
+
+      await db.delete(authTokensTable).where(eq(authTokensTable.userId, admin.id));
+      await db.delete(usersTable).where(eq(usersTable.id, admin.id));
+
+      const after = await admin.agent
+        .patch("/api/settlement-obligations/999999999")
+        .send({ status: "settled" });
+      expect(
+        after.status,
+        "deleted admin's session must be rejected with 401 on PATCH /settlement-obligations/:id",
+      ).toBe(401);
     },
   );
 });

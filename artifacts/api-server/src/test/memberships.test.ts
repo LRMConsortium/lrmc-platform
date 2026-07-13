@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { eq } from "drizzle-orm";
-import { db, membershipsTable } from "@workspace/db";
+import { db, membershipsTable, usersTable, authTokensTable } from "@workspace/db";
 import type Stripe from "stripe";
 import { createMemberUser, createMemberUserWithMembership, createAdminUser } from "./helpers";
 import { fulfillMembershipCheckout } from "../lib/membershipFulfillment";
@@ -109,4 +109,45 @@ describe("membership checkout fulfillment", () => {
     expect(afterCurrent.paymentStatus).toBe("paid");
     expect(afterCurrent.stripeCheckoutSessionId).toBe(currentSessionId);
   });
+});
+
+// ---------------------------------------------------------------------------
+// Deleted-user session guard — memberships routes
+//
+// isSessionStillValid() queries the DB for the user row on every request.
+// If the row no longer exists the query returns nothing, the function returns
+// false, and requireAdmin must respond with 401 — not 500 or a stale 200.
+// ---------------------------------------------------------------------------
+
+describe("memberships routes — deleted-user session guard", () => {
+  it(
+    "returns 401 on PATCH /memberships/:id when the admin's user row has been deleted",
+    async () => {
+      const admin = await createAdminUser("memberships-deleted-patch");
+      const member = await createMemberUserWithMembership("memberships-deleted-member", {
+        withMembership: false,
+      });
+      const membershipId = await createMembership(member.agent);
+
+      // Confirm access while the admin row still exists.
+      const before = await admin.agent
+        .patch(`/api/memberships/${membershipId}`)
+        .send({ status: "active" });
+      expect(before.status, "admin should be able to update membership before deletion").toBe(200);
+
+      // Hard-delete the admin's user row. Auth tokens must be removed first to
+      // satisfy the FK constraint; the session cookie itself is unaffected.
+      await db.delete(authTokensTable).where(eq(authTokensTable.userId, admin.id));
+      await db.delete(usersTable).where(eq(usersTable.id, admin.id));
+
+      // Same session cookie — isSessionStillValid must return false → 401.
+      const after = await admin.agent
+        .patch(`/api/memberships/${membershipId}`)
+        .send({ status: "rejected" });
+      expect(
+        after.status,
+        "deleted admin's session must be rejected with 401 on PATCH /memberships/:id",
+      ).toBe(401);
+    },
+  );
 });
