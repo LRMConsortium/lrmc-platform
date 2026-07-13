@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { db, digitalProductsTable } from "@workspace/db";
+import { db, digitalProductsTable, digitalProductPurchasesTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { createMemberUser, createAdminUser, anonymousAgent } from "./helpers";
 import { getUncachableStripeClient } from "../lib/stripeClient";
@@ -346,5 +346,36 @@ describe("digital-products checkout — failed DB insert expires Stripe session"
     } finally {
       insertSpy.mockRestore();
     }
+  });
+});
+
+describe("digital-products checkout — pending duplicate guard", () => {
+  it("POST /checkout returns 409 when the buyer already has a pending checkout for the same product", async () => {
+    // Guard: the checkout endpoint blocks a second checkout session for the
+    // same (product, buyer email) pair when one is already pending.
+    // This prevents a buyer from flooding Stripe with duplicate open sessions.
+    const seller = await createMemberUser("dp-co-pending-dup-seller");
+    const product = await createProduct(seller.agent);
+
+    const buyerEmail = "pending-dup-buyer@example.com";
+
+    // Insert a pending purchase row directly so the duplicate guard fires
+    // without needing a real Stripe session from a prior checkout call.
+    await db.insert(digitalProductPurchasesTable).values({
+      productId: product.id,
+      buyerId: null,
+      buyerEmail,
+      amountCents: product.priceCents ?? 1500,
+      stripeCheckoutSessionId: `cs_test_pending_dup_guard_${crypto.randomUUID()}`,
+      status: "pending",
+    });
+
+    // Attempt a second checkout with the same buyer email.
+    const res = await anonymousAgent()
+      .post(`/api/digital-products/${product.id}/checkout`)
+      .send({ buyerEmail });
+
+    expect(res.status).toBe(409);
+    expect(res.body.error).toMatch(/already in progress/i);
   });
 });
