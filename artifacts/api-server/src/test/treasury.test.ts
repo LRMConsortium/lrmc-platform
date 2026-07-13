@@ -353,6 +353,78 @@ describe("session invalidation — password change bumps sessionVersion", () => 
       ).toBe(401);
     },
   );
+
+  it(
+    "a session minted between two rapid resets is rejected; only the post-final-reset session is valid",
+    async () => {
+      // This covers the concurrent-reset race: two password-reset completions
+      // in quick succession.  Each one bumps sessionVersion.  A session minted
+      // after the first bump (e.g. from the first reset's own login) must be
+      // invalidated by the second bump — only a session carrying the final
+      // sessionVersion is accepted.
+
+      // Session A — minted at the original sessionVersion (pre-any-reset).
+      const member = await createMemberUser("session-concurrent-reset");
+      const sessionA = member.agent; // already logged in
+
+      // Confirm session A is initially valid.
+      const beforeAny = await sessionA.get("/api/auth/me");
+      expect(beforeAny.status, "session A must be valid before any reset").toBe(200);
+
+      // First password reset: bump sessionVersion (v → v+1).
+      await db
+        .update(usersTable)
+        .set({ sessionVersion: sql`${usersTable.sessionVersion} + 1` })
+        .where(eq(usersTable.id, member.id));
+
+      // Session B — minted immediately after the first reset (sessionVersion = v+1).
+      const sessionB = request.agent(app);
+      const loginB = await sessionB
+        .post("/api/auth/login")
+        .send({ email: member.email, password: member.password });
+      expect(loginB.status, "login after first reset must succeed").toBe(200);
+
+      // Confirm session B is valid at this point (first reset is the latest).
+      const midB = await sessionB.get("/api/auth/me");
+      expect(midB.status, "session B must be valid after first reset").toBe(200);
+
+      // Second password reset: bump sessionVersion again (v+1 → v+2).
+      await db
+        .update(usersTable)
+        .set({ sessionVersion: sql`${usersTable.sessionVersion} + 1` })
+        .where(eq(usersTable.id, member.id));
+
+      // Session C — minted after the second (final) reset (sessionVersion = v+2).
+      const sessionC = request.agent(app);
+      const loginC = await sessionC
+        .post("/api/auth/login")
+        .send({ email: member.email, password: member.password });
+      expect(loginC.status, "login after second reset must succeed").toBe(200);
+
+      // Session A (pre-first-reset) must be rejected.
+      const afterA = await sessionA.get("/api/auth/me");
+      expect(
+        afterA.status,
+        "session A (pre-first-reset) must be rejected after both resets",
+      ).toBe(401);
+
+      // Session B (between the two resets) must also be rejected — this is the
+      // key concurrent-reset property: the second bump invalidates session B
+      // even though session B was itself minted after a valid reset.
+      const afterB = await sessionB.get("/api/auth/me");
+      expect(
+        afterB.status,
+        "session B (minted between the two resets) must be rejected after the second reset",
+      ).toBe(401);
+
+      // Session C (minted after the final reset) must be accepted.
+      const afterC = await sessionC.get("/api/auth/me");
+      expect(
+        afterC.status,
+        "session C (minted after final reset) must be the only valid session",
+      ).toBe(200);
+    },
+  );
 });
 
 // ---------------------------------------------------------------------------
