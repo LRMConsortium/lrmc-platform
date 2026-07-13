@@ -6,3 +6,21 @@ id = "_WwQqrBSJ3R4KYvVAJZfL"
 uri = "file://screenshots/download-guide.html"
 type = "unspecified"
 title = "How to Get the Asset Manager Code — Step by Step"
+
+[[outputs]]
+id = "jKZxyJvw7On41CwZTPQyz"
+uri = "file://screenshots/step1.png"
+type = "image"
+title = "Step 1 — Find the ⋯ button in the Files panel"
+
+[[outputs]]
+id = "byf9xNENkGwGseGSs98Ok"
+uri = "file://screenshots/step2.png"
+type = "image"
+title = "Step 2 — Click Download as zip"
+
+[[outputs]]
+id = "_fGRKNWOFkBaTEJBfTLb4"
+uri = "file://screenshots/step3.png"
+type = "image"
+title = "Step 3 — Drag the ZIP into this project"
