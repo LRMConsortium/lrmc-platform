@@ -151,3 +151,73 @@ describe("memberships routes — deleted-user session guard", () => {
     },
   );
 });
+
+// ---------------------------------------------------------------------------
+// Session role re-sync — demotion guard (memberships routes)
+//
+// requireAdmin calls isSessionStillValid() on every request, which re-reads
+// the user's role from the DB and syncs it onto req.session.role.  An admin
+// demoted in the DB must therefore lose access on their very next request —
+// no grace period, no need to invalidate the session cookie.
+// ---------------------------------------------------------------------------
+
+describe("memberships routes — session role re-sync (demotion guard)", () => {
+  it(
+    "an admin demoted to member in the DB immediately loses access to GET /memberships",
+    async () => {
+      const admin = await createAdminUser("memberships-demotion-list");
+
+      // Confirm access while still an admin.
+      const before = await admin.agent.get("/api/memberships");
+      expect(before.status, "admin should have access before demotion").toBe(200);
+
+      // Revoke admin role directly in the DB (simulates demotion by another
+      // admin or a security response action, without touching the session cookie).
+      await db
+        .update(usersTable)
+        .set({ role: "member" })
+        .where(eq(usersTable.id, admin.id));
+
+      // Same session cookie, same agent — role re-sync must now return 403.
+      const after = await admin.agent.get("/api/memberships");
+      expect(
+        after.status,
+        "demoted admin's existing session must be rejected immediately on GET /memberships",
+      ).toBe(403);
+    },
+  );
+
+  it(
+    "an admin demoted to member in the DB immediately loses access to PATCH /memberships/:id/kyc",
+    async () => {
+      const admin = await createAdminUser("memberships-demotion-kyc");
+      const member = await createMemberUserWithMembership("memberships-demotion-kyc-member", {
+        withMembership: false,
+      });
+      const membershipId = await createMembership(member.agent);
+
+      // Confirm access while still an admin.
+      const before = await admin.agent
+        .patch(`/api/memberships/${membershipId}/kyc`)
+        .send({ action: "approve" });
+      // 409 is expected (no pending KYC submission), but not 401/403 — the admin is authorised.
+      expect(before.status, "admin should be authorised before demotion").not.toBe(401);
+      expect(before.status, "admin should be authorised before demotion").not.toBe(403);
+
+      // Demote the admin directly in the DB.
+      await db
+        .update(usersTable)
+        .set({ role: "member" })
+        .where(eq(usersTable.id, admin.id));
+
+      // Same session cookie — role re-sync must now return 403.
+      const after = await admin.agent
+        .patch(`/api/memberships/${membershipId}/kyc`)
+        .send({ action: "approve" });
+      expect(
+        after.status,
+        "demoted admin's existing session must be rejected immediately on PATCH /memberships/:id/kyc",
+      ).toBe(403);
+    },
+  );
+});
