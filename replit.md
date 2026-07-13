@@ -1,6 +1,16 @@
-# [Project name]
+# LRMC Platform (Ususu)
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+A unified membership, asset management, and marketplace platform for the Land Registry & Membership Consortium.
+
+## Operating Model
+
+| Role | Tool | Responsibility |
+|------|------|----------------|
+| **Vision** | Mustafa (Founder) | Mission, business model, domain structure, product strategy |
+| **Architecture** | Microsoft Copilot | System design, monorepo governance, PR review, strategic planning |
+| **Execution** | Replit Agent | Code, migrations, servers, deployments, integrations |
+
+Copilot reviews the codebase at the GitHub layer. This agent (Replit) is the execution engine only — it does not override architectural decisions made by Copilot.
 
 ## Run & Operate
 
