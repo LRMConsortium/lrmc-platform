@@ -7,7 +7,7 @@ export const propertyListingsTable = pgTable("property_listings", {
   id: serial("id").primaryKey(),
   ownerId: integer("owner_id")
     .notNull()
-    .references(() => usersTable.id),
+    .references(() => usersTable.id, { onDelete: "cascade" }),
   category: text("category").notNull(), // property | vehicle | airbnb | resort
   title: text("title").notNull(),
   location: text("location").notNull(),

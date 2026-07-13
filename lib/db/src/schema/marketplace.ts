@@ -7,7 +7,7 @@ export const marketplaceListingsTable = pgTable("marketplace_listings", {
   id: serial("id").primaryKey(),
   sellerId: integer("seller_id")
     .notNull()
-    .references(() => usersTable.id),
+    .references(() => usersTable.id, { onDelete: "cascade" }),
   title: text("title").notNull(),
   description: text("description").notNull(),
   priceCents: integer("price_cents").notNull(),
@@ -28,7 +28,7 @@ export type MarketplaceListing = typeof marketplaceListingsTable.$inferSelect;
 
 export const digitalProductsTable = pgTable("digital_products", {
   id: serial("id").primaryKey(),
-  sellerId: integer("seller_id").references(() => usersTable.id),
+  sellerId: integer("seller_id").references(() => usersTable.id, { onDelete: "cascade" }),
   title: text("title").notNull(),
   description: text("description").notNull(),
   priceCents: integer("price_cents").notNull(),
@@ -69,7 +69,8 @@ export const digitalProductPurchasesTable = pgTable(
       .notNull()
       .references(() => digitalProductsTable.id),
     // Set when the buyer was signed in at checkout time; null for guests.
-    buyerId: integer("buyer_id").references(() => usersTable.id),
+    // ON DELETE SET NULL: purchase records are kept for financial audit when a user is deleted.
+    buyerId: integer("buyer_id").references(() => usersTable.id, { onDelete: "set null" }),
     buyerEmail: text("buyer_email").notNull(),
     amountCents: integer("amount_cents").notNull(),
     memberDiscountApplied: boolean("member_discount_applied")
@@ -99,7 +100,7 @@ export const adsTable = pgTable("ads", {
   id: serial("id").primaryKey(),
   advertiserId: integer("advertiser_id")
     .notNull()
-    .references(() => usersTable.id),
+    .references(() => usersTable.id, { onDelete: "cascade" }),
   title: text("title").notNull(),
   content: text("content").notNull(),
   placement: text("placement").notNull(), // homepage | ususu | marketplace

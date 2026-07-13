@@ -7,7 +7,7 @@ export const driversTable = pgTable("drivers", {
   id: serial("id").primaryKey(),
   userId: integer("user_id")
     .notNull()
-    .references(() => usersTable.id),
+    .references(() => usersTable.id, { onDelete: "cascade" }),
   vehicleInfo: text("vehicle_info").notNull(),
   status: text("status").notNull().default("pending"), // pending | approved | suspended
   rating: integer("rating").notNull().default(5),
@@ -29,7 +29,7 @@ export const ridesTable = pgTable("rides", {
   id: serial("id").primaryKey(),
   riderId: integer("rider_id")
     .notNull()
-    .references(() => usersTable.id),
+    .references(() => usersTable.id, { onDelete: "cascade" }),
   driverId: integer("driver_id").references(() => driversTable.id),
   pickup: text("pickup").notNull(),
   dropoff: text("dropoff").notNull(),

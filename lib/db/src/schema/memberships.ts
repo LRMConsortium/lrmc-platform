@@ -8,7 +8,7 @@ export const membershipsTable = pgTable("memberships", {
   userId: integer("user_id")
     .notNull()
     .unique()
-    .references(() => usersTable.id),
+    .references(() => usersTable.id, { onDelete: "cascade" }),
   type: text("type").notNull(), // property_owner | vehicle_owner | airbnb_host | resort_owner | land_seller | construction_contractor | advertiser | ususu_driver | renter
   feePaidCents: integer("fee_paid_cents").notNull().default(0),
   status: text("status").notNull().default("pending"), // pending | active | rejected | suspended

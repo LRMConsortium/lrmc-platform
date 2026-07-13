@@ -7,7 +7,7 @@ export const authTokensTable = pgTable("auth_tokens", {
   id: serial("id").primaryKey(),
   userId: integer("user_id")
     .notNull()
-    .references(() => usersTable.id),
+    .references(() => usersTable.id, { onDelete: "cascade" }),
   tokenHash: text("token_hash").notNull().unique(),
   purpose: text("purpose").notNull(), // verify_email | reset_password
   expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),

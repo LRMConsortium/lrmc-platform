@@ -7,10 +7,10 @@ export const internalMessagesTable = pgTable("internal_messages", {
   id: serial("id").primaryKey(),
   senderId: integer("sender_id")
     .notNull()
-    .references(() => usersTable.id),
+    .references(() => usersTable.id, { onDelete: "cascade" }),
   recipientId: integer("recipient_id")
     .notNull()
-    .references(() => usersTable.id),
+    .references(() => usersTable.id, { onDelete: "cascade" }),
   subject: text("subject").notNull(),
   body: text("body").notNull(),
   readAt: timestamp("read_at", { withTimezone: true }),
@@ -29,7 +29,7 @@ export const internalTicketsTable = pgTable("internal_tickets", {
   id: serial("id").primaryKey(),
   createdById: integer("created_by_id")
     .notNull()
-    .references(() => usersTable.id),
+    .references(() => usersTable.id, { onDelete: "cascade" }),
   department: text("department").notNull(), // finance | treasury | membership | land | construction | marketplace | youth | dispatch | support
   subject: text("subject").notNull(),
   description: text("description").notNull(),

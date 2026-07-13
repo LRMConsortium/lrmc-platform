@@ -7,7 +7,7 @@ export const landListingsTable = pgTable("land_listings", {
   id: serial("id").primaryKey(),
   sellerId: integer("seller_id")
     .notNull()
-    .references(() => usersTable.id),
+    .references(() => usersTable.id, { onDelete: "cascade" }),
   title: text("title").notNull(),
   location: text("location").notNull(),
   priceCents: integer("price_cents").notNull(),
@@ -32,7 +32,7 @@ export const landTransactionsTable = pgTable("land_transactions", {
     .references(() => landListingsTable.id),
   buyerId: integer("buyer_id")
     .notNull()
-    .references(() => usersTable.id),
+    .references(() => usersTable.id, { onDelete: "cascade" }),
   amountCents: integer("amount_cents").notNull(),
   status: text("status").notNull().default("pending"), // pending | completed | cancelled
   createdAt: timestamp("created_at", { withTimezone: true })

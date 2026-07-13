@@ -7,7 +7,7 @@ export const constructionContractorsTable = pgTable("construction_contractors", 
   id: serial("id").primaryKey(),
   userId: integer("user_id")
     .notNull()
-    .references(() => usersTable.id),
+    .references(() => usersTable.id, { onDelete: "cascade" }),
   companyName: text("company_name").notNull(),
   specialty: text("specialty").notNull(),
   rating: integer("rating").notNull().default(5),

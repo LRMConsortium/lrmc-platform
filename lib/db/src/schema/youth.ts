@@ -7,7 +7,7 @@ export const youthEmploymentRecordsTable = pgTable("youth_employment_records", {
   id: serial("id").primaryKey(),
   userId: integer("user_id")
     .notNull()
-    .references(() => usersTable.id),
+    .references(() => usersTable.id, { onDelete: "cascade" }),
   program: text("program").notNull(),
   status: text("status").notNull().default("enrolled"), // enrolled | training | placed | completed
   placementCompany: text("placement_company"),
