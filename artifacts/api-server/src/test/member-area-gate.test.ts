@@ -387,3 +387,78 @@ describe("member-area gate — mid-session membership status change", () => {
     },
   );
 });
+
+// ---------------------------------------------------------------------------
+// Membership row deletion
+//
+// requireApprovedMembership treats a missing row as 403 (same branch as an
+// unpaid / unverified row). This suite confirms that a hard-delete of the
+// membership row — e.g. an admin purge or a cascade delete — locks the user
+// out on their very next request, without requiring a fresh login.
+// ---------------------------------------------------------------------------
+
+describe("member-area gate — membership row deletion", () => {
+  it(
+    "a paid + KYC-approved member immediately loses access when their membership row is deleted",
+    async () => {
+      const member = await createMemberUser("membership-deletion");
+
+      // Confirm the member has access before deletion.
+      const before = await member.agent.get("/api/land-transactions");
+      expect(
+        before.status,
+        "approved member must have access before membership row is deleted",
+      ).toBe(200);
+
+      // Hard-delete the membership row (simulates an admin purge or cascade delete).
+      await db
+        .delete(membershipsTable)
+        .where(eq(membershipsTable.userId, member.id));
+
+      // Same session cookie — the middleware re-reads the row on every request,
+      // so the deletion must take effect immediately without a new login.
+      const after = await member.agent.get("/api/land-transactions");
+      expect(
+        after.status,
+        "member's existing session must be blocked immediately after membership row deletion",
+      ).toBe(403);
+    },
+  );
+
+  it(
+    "the 403 body after deletion matches the standard membership-gate error message",
+    async () => {
+      const member = await createMemberUser("membership-deletion-body");
+
+      await db
+        .delete(membershipsTable)
+        .where(eq(membershipsTable.userId, member.id));
+
+      const res = await member.agent.get("/api/land-transactions");
+      expect(res.status).toBe(403);
+      expect(res.body.error).toBe(
+        "Full member's-area access requires a paid membership and approved identity verification",
+      );
+    },
+  );
+
+  it(
+    "membership deletion blocks access across multiple member-area routes simultaneously",
+    async () => {
+      const member = await createMemberUser("membership-deletion-multi-route");
+
+      await db
+        .delete(membershipsTable)
+        .where(eq(membershipsTable.userId, member.id));
+
+      const routes = ["/api/land-transactions", "/api/rides", "/api/internal-messages"];
+      for (const route of routes) {
+        const res = await member.agent.get(route);
+        expect(
+          res.status,
+          `existing session must be blocked on ${route} after membership deletion`,
+        ).toBe(403);
+      }
+    },
+  );
+});
