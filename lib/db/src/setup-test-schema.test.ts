@@ -12,13 +12,139 @@
  *    still shows up in pg_database (e.g. a connection prevented the real drop),
  *    runSetupTestSchema must throw rather than silently continuing — exercising
  *    the post-DROP existence check directly.
+ *
+ * Also covers testDatabaseUrl() — the URL-derivation utility whose regex must
+ * always produce a URL pointing at heliumdb_test, never the dev database.
  */
 
 import { describe, it, expect, vi, type MockedFunction } from "vitest";
 import pg from "pg";
 import { runSetupTestSchema } from "./setup-test-schema-core";
+import { testDatabaseUrl } from "./test-db-url";
 
 const { Pool, Client } = pg;
+
+// ─── unit tests: testDatabaseUrl() ──────────────────────────────────────────
+
+describe("testDatabaseUrl – URL derivation", () => {
+  it("replaces a plain path-segment database name with heliumdb_test", () => {
+    const input = "postgresql://user:pass@host/heliumdb";
+    const result = testDatabaseUrl(input);
+    expect(result).toBe("postgresql://user:pass@host/heliumdb_test");
+  });
+
+  it("preserves query params after replacing the database name", () => {
+    const input = "postgresql://user:pass@host/heliumdb?sslmode=disable";
+    const result = testDatabaseUrl(input);
+    expect(result).toBe(
+      "postgresql://user:pass@host/heliumdb_test?sslmode=disable"
+    );
+  });
+
+  it("preserves multiple query params after the replacement", () => {
+    const input =
+      "postgresql://user:pass@host/heliumdb?sslmode=require&connect_timeout=10";
+    const result = testDatabaseUrl(input);
+    expect(result).toBe(
+      "postgresql://user:pass@host/heliumdb_test?sslmode=require&connect_timeout=10"
+    );
+  });
+
+  it("is idempotent when the URL already targets heliumdb_test", () => {
+    const input = "postgresql://user:pass@host/heliumdb_test";
+    const result = testDatabaseUrl(input);
+    expect(result).toBe("postgresql://user:pass@host/heliumdb_test");
+  });
+
+  it("is idempotent when heliumdb_test URL already has query params", () => {
+    const input = "postgresql://user:pass@host/heliumdb_test?sslmode=disable";
+    const result = testDatabaseUrl(input);
+    expect(result).toBe(
+      "postgresql://user:pass@host/heliumdb_test?sslmode=disable"
+    );
+  });
+
+  it("works with postgres:// scheme as well as postgresql://", () => {
+    const input = "postgres://user:pass@host/heliumdb";
+    const result = testDatabaseUrl(input);
+    expect(result).toBe("postgres://user:pass@host/heliumdb_test");
+  });
+
+  it("works with a port number in the host", () => {
+    const input = "postgresql://user:pass@host:5432/heliumdb";
+    const result = testDatabaseUrl(input);
+    expect(result).toBe("postgresql://user:pass@host:5432/heliumdb_test");
+  });
+
+  // ── Format-change safety: unrecognisable URLs must pass through unchanged ──
+  //
+  // The safety guard in setup-test-schema.ts aborts when the derived URL equals
+  // the base URL.  An unrecognisable format (no replaceable path segment) must
+  // therefore return the input unchanged so the guard fires instead of silently
+  // targeting the wrong database.
+
+  it("returns the input unchanged when the URL has no path segment (triggers safety guard)", () => {
+    // A hypothetical future format where the database name lives only in a
+    // query parameter — no path segment to replace.
+    const input = "postgresql://user:pass@host?dbname=heliumdb";
+    const result = testDatabaseUrl(input);
+    // No replacement possible → result equals input → safety guard will fire.
+    expect(result).toBe(input);
+  });
+
+  it("returns the input unchanged for a bare host URL with no path or query", () => {
+    const input = "postgresql://user:pass@host";
+    const result = testDatabaseUrl(input);
+    expect(result).toBe(input);
+  });
+
+  it("returns the input unchanged when the path is just '/' (no database name)", () => {
+    const input = "postgresql://user:pass@host/";
+    const result = testDatabaseUrl(input);
+    expect(result).toBe(input);
+  });
+
+  it("returns the input unchanged when a query param value contains a slash", () => {
+    // A slash inside a query-param value must NEVER be treated as a path segment.
+    const input = "postgresql://user:pass@host?options=/c%20heliumdb";
+    const result = testDatabaseUrl(input);
+    expect(result).toBe(input);
+  });
+
+  it("returns the input unchanged when query params have slash-bearing values and no path segment", () => {
+    const input = "postgresql://host?sslrootcert=/etc/ssl/certs/ca.crt&dbname=heliumdb";
+    const result = testDatabaseUrl(input);
+    expect(result).toBe(input);
+  });
+
+  it("returns the input unchanged for a completely unparseable string", () => {
+    const input = "not-a-url-at-all";
+    const result = testDatabaseUrl(input);
+    expect(result).toBe(input);
+  });
+
+  // ── Invariant: output always ends with heliumdb_test (path or query start) ─
+
+  it.each([
+    "postgresql://u:p@h/heliumdb",
+    "postgresql://u:p@h/heliumdb?sslmode=disable",
+    "postgresql://u:p@h:5432/myapp_dev",
+    "postgresql://u:p@h/heliumdb_test",
+    "postgres://u:p@h/somedb?foo=bar&baz=qux",
+  ])("output always contains /heliumdb_test at the db-name position: %s", (url) => {
+    const result = testDatabaseUrl(url);
+    // Either the result was successfully rewritten, or it was returned unchanged
+    // (no path segment).  When rewritten, it must contain /heliumdb_test.
+    const wasRewritten = result !== url;
+    if (wasRewritten) {
+      expect(result).toMatch(/\/heliumdb_test(\?|$)/);
+    } else {
+      // Unchanged means the URL had no replaceable segment; the safety guard
+      // must catch this at runtime.
+      expect(result).toBe(url);
+    }
+  });
+});
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 

@@ -7,8 +7,35 @@
  * any side-effect code.
  */
 export function testDatabaseUrl(baseUrl: string): string {
-  // Replace the path segment (database name) while preserving query params.
-  // e.g. postgresql://user:pass@host/heliumdb?sslmode=disable
-  //   => postgresql://user:pass@host/heliumdb_test?sslmode=disable
-  return baseUrl.replace(/\/([^/?]+)(\?|$)/, "/heliumdb_test$2");
+  // Derive the test URL by swapping only the pathname's database segment to
+  // `heliumdb_test`.  We parse the URL structurally so we never accidentally
+  // rewrite query-param values, the authority, or the scheme — all of which
+  // look like plausible regex targets in edge-case formats.
+  //
+  // If the URL cannot be parsed, or it has no meaningful pathname database
+  // segment (pathname is empty, "/", or contains nested slashes), we return
+  // the original string unchanged.  The caller (setup-test-schema.ts, index.ts)
+  // compares the result against baseUrl and aborts if they are equal — that is
+  // the intended safety-guard path for unrecognisable URL formats.
+  let parsed: URL;
+  try {
+    // `new URL()` requires a scheme.  postgresql:// and postgres:// are not
+    // registered WHATWG schemes, but the parser accepts unknown schemes as long
+    // as the string is well-formed, which is sufficient for our purpose.
+    parsed = new URL(baseUrl);
+  } catch {
+    // Unparseable URL — return unchanged so the safety guard fires.
+    return baseUrl;
+  }
+
+  // pathname must be exactly "/<dbname>" — a single non-empty segment with no
+  // nested slashes.  Anything else (empty, "/", "/a/b") is not a recognisable
+  // database-name path, so we return unchanged.
+  const pathname = parsed.pathname; // e.g. "/heliumdb" or ""
+  if (!pathname || pathname === "/" || pathname.lastIndexOf("/") !== 0) {
+    return baseUrl;
+  }
+
+  parsed.pathname = "/heliumdb_test";
+  return parsed.toString();
 }
