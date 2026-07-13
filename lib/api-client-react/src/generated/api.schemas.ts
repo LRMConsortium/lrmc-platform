@@ -162,8 +162,18 @@ export interface PropertyListing {
   createdAt: string;
 }
 
+export type PropertyListingInputCategory = typeof PropertyListingInputCategory[keyof typeof PropertyListingInputCategory];
+
+
+export const PropertyListingInputCategory = {
+  property: 'property',
+  vehicle: 'vehicle',
+  airbnb: 'airbnb',
+  resort: 'resort',
+} as const;
+
 export interface PropertyListingInput {
-  category: string;
+  category: PropertyListingInputCategory;
   /** @minLength 1 */
   title: string;
   /** @minLength 1 */
@@ -555,6 +565,42 @@ export interface AdContentUpdate {
   rejectionNote?: string | null;
 }
 
+export interface Asset {
+  id: number;
+  ownerId: number;
+  kind: string;
+  title: string;
+  description: string;
+  location: string;
+  priceCents: number;
+  imageUrl?: string | null;
+  status: string;
+  createdAt: string;
+}
+
+export interface AssetInput {
+  /** @minLength 1 */
+  kind: string;
+  /** @minLength 1 */
+  title: string;
+  description?: string;
+  location?: string;
+  /** @minimum 0 */
+  priceCents?: number;
+  imageUrl?: string;
+}
+
+export interface AssetUpdate {
+  /** @minLength 1 */
+  title?: string;
+  description?: string;
+  location?: string;
+  /** @minimum 0 */
+  priceCents?: number;
+  imageUrl?: string | null;
+  status?: string;
+}
+
 export interface YouthEmploymentRecord {
   id: number;
   userId: number;
@@ -830,4 +876,9 @@ export const ListDigitalProductsStatus = {
   active: 'active',
   archived: 'archived',
 } as const;
+
+export type ListAssetsParams = {
+kind?: string;
+ownerId?: number;
+};
 

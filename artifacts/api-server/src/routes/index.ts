@@ -13,6 +13,7 @@ import treasuryRouter from "./treasury";
 import riskRouter from "./risk";
 import settlementRouter from "./settlement";
 import internalRouter from "./internal";
+import assetsRouter from "./assets";
 import dashboardRouter from "./dashboard";
 
 const router: IRouter = Router();
@@ -31,6 +32,7 @@ router.use(treasuryRouter);
 router.use(riskRouter);
 router.use(settlementRouter);
 router.use(internalRouter);
+router.use(assetsRouter);
 router.use(dashboardRouter);
 
 export default router;

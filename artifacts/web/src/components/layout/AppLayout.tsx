@@ -16,7 +16,8 @@ import {
   LogOut,
   Menu,
   ShieldCheck,
-  Hourglass
+  Hourglass,
+  Package,
 } from "lucide-react"
 import { useLogout, useGetCurrentUser, useGetMyMembership, getGetMyMembershipQueryKey } from "@workspace/api-client-react"
 import { Button } from "@/components/ui/button"
@@ -66,6 +67,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     { href: "/construction", label: "Construction", icon: Home },
     { href: "/mobility", label: "Ususu Mobility", icon: Car },
     { href: "/marketplace", label: "Marketplace", icon: Store },
+    { href: "/assets", label: "Asset Manager", icon: Package },
     { href: "/youth-employment", label: "Youth Placement", icon: GraduationCap },
     ...(isAdmin ? [
       { href: "/prospecting", label: "Prospecting", icon: Users },

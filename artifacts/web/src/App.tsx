@@ -34,6 +34,7 @@ import Settlements from '@/pages/settlements';
 import Messages from '@/pages/messages';
 import Tickets from '@/pages/tickets';
 import Settings from '@/pages/settings';
+import Assets from '@/pages/assets';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -90,6 +91,7 @@ function Router() {
       <Route path="/messages" component={() => <ProtectedRoute component={Messages} />} />
       <Route path="/tickets" component={() => <ProtectedRoute component={Tickets} />} />
       <Route path="/settings" component={() => <ProtectedRoute component={Settings} />} />
+      <Route path="/assets" component={() => <ProtectedRoute component={Assets} />} />
 
       {/* Admin Only Routes */}
       <Route path="/prospecting" component={() => <ProtectedRoute component={Prospecting} adminOnly />} />

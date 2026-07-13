@@ -1,5 +1,6 @@
 export * from "./users";
 export * from "./auth-tokens";
+export * from "./assets";
 export * from "./memberships";
 export * from "./properties";
 export * from "./land";

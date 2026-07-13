@@ -950,6 +950,83 @@ paths:
         "204":
           description: Deleted
 
+  # ---------------- ASSETS ----------------
+  /assets:
+    get:
+      operationId: listAssets
+      tags: [assets]
+      parameters:
+        - name: kind
+          in: query
+          schema:
+            type: string
+        - name: ownerId
+          in: query
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: List of assets
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Asset"
+    post:
+      operationId: createAsset
+      tags: [assets]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AssetInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Asset"
+  /assets/{id}:
+    patch:
+      operationId: updateAsset
+      tags: [assets]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AssetUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Asset"
+        "404":
+          description: Not found
+    delete:
+      operationId: deleteAsset
+      tags: [assets]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
   # ---------------- YOUTH EMPLOYMENT ----------------
   /youth-employment-records:
     get:
@@ -1757,6 +1834,41 @@ components:
         placement: { type: string, minLength: 1 }
         status: { type: string, enum: [pending, active, rejected] }
         rejectionNote: { type: string, nullable: true }
+
+    # ---------- ASSETS ----------
+    Asset:
+      type: object
+      required: [id, ownerId, kind, title, description, location, priceCents, status, createdAt]
+      properties:
+        id: { type: integer }
+        ownerId: { type: integer }
+        kind: { type: string }
+        title: { type: string }
+        description: { type: string }
+        location: { type: string }
+        priceCents: { type: integer }
+        imageUrl: { type: string, nullable: true }
+        status: { type: string }
+        createdAt: { type: string, format: date-time }
+    AssetInput:
+      type: object
+      required: [kind, title]
+      properties:
+        kind: { type: string, minLength: 1 }
+        title: { type: string, minLength: 1 }
+        description: { type: string }
+        location: { type: string }
+        priceCents: { type: integer, minimum: 0 }
+        imageUrl: { type: string }
+    AssetUpdate:
+      type: object
+      properties:
+        title: { type: string, minLength: 1 }
+        description: { type: string }
+        location: { type: string }
+        priceCents: { type: integer, minimum: 0 }
+        imageUrl: { type: string, nullable: true }
+        status: { type: string }
 
     # ---------- YOUTH ----------
     YouthEmploymentRecord:

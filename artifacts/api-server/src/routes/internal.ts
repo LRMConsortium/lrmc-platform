@@ -3,10 +3,9 @@ import { eq, or, desc } from "drizzle-orm";
 import { db, internalMessagesTable, internalTicketsTable, membershipsTable, usersTable } from "@workspace/db";
 import {
   ListInternalMessagesResponse,
+  ListInternalMessagesResponseItem,
   CreateInternalMessageBody,
   CreateInternalMessageResponse,
-  GetInternalMessageParams,
-  GetInternalMessageResponse,
   MarkInternalMessageReadParams,
   MarkInternalMessageReadResponse,
   ListInternalTicketsResponse,
@@ -81,7 +80,7 @@ router.post("/internal-messages", requireAuth, requireApprovedMembership, async 
 });
 
 router.get("/internal-messages/:id", requireAuth, requireApprovedMembership, async (req, res): Promise<void> => {
-  const params = GetInternalMessageParams.safeParse(req.params);
+  const params = MarkInternalMessageReadParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
     return;
@@ -109,7 +108,7 @@ router.get("/internal-messages/:id", requireAuth, requireApprovedMembership, asy
     return;
   }
 
-  res.json(GetInternalMessageResponse.parse(existing));
+  res.json(ListInternalMessagesResponseItem.parse(existing));
 });
 
 router.patch(

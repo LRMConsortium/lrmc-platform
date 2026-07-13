@@ -5,9 +5,10 @@
  * LRMC / Ususu institution API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { PropertyListingInputCategory } from './propertyListingInputCategory';
 
 export interface PropertyListingInput {
-  category: string;
+  category: PropertyListingInputCategory;
   /** @minLength 1 */
   title: string;
   /** @minLength 1 */

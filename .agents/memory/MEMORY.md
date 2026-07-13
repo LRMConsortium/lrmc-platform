@@ -8,3 +8,4 @@
 - [Payment/KYC gate = soft UI gate, not API lockdown](membership-payment-kyc-soft-gate.md) — "grayed-out member area pending review" was interpreted as UI-only dimming; underlying data queries still run.
 - [Stripe webhook must fail closed on missing secret](stripe-webhook-fail-closed.md) — empty-string webhook secret makes Stripe's SDK skip signature verification entirely; throw/abort instead of `?? ""`.
 - [Rate limiter test-suite exemption pattern](ratelimit-test-exemption.md) — new rate limiters on high-volume auth routes need `skip: () => NODE_ENV === "test"` or the authz suite (hundreds of registrations/run) trips them.
+- [Assets module integration](assets-module-integration.md) — drizzle push blocked by memberships unique constraint; use direct SQL for new tables. Orval clean mode drops hand-named schemas not in spec.

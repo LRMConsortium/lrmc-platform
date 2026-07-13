@@ -965,6 +965,94 @@ export const DeleteAdParams = zod.object({
 export const DeleteAdResponse = zod.void()
 
 
+export const ListAssetsQueryParams = zod.object({
+  "kind": zod.coerce.string().optional(),
+  "ownerId": zod.coerce.number().int().optional()
+})
+
+export const ListAssetsResponseItem = zod.object({
+  "id": zod.number().int(),
+  "ownerId": zod.number().int(),
+  "kind": zod.string(),
+  "title": zod.string(),
+  "description": zod.string(),
+  "location": zod.string(),
+  "priceCents": zod.number().int(),
+  "imageUrl": zod.string().nullish(),
+  "status": zod.string(),
+  "createdAt": zod.coerce.date()
+})
+export const ListAssetsResponse = zod.array(ListAssetsResponseItem)
+
+
+
+
+export const createAssetBodyPriceCentsMin = 0;
+
+
+
+export const CreateAssetBody = zod.object({
+  "kind": zod.string().min(1),
+  "title": zod.string().min(1),
+  "description": zod.string().optional(),
+  "location": zod.string().optional(),
+  "priceCents": zod.number().int().min(createAssetBodyPriceCentsMin).optional(),
+  "imageUrl": zod.string().optional()
+})
+
+export const CreateAssetResponse = zod.object({
+  "id": zod.number().int(),
+  "ownerId": zod.number().int(),
+  "kind": zod.string(),
+  "title": zod.string(),
+  "description": zod.string(),
+  "location": zod.string(),
+  "priceCents": zod.number().int(),
+  "imageUrl": zod.string().nullish(),
+  "status": zod.string(),
+  "createdAt": zod.coerce.date()
+})
+
+
+export const UpdateAssetParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+
+export const updateAssetBodyPriceCentsMin = 0;
+
+
+
+export const UpdateAssetBody = zod.object({
+  "title": zod.string().min(1).optional(),
+  "description": zod.string().optional(),
+  "location": zod.string().optional(),
+  "priceCents": zod.number().int().min(updateAssetBodyPriceCentsMin).optional(),
+  "imageUrl": zod.string().nullish(),
+  "status": zod.string().optional()
+})
+
+export const UpdateAssetResponse = zod.object({
+  "id": zod.number().int(),
+  "ownerId": zod.number().int(),
+  "kind": zod.string(),
+  "title": zod.string(),
+  "description": zod.string(),
+  "location": zod.string(),
+  "priceCents": zod.number().int(),
+  "imageUrl": zod.string().nullish(),
+  "status": zod.string(),
+  "createdAt": zod.coerce.date()
+})
+
+
+export const DeleteAssetParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const DeleteAssetResponse = zod.void()
+
+
 export const ListYouthEmploymentRecordsResponseItem = zod.object({
   "id": zod.number().int(),
   "userId": zod.number().int(),
@@ -1224,20 +1312,6 @@ export const CreateInternalMessageResponse = zod.object({
   "createdAt": zod.coerce.date()
 })
 
-
-export const GetInternalMessageParams = zod.object({
-  "id": zod.coerce.number().int()
-})
-
-export const GetInternalMessageResponse = zod.object({
-  "id": zod.number().int(),
-  "senderId": zod.number().int(),
-  "recipientId": zod.number().int(),
-  "subject": zod.string(),
-  "body": zod.string(),
-  "readAt": zod.coerce.date().nullable(),
-  "createdAt": zod.coerce.date()
-})
 
 export const MarkInternalMessageReadParams = zod.object({
   "id": zod.coerce.number().int()
