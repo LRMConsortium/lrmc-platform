@@ -13,7 +13,8 @@
     "setup-test-schema": "tsx src/setup-test-schema.ts",
     "push-force-test": "drizzle-kit push --force --config ./drizzle.test.config.ts",
     "verify-test-schema": "tsx src/verify-test-schema.ts",
-    "seed": "tsx src/seed.ts"
+    "seed": "tsx src/seed.ts",
+    "test": "vitest run"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",
@@ -27,6 +28,7 @@
     "@types/node": "catalog:",
     "@types/pg": "^8.20.0",
     "drizzle-kit": "^0.31.10",
-    "tsx": "catalog:"
+    "tsx": "catalog:",
+    "vitest": "^4.1.10"
   }
 }
