@@ -1,4 +1,6 @@
 import { describe, it, expect } from "vitest";
+import { eq } from "drizzle-orm";
+import { db, membershipsTable } from "@workspace/db";
 import { createMemberUser, createAdminUser, createMemberUserWithMembership, anonymousAgent } from "./helpers";
 
 // ---------------------------------------------------------------------------
@@ -42,6 +44,23 @@ describe("internal-messages — access control", () => {
     const res = await sender.agent
       .post("/api/internal-messages")
       .send({ recipientId: unapproved.id, subject: "Hi", body: "Can you see this?" });
+    expect(res.status).toBe(404);
+  });
+
+  it("sending to a recipient whose KYC was revoked after approval returns 404", async () => {
+    const sender = await createMemberUser("msg-kyc-revoked-sender");
+    const recipient = await createMemberUser("msg-kyc-revoked-recipient");
+
+    // Recipient starts with an approved membership (createMemberUser gives them one).
+    // Simulate KYC being revoked post-approval by downgrading directly in the DB.
+    await db
+      .update(membershipsTable)
+      .set({ kycStatus: "rejected" })
+      .where(eq(membershipsTable.userId, recipient.id));
+
+    const res = await sender.agent
+      .post("/api/internal-messages")
+      .send({ recipientId: recipient.id, subject: "Hi", body: "Still there?" });
     expect(res.status).toBe(404);
   });
 
