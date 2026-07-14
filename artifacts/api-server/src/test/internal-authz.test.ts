@@ -64,6 +64,25 @@ describe("internal-messages — access control", () => {
     expect(res.status).toBe(404);
   });
 
+  it("a sender whose KYC is revoked mid-session is blocked by requireApprovedMembership (403)", async () => {
+    const sender = await createMemberUser("msg-sender-kyc-revoked");
+    const recipient = await createMemberUser("msg-sender-kyc-revoked-recip");
+
+    // Sender starts with an approved membership (createMemberUser gives them one).
+    // Simulate KYC being revoked post-login by downgrading directly in the DB.
+    await db
+      .update(membershipsTable)
+      .set({ kycStatus: "rejected" })
+      .where(eq(membershipsTable.userId, sender.id));
+
+    // The sender's session is still active, but the gate must re-check the DB
+    // on every request and block them with 403.
+    const res = await sender.agent
+      .post("/api/internal-messages")
+      .send({ recipientId: recipient.id, subject: "Late attempt", body: "Should be blocked" });
+    expect(res.status).toBe(403);
+  });
+
   it("sending to a fully approved member returns 201", async () => {
     const sender = await createMemberUser("msg-approved-sender");
     const recipient = await createMemberUser("msg-approved-recipient");
