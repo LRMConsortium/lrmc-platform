@@ -105,6 +105,33 @@ describe("internal-messages — access control", () => {
     expect(res.body).toHaveProperty("id");
   });
 
+  it("an admin recipient can GET the message by ID, see it in their list, and mark it read", async () => {
+    const sender = await createMemberUser("msg-admin-as-recip-sender");
+    const admin = await createAdminUser("msg-admin-as-recip-admin");
+
+    // Member sends a message directly to the admin.
+    const sendRes = await sender.agent
+      .post("/api/internal-messages")
+      .send({ recipientId: admin.id, subject: "For you admin", body: "Please read this" });
+    expect(sendRes.status).toBe(201);
+    const messageId: number = sendRes.body.id;
+
+    // Admin fetches the message by ID — must see it (200), not get 403 or 404.
+    const getRes = await admin.agent.get(`/api/internal-messages/${messageId}`);
+    expect(getRes.status).toBe(200);
+    expect(getRes.body.id).toBe(messageId);
+
+    // Admin sees the message in their inbox list.
+    const listRes = await admin.agent.get("/api/internal-messages");
+    expect(listRes.status).toBe(200);
+    const listedIds = (listRes.body as { id: number }[]).map((m) => m.id);
+    expect(listedIds).toContain(messageId);
+
+    // Admin marks the message as read — must succeed (200).
+    const readRes = await admin.agent.patch(`/api/internal-messages/${messageId}/read`);
+    expect(readRes.status).toBe(200);
+  });
+
   it("a member can only see messages they sent or received", async () => {
     const memberA = await createMemberUser("msg-scope-a");
     const memberB = await createMemberUser("msg-scope-b");
