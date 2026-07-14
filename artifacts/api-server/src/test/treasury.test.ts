@@ -3,6 +3,7 @@ import request from "supertest";
 import { eq, sql } from "drizzle-orm";
 import { db, usersTable, authTokensTable } from "@workspace/db";
 import { createMemberUser, createAdminUser, anonymousAgent, app } from "./helpers";
+import { generateRawToken, hashToken, expiryFor } from "../lib/tokens";
 
 const TREASURY_ROUTES = [
   "/api/treasury/accounts",
@@ -611,6 +612,277 @@ describe("session invalidation — concurrent logout only kills the requesting s
         afterBFinal.status,
         "agent B session must remain invalidated (401) after its own earlier logout",
       ).toBe(401);
+    },
+  );
+});
+
+// ---------------------------------------------------------------------------
+// Logout + email-verification token interaction
+//
+// A user may register, receive a verification link, and then log out (or lose
+// their session) before clicking it.  The verify-email token must still be
+// consumable after logout — the account must be verifiable from the emailed
+// link regardless of current session state.  Simultaneously the pre-logout
+// cookie must never be revived by consuming the token.
+// ---------------------------------------------------------------------------
+
+describe("session invalidation — logout does not block a pending verify-email token", () => {
+  it(
+    "pre-logout cookie stays 401 after consuming the verify-email token; fresh login works",
+    async () => {
+      const member = await createMemberUser("logout-then-verify");
+
+      // ── Step 1: capture a raw session cookie from a direct login. ──
+      const directLoginRes = await request(app)
+        .post("/api/auth/login")
+        .send({ email: member.email, password: member.password });
+      expect(directLoginRes.status, "direct login must succeed").toBe(200);
+
+      const rawCookie = (directLoginRes.headers["set-cookie"] as string[] | undefined)?.[0];
+      expect(rawCookie, "login response must set a session cookie").toBeTruthy();
+
+      // Confirm the captured cookie is valid before logout.
+      const before = await request(app)
+        .get("/api/auth/me")
+        .set("Cookie", rawCookie!);
+      expect(before.status, "captured cookie must be valid before logout").toBe(200);
+
+      // ── Step 2: mint a verify_email token directly (simulates the registration email). ──
+      const rawToken = generateRawToken();
+      await db.insert(authTokensTable).values({
+        userId: member.id,
+        tokenHash: hashToken(rawToken),
+        purpose: "verify_email",
+        expiresAt: expiryFor("verify_email"),
+      });
+
+      // ── Step 3: user logs out — session is destroyed server-side. ──
+      const logoutRes = await request(app)
+        .post("/api/auth/logout")
+        .set("Cookie", rawCookie!);
+      expect(logoutRes.status, "logout must succeed with 204").toBe(204);
+
+      // ── Step 4: pre-logout cookie must be dead immediately. ──
+      const afterLogout = await request(app)
+        .get("/api/auth/me")
+        .set("Cookie", rawCookie!);
+      expect(
+        afterLogout.status,
+        "pre-logout cookie must be rejected (401) after logout",
+      ).toBe(401);
+
+      // ── Step 5: verify-email token must still be usable after logout. ──
+      const verifyRes = await request(app)
+        .post("/api/auth/verify-email")
+        .send({ token: rawToken });
+      expect(
+        verifyRes.status,
+        "verify-email with a valid token must succeed (200) even after logout",
+      ).toBe(200);
+
+      // ── Step 6: pre-logout cookie remains dead after token consumption. ──
+      const afterVerify = await request(app)
+        .get("/api/auth/me")
+        .set("Cookie", rawCookie!);
+      expect(
+        afterVerify.status,
+        "pre-logout cookie must remain rejected (401) even after verify-email token is consumed",
+      ).toBe(401);
+
+      // ── Step 7: fresh login must still work (account is verified). ──
+      const freshAgent = request.agent(app);
+      const freshLoginRes = await freshAgent
+        .post("/api/auth/login")
+        .send({ email: member.email, password: member.password });
+      expect(
+        freshLoginRes.status,
+        "fresh login must succeed (200) after email verification",
+      ).toBe(200);
+
+      // ── Step 8: the fresh session must be fully functional. ──
+      const meRes = await freshAgent.get("/api/auth/me");
+      expect(
+        meRes.status,
+        "fresh session obtained after verify-email must be valid (200)",
+      ).toBe(200);
+      expect(meRes.body.email, "session must belong to the correct user").toBe(member.email);
+    },
+  );
+
+  it(
+    "verify-email token cannot be replayed a second time after it has been consumed",
+    async () => {
+      const member = await createMemberUser("verify-token-replay");
+
+      // Mint a verify_email token.
+      const rawToken = generateRawToken();
+      await db.insert(authTokensTable).values({
+        userId: member.id,
+        tokenHash: hashToken(rawToken),
+        purpose: "verify_email",
+        expiresAt: expiryFor("verify_email"),
+      });
+
+      // Log out first (the flow under test).
+      const logoutRes = await member.agent.post("/api/auth/logout");
+      expect(logoutRes.status, "logout must succeed").toBe(204);
+
+      // First use of the verify-email token — must succeed.
+      const firstVerify = await request(app)
+        .post("/api/auth/verify-email")
+        .send({ token: rawToken });
+      expect(firstVerify.status, "first verify-email must succeed (200)").toBe(200);
+
+      // Second use of the same token — must be rejected (usedAt is already set).
+      const secondVerify = await request(app)
+        .post("/api/auth/verify-email")
+        .send({ token: rawToken });
+      expect(
+        secondVerify.status,
+        "replayed verify-email token must be rejected (400)",
+      ).toBe(400);
+    },
+  );
+});
+
+// ---------------------------------------------------------------------------
+// Logout + password-reset token interaction
+//
+// A user may trigger a password-reset request and then explicitly log out
+// before following the reset link.  This is a normal flow (e.g. the user
+// realises they forgot their password, requests a link, then closes the tab).
+// The security properties that must hold simultaneously:
+//
+//  1. The pre-logout cookie is dead (401) the moment logout completes — the
+//     reset token cannot "revive" it.
+//  2. The reset token itself is still consumable after logout — the user must
+//     be able to complete the reset from the emailed link regardless of their
+//     current session state.
+//  3. After a successful reset the user can log in with the new password and
+//     gets a working session.
+//  4. The pre-reset session (from before logout) remains dead even after the
+//     reset, because sessionVersion was bumped.
+// ---------------------------------------------------------------------------
+
+describe("session invalidation — logout does not block a pending password-reset token", () => {
+  it(
+    "pre-logout cookie stays 401, reset token is still usable, and fresh login succeeds",
+    async () => {
+      const member = await createMemberUser("logout-then-reset");
+      const newPassword = "New-Password-456!";
+
+      // ── Step 1: capture a raw cookie from a direct login (the "pre-logout cookie"). ──
+      const directLoginRes = await request(app)
+        .post("/api/auth/login")
+        .send({ email: member.email, password: member.password });
+      expect(directLoginRes.status, "direct login must succeed").toBe(200);
+
+      const rawCookie = (directLoginRes.headers["set-cookie"] as string[] | undefined)?.[0];
+      expect(rawCookie, "login response must set a session cookie").toBeTruthy();
+
+      // Confirm the captured cookie is valid before logout.
+      const before = await request(app)
+        .get("/api/auth/me")
+        .set("Cookie", rawCookie!);
+      expect(before.status, "captured cookie must be valid before logout").toBe(200);
+
+      // ── Step 2: mint a reset token directly (simulates the /forgot-password email). ──
+      // Tests cannot intercept outbound email, so we insert the token row
+      // ourselves using the same helpers the production route uses.
+      const rawToken = generateRawToken();
+      await db.insert(authTokensTable).values({
+        userId: member.id,
+        tokenHash: hashToken(rawToken),
+        purpose: "reset_password",
+        expiresAt: expiryFor("reset_password"),
+      });
+
+      // ── Step 3: user logs out — session is destroyed server-side. ──
+      const logoutRes = await request(app)
+        .post("/api/auth/logout")
+        .set("Cookie", rawCookie!);
+      expect(logoutRes.status, "logout must succeed with 204").toBe(204);
+
+      // ── Step 4: pre-logout cookie must be dead immediately. ──
+      const afterLogout = await request(app)
+        .get("/api/auth/me")
+        .set("Cookie", rawCookie!);
+      expect(
+        afterLogout.status,
+        "pre-logout cookie must be rejected (401) after logout",
+      ).toBe(401);
+
+      // ── Step 5: reset token must still be usable even though the user has logged out. ──
+      const resetRes = await request(app)
+        .post("/api/auth/reset-password")
+        .send({ token: rawToken, password: newPassword });
+      expect(
+        resetRes.status,
+        "reset-password with a valid token must succeed (200) even after logout",
+      ).toBe(200);
+
+      // ── Step 6: pre-logout cookie remains dead after the reset (sessionVersion bump). ──
+      const afterReset = await request(app)
+        .get("/api/auth/me")
+        .set("Cookie", rawCookie!);
+      expect(
+        afterReset.status,
+        "pre-logout cookie must remain rejected (401) even after the password reset",
+      ).toBe(401);
+
+      // ── Step 7: fresh login with the new password must succeed. ──
+      const freshAgent = request.agent(app);
+      const freshLoginRes = await freshAgent
+        .post("/api/auth/login")
+        .send({ email: member.email, password: newPassword });
+      expect(
+        freshLoginRes.status,
+        "fresh login with the new password must succeed (200)",
+      ).toBe(200);
+
+      // ── Step 8: the fresh session must be fully functional. ──
+      const meRes = await freshAgent.get("/api/auth/me");
+      expect(
+        meRes.status,
+        "fresh session obtained after reset must be valid (200)",
+      ).toBe(200);
+      expect(meRes.body.email, "session must belong to the correct user").toBe(member.email);
+    },
+  );
+
+  it(
+    "reset token cannot be replayed a second time after it has been consumed",
+    async () => {
+      const member = await createMemberUser("reset-token-replay");
+      const newPassword = "New-Password-789!";
+
+      // Mint a reset token.
+      const rawToken = generateRawToken();
+      await db.insert(authTokensTable).values({
+        userId: member.id,
+        tokenHash: hashToken(rawToken),
+        purpose: "reset_password",
+        expiresAt: expiryFor("reset_password"),
+      });
+
+      // Log out first (the flow under test).
+      const logoutRes = await member.agent.post("/api/auth/logout");
+      expect(logoutRes.status, "logout must succeed").toBe(204);
+
+      // First use of the reset token — must succeed.
+      const firstReset = await request(app)
+        .post("/api/auth/reset-password")
+        .send({ token: rawToken, password: newPassword });
+      expect(firstReset.status, "first reset must succeed (200)").toBe(200);
+
+      // Second use of the same token — must be rejected (usedAt is already set).
+      const secondReset = await request(app)
+        .post("/api/auth/reset-password")
+        .send({ token: rawToken, password: "Another-Password-000!" });
+      expect(
+        secondReset.status,
+        "replayed reset token must be rejected (400)",
+      ).toBe(400);
     },
   );
 });
