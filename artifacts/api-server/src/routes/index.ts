@@ -15,6 +15,7 @@ import settlementRouter from "./settlement";
 import internalRouter from "./internal";
 import assetsRouter from "./assets";
 import dashboardRouter from "./dashboard";
+import settingsRouter from "./settings";
 
 const router: IRouter = Router();
 
@@ -34,5 +35,6 @@ router.use(settlementRouter);
 router.use(internalRouter);
 router.use(assetsRouter);
 router.use(dashboardRouter);
+router.use(settingsRouter);
 
 export default router;

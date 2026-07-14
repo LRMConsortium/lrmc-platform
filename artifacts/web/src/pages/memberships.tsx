@@ -282,9 +282,11 @@ function MembershipKycForm({ membership }: { membership: { id: number; kycStatus
           <Select value={idType} onValueChange={setIdType}>
             <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="national_id">National ID</SelectItem>
+              <SelectItem value="national_id">National ID Card (NIC)</SelectItem>
               <SelectItem value="passport">Passport</SelectItem>
-              <SelectItem value="drivers_license">Driver's License</SelectItem>
+              <SelectItem value="drivers_license">Driver's Licence</SelectItem>
+              <SelectItem value="voters_id">Voter's ID Card</SelectItem>
+              <SelectItem value="foreign_national_id">Foreign National ID</SelectItem>
             </SelectContent>
           </Select>
         </div>

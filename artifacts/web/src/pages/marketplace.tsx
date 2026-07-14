@@ -9,7 +9,8 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { formatMoney, formatUSD, formatDate } from "@/lib/utils"
+import { formatGMD, formatUSD, formatDate } from "@/lib/utils"
+import { useExchangeRate } from "@/hooks/useExchangeRate"
 import { Store, Plus } from "lucide-react"
 import { DigitalProductCheckoutDialog } from "@/components/DigitalProductCheckoutDialog"
 import { useState } from "react"
@@ -49,6 +50,7 @@ export default function Marketplace() {
 function PhysicalGoodsList() {
   const { data: items, isLoading } = useListMarketplaceListings()
   const { data: user } = useGetCurrentUser()
+  const rate = useExchangeRate()
 
   if (isLoading) return <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-pulse"><div className="h-48 bg-muted rounded-xl"></div></div>
 
@@ -64,7 +66,8 @@ function PhysicalGoodsList() {
               <h3 className="font-bold line-clamp-1" title={item.title}>{item.title}</h3>
             </div>
             <p className="text-xs text-muted-foreground line-clamp-2 mb-4">{item.description}</p>
-            <div className="text-xl font-bold text-primary">{formatMoney(item.priceCents)}</div>
+            <div className="text-xl font-bold text-primary">{formatGMD(item.priceCents, rate)}</div>
+            <div className="text-xs text-muted-foreground mt-0.5">≈ {formatUSD(item.priceCents)}</div>
           </CardContent>
           <CardFooter className="p-4 pt-0">
             {item.sellerId !== user?.id ? (
@@ -90,6 +93,7 @@ function DigitalProductsList() {
   const { data: products, isLoading } = useListDigitalProducts()
   const { data: user } = useGetCurrentUser()
   const isAdmin = user?.role === "admin"
+  const rate = useExchangeRate()
 
   return (
     <div>
@@ -109,7 +113,8 @@ function DigitalProductsList() {
                 <Badge className="mb-4">{p.category}</Badge>
                 <h3 className="font-serif font-bold text-xl mb-2">{p.title}</h3>
                 <p className="text-sm text-muted-foreground mb-6 line-clamp-3">{p.description}</p>
-                <div className="text-2xl font-bold">{formatUSD(p.priceCents)}</div>
+                <div className="text-2xl font-bold">{formatGMD(p.priceCents, rate)}</div>
+                <div className="text-sm text-muted-foreground">≈ {formatUSD(p.priceCents)}</div>
               </CardContent>
               <CardFooter className="p-6 pt-0 bg-muted/10 border-t mt-auto">
                 <DigitalProductCheckoutDialog product={p} />

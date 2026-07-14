@@ -12,7 +12,8 @@ import * as z from "zod"
 import { useQueryClient } from "@tanstack/react-query"
 import { useToast } from "@/hooks/use-toast"
 import { useState } from "react"
-import { formatMoney, formatDate } from "@/lib/utils"
+import { formatUSD, formatGMD, formatDate } from "@/lib/utils"
+import { useExchangeRate } from "@/hooks/useExchangeRate"
 import { Map, MapPin } from "lucide-react"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 
@@ -47,6 +48,7 @@ export default function Land() {
 function LandListingsGrid() {
   const { data: listings, isLoading } = useListLandListings({ query: { queryKey: getListLandListingsQueryKey() }})
   const { data: user } = useGetCurrentUser()
+  const rate = useExchangeRate()
 
   if (isLoading) return <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-pulse">
     {[1,2,3].map(i => <div key={i} className="h-48 bg-muted rounded-xl"></div>)}
@@ -74,7 +76,10 @@ function LandListingsGrid() {
             <div className="flex justify-between items-end">
               <div>
                 <div className="text-2xl font-serif font-bold text-foreground">
-                  {formatMoney(plot.priceCents)}
+                  {formatGMD(plot.priceCents, rate)}
+                </div>
+                <div className="text-sm text-muted-foreground mt-0.5">
+                  ≈ {formatUSD(plot.priceCents)}
                 </div>
                 <p className="text-sm font-medium text-emerald-600 mt-1">{plot.sizeMeters} m²</p>
               </div>
@@ -88,31 +93,36 @@ function LandListingsGrid() {
             {plot.sellerId === user?.id && (
               <div className="text-sm font-medium text-muted-foreground w-full text-center">Your Listing</div>
             )}
+            {plot.status !== 'available' && plot.sellerId !== user?.id && (
+              <div className="text-sm font-medium text-muted-foreground w-full text-center capitalize">{plot.status}</div>
+            )}
           </CardFooter>
         </Card>
       ))}
       {listings?.length === 0 && (
-        <div className="col-span-full py-12 text-center text-muted-foreground bg-card border rounded-lg">
-          No land listings available.
-        </div>
+        <div className="col-span-full py-12 text-center text-muted-foreground">No land listings available.</div>
       )}
     </div>
   )
 }
 
-function PurchaseLandButton({ plotId, priceCents }: { plotId: number, priceCents: number }) {
+function PurchaseLandButton({ plotId, priceCents }: { plotId: number; priceCents: number }) {
   const [open, setOpen] = useState(false)
-  const purchase = useCreateLandTransaction()
+  const create = useCreateLandTransaction()
   const queryClient = useQueryClient()
   const { toast } = useToast()
+  const rate = useExchangeRate()
 
   const onConfirm = () => {
-    purchase.mutate({ data: { listingId: plotId } }, {
+    create.mutate({ data: { listingId: plotId } }, {
       onSuccess: () => {
-        toast({ title: "Purchase initiated", description: "Transaction sent to treasury for settlement." })
         queryClient.invalidateQueries({ queryKey: getListLandListingsQueryKey() })
         queryClient.invalidateQueries({ queryKey: getListLandTransactionsQueryKey() })
+        toast({ title: "Purchase recorded", description: "The land transaction has been logged." })
         setOpen(false)
+      },
+      onError: () => {
+        toast({ title: "Purchase failed", description: "Please try again.", variant: "destructive" })
       }
     })
   }
@@ -120,18 +130,21 @@ function PurchaseLandButton({ plotId, priceCents }: { plotId: number, priceCents
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="w-full bg-emerald-600 hover:bg-emerald-700">Initiate Purchase</Button>
+        <Button size="sm" className="w-full bg-emerald-600 hover:bg-emerald-700">Purchase</Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Confirm Land Purchase</DialogTitle>
+          <DialogTitle>Confirm Purchase</DialogTitle>
         </DialogHeader>
-        <div className="py-4 space-y-4">
-          <p className="text-sm text-muted-foreground">
-            You are about to initiate a purchase for this land. The total cost of <strong>{formatMoney(priceCents)}</strong> will be registered as a settlement obligation.
-          </p>
-          <Button onClick={onConfirm} disabled={purchase.isPending} className="w-full bg-emerald-600 hover:bg-emerald-700">
-            Confirm Purchase
+        <p className="text-sm text-muted-foreground">
+          You are about to initiate a purchase for this land. The total cost of{" "}
+          <strong>{formatGMD(priceCents, rate)}</strong> ({formatUSD(priceCents)}) will be
+          registered as a settlement obligation.
+        </p>
+        <div className="flex gap-3 pt-2">
+          <Button variant="outline" onClick={() => setOpen(false)} className="flex-1">Cancel</Button>
+          <Button onClick={onConfirm} disabled={create.isPending} className="flex-1 bg-emerald-600 hover:bg-emerald-700">
+            {create.isPending ? "Processing..." : "Confirm"}
           </Button>
         </div>
       </DialogContent>
@@ -140,36 +153,40 @@ function PurchaseLandButton({ plotId, priceCents }: { plotId: number, priceCents
 }
 
 function LandTransactionsTable() {
-  const { data: txs, isLoading } = useListLandTransactions({ query: { queryKey: getListLandTransactionsQueryKey() }})
+  const { data: transactions, isLoading } = useListLandTransactions({ query: { queryKey: getListLandTransactionsQueryKey() }})
+  const rate = useExchangeRate()
 
-  if (isLoading) return <div className="h-64 bg-muted animate-pulse rounded-lg" />
+  if (isLoading) return <div className="h-32 bg-muted rounded-xl animate-pulse"></div>
 
   return (
-    <div className="bg-card border rounded-lg overflow-hidden">
+    <div className="rounded-lg border">
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>TX ID</TableHead>
+            <TableHead>ID</TableHead>
             <TableHead>Listing</TableHead>
+            <TableHead>Type</TableHead>
             <TableHead>Amount</TableHead>
-            <TableHead>Status</TableHead>
             <TableHead>Date</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {txs?.map(tx => (
+          {transactions?.map(tx => (
             <TableRow key={tx.id}>
-              <TableCell className="font-mono text-xs">{tx.id}</TableCell>
-              <TableCell>Listing #{tx.listingId}</TableCell>
-              <TableCell className="font-medium">{formatMoney(tx.amountCents)}</TableCell>
-              <TableCell>
-                <Badge variant={tx.status === 'completed' ? 'default' : 'secondary'}>{tx.status}</Badge>
+              <TableCell className="text-muted-foreground text-sm">#{tx.id}</TableCell>
+              <TableCell>#{tx.listingId}</TableCell>
+              <TableCell className="capitalize">{tx.status}</TableCell>
+              <TableCell className="font-medium">
+                <span>{formatGMD(tx.amountCents, rate)}</span>
+                <span className="text-xs text-muted-foreground ml-1.5">{formatUSD(tx.amountCents)}</span>
               </TableCell>
-              <TableCell className="text-muted-foreground">{formatDate(tx.createdAt)}</TableCell>
+              <TableCell className="text-muted-foreground text-sm">{formatDate(tx.createdAt)}</TableCell>
             </TableRow>
           ))}
-          {txs?.length === 0 && (
-            <TableRow><TableCell colSpan={5} className="text-center py-4">No transactions found.</TableCell></TableRow>
+          {transactions?.length === 0 && (
+            <TableRow>
+              <TableCell colSpan={5} className="text-center text-muted-foreground py-8">No transactions yet.</TableCell>
+            </TableRow>
           )}
         </TableBody>
       </Table>
@@ -177,38 +194,37 @@ function LandTransactionsTable() {
   )
 }
 
-const formSchema = z.object({
-  title: z.string().min(1, "Title is required"),
-  location: z.string().min(1, "Location is required"),
-  sizeMeters: z.string().refine(v => !isNaN(Number(v)) && Number(v) > 0, "Valid measurement required"),
-  priceAmount: z.string().refine(v => !isNaN(Number(v)) && Number(v) >= 0, "Valid price required"),
+const addLandSchema = z.object({
+  title: z.string().min(2, "Title is required"),
+  location: z.string().min(2, "Location is required"),
+  sizeMeters: z.coerce.number().positive("Size must be positive"),
+  priceCents: z.coerce.number().int().positive("Price must be positive"),
 })
 
 function AddLandDialog() {
   const [open, setOpen] = useState(false)
+  const { data: user } = useGetCurrentUser()
   const create = useCreateLandListing()
   const queryClient = useQueryClient()
   const { toast } = useToast()
 
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: { title: "", location: "", sizeMeters: "", priceAmount: "" }
+  const form = useForm<z.infer<typeof addLandSchema>>({
+    resolver: zodResolver(addLandSchema),
+    defaultValues: { title: "", location: "", sizeMeters: 0, priceCents: 0 },
   })
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    create.mutate({
-      data: {
-        title: values.title,
-        location: values.location,
-        sizeMeters: Number(values.sizeMeters),
-        priceCents: Math.floor(Number(values.priceAmount) * 100)
-      }
-    }, {
+  if (!user) return null
+
+  const onSubmit = (values: z.infer<typeof addLandSchema>) => {
+    create.mutate({ data: { title: values.title, location: values.location, priceCents: values.priceCents, sizeMeters: values.sizeMeters } }, {
       onSuccess: () => {
-        toast({ title: "Land listed successfully" })
         queryClient.invalidateQueries({ queryKey: getListLandListingsQueryKey() })
+        toast({ title: "Listing created" })
         setOpen(false)
         form.reset()
+      },
+      onError: () => {
+        toast({ title: "Failed to create listing", variant: "destructive" })
       }
     })
   }
@@ -216,30 +232,44 @@ function AddLandDialog() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button>List Plot</Button>
+        <Button className="bg-emerald-600 hover:bg-emerald-700">+ Add Listing</Button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Register Land Plot</DialogTitle>
+          <DialogTitle>New Land Listing</DialogTitle>
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField control={form.control} name="title" render={({ field }) => (
-              <FormItem><FormLabel>Title</FormLabel><FormControl><Input placeholder="Prime Plot near Beach" {...field} /></FormControl><FormMessage/></FormItem>
-            )}/>
+              <FormItem>
+                <FormLabel>Title</FormLabel>
+                <FormControl><Input placeholder="Plot in Bakau" {...field} /></FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
             <FormField control={form.control} name="location" render={({ field }) => (
-              <FormItem><FormLabel>Location</FormLabel><FormControl><Input placeholder="Sanyang" {...field} /></FormControl><FormMessage/></FormItem>
-            )}/>
-            <div className="grid grid-cols-2 gap-4">
-              <FormField control={form.control} name="sizeMeters" render={({ field }) => (
-                <FormItem><FormLabel>Measurement (m²)</FormLabel><FormControl><Input type="number" step="1" placeholder="500" {...field} /></FormControl><FormMessage/></FormItem>
-              )}/>
-              <FormField control={form.control} name="priceAmount" render={({ field }) => (
-                <FormItem><FormLabel>Price (GMD)</FormLabel><FormControl><Input type="number" placeholder="150000" {...field} /></FormControl><FormMessage/></FormItem>
-              )}/>
-            </div>
+              <FormItem>
+                <FormLabel>Location</FormLabel>
+                <FormControl><Input placeholder="Bakau, The Gambia" {...field} /></FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
+            <FormField control={form.control} name="sizeMeters" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Measurement (m²)</FormLabel>
+                <FormControl><Input type="number" step="1" min="1" {...field} /></FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
+            <FormField control={form.control} name="priceCents" render={({ field }) => (
+              <FormItem>
+                <FormLabel>Price (USD cents — e.g. 500000 = $5,000)</FormLabel>
+                <FormControl><Input type="number" step="1" min="1" {...field} /></FormControl>
+                <FormMessage />
+              </FormItem>
+            )} />
             <Button type="submit" disabled={create.isPending} className="w-full">
-              List for Sale
+              {create.isPending ? "Creating..." : "Create Listing"}
             </Button>
           </form>
         </Form>

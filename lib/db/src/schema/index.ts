@@ -11,3 +11,4 @@ export * from "./youth";
 export * from "./prospecting";
 export * from "./treasury";
 export * from "./internal";
+export * from "./settings";

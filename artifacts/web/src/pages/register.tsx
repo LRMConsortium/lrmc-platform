@@ -14,6 +14,7 @@ import {
   FormMessage,
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { useRegister, useGetCurrentUser } from "@workspace/api-client-react"
 import { useState } from "react"
@@ -21,10 +22,25 @@ import { useEffect } from "react"
 import { useToast } from "@/hooks/use-toast"
 import { Mail } from "lucide-react"
 
+// Common country dialing codes — defaulting to Gambia (+220)
+const COUNTRY_CODES = [
+  { code: "+220", label: "+220 Gambia" },
+  { code: "+221", label: "+221 Senegal" },
+  { code: "+233", label: "+233 Ghana" },
+  { code: "+234", label: "+234 Nigeria" },
+  { code: "+27",  label: "+27 South Africa" },
+  { code: "+254", label: "+254 Kenya" },
+  { code: "+1",   label: "+1 USA / Canada" },
+  { code: "+44",  label: "+44 United Kingdom" },
+  { code: "+33",  label: "+33 France" },
+  { code: "+49",  label: "+49 Germany" },
+] as const
+
 const registerSchema = z.object({
   fullName: z.string().min(2, "Full name is required"),
   email: z.string().email(),
-  phone: z.string().min(5, "Phone is required"),
+  phoneCode: z.string().min(1, "Country code is required"),
+  phoneNumber: z.string().min(4, "Phone number is required"),
   password: z.string().min(6, "Password must be at least 6 characters"),
 })
 
@@ -40,7 +56,8 @@ export default function Register() {
     defaultValues: {
       fullName: "",
       email: "",
-      phone: "",
+      phoneCode: "+220",
+      phoneNumber: "",
       password: "",
     },
   })
@@ -52,7 +69,8 @@ export default function Register() {
   }, [user, userLoading, setLocation])
 
   function onSubmit(values: z.infer<typeof registerSchema>) {
-    register.mutate({ data: values }, {
+    const phone = `${values.phoneCode} ${values.phoneNumber}`.trim()
+    register.mutate({ data: { fullName: values.fullName, email: values.email, phone, password: values.password } }, {
       onSuccess: () => {
         setSubmittedEmail(values.email)
       },
@@ -145,19 +163,47 @@ export default function Register() {
                     </FormItem>
                   )}
                 />
-                <FormField
-                  control={form.control}
-                  name="phone"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Phone Number</FormLabel>
-                      <FormControl>
-                        <Input placeholder="+220 123 4567" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+
+                {/* Phone with country code */}
+                <div className="space-y-2">
+                  <FormLabel>Phone Number</FormLabel>
+                  <div className="flex gap-2">
+                    <FormField
+                      control={form.control}
+                      name="phoneCode"
+                      render={({ field }) => (
+                        <FormItem className="w-44 shrink-0">
+                          <FormControl>
+                            <Select value={field.value} onValueChange={field.onChange}>
+                              <SelectTrigger>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {COUNTRY_CODES.map(c => (
+                                  <SelectItem key={c.code} value={c.code}>{c.label}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="phoneNumber"
+                      render={({ field }) => (
+                        <FormItem className="flex-1">
+                          <FormControl>
+                            <Input placeholder="123 4567" type="tel" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                </div>
+
                 <FormField
                   control={form.control}
                   name="password"
@@ -178,9 +224,7 @@ export default function Register() {
             </Form>
             <div className="mt-6 text-center text-sm">
               <span className="text-muted-foreground">Already a member? </span>
-              <Link href="/login" className="text-primary hover:underline font-semibold">
-                Sign in
-              </Link>
+              <Link href="/login" className="text-primary hover:underline font-semibold">Sign in</Link>
             </div>
           </CardContent>
         </Card>
