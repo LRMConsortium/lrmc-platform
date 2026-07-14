@@ -515,3 +515,102 @@ describe("session invalidation — logout fully destroys the session", () => {
     },
   );
 });
+
+// ---------------------------------------------------------------------------
+// Concurrent logout — only the logging-out session is destroyed
+//
+// When two devices (agents) are logged in as the same user simultaneously,
+// logging out from one device must NOT invalidate the other device's session.
+// Each session is an independent store entry keyed by its own session ID.
+// req.session.destroy() removes only the calling session, leaving unrelated
+// sessions for the same userId untouched.
+// ---------------------------------------------------------------------------
+
+describe("session invalidation — concurrent logout only kills the requesting session", () => {
+  it(
+    "logging out from one session leaves a second independent session for the same user valid",
+    async () => {
+      // Register a single shared user account.
+      const userA = await createMemberUser("concurrent-logout");
+
+      // Agent A is already logged in (session cookie held by the agent).
+      // Open a second independent session for the same credentials — simulating
+      // a second device or browser tab.
+      const agentB = request.agent(app);
+      const loginB = await agentB
+        .post("/api/auth/login")
+        .send({ email: userA.email, password: userA.password });
+      expect(loginB.status, "agent B must be able to log in independently").toBe(200);
+
+      // Confirm both sessions are valid before any logout.
+      const beforeA = await userA.agent.get("/api/auth/me");
+      expect(beforeA.status, "agent A session must be valid before logout").toBe(200);
+
+      const beforeB = await agentB.get("/api/auth/me");
+      expect(beforeB.status, "agent B session must be valid before logout").toBe(200);
+
+      // Agent A logs out — only A's session should be destroyed.
+      const logoutRes = await userA.agent.post("/api/auth/logout");
+      expect(logoutRes.status, "agent A logout must return 204").toBe(204);
+
+      // Agent A's old cookie must now be rejected.
+      const afterA = await userA.agent.get("/api/auth/me");
+      expect(
+        afterA.status,
+        "agent A session must be invalidated (401) after logout",
+      ).toBe(401);
+
+      // Agent B's independent session must remain fully valid — it was not the
+      // session that was destroyed by the logout call.
+      const afterB = await agentB.get("/api/auth/me");
+      expect(
+        afterB.status,
+        "agent B session must remain valid (200) after agent A logs out",
+      ).toBe(200);
+    },
+  );
+
+  it(
+    "each device can log out independently without affecting the other",
+    async () => {
+      // Two agents, same user — log out B first, then A.
+      const userA = await createMemberUser("concurrent-logout-order");
+
+      const agentB = request.agent(app);
+      const loginB = await agentB
+        .post("/api/auth/login")
+        .send({ email: userA.email, password: userA.password });
+      expect(loginB.status, "agent B must log in successfully").toBe(200);
+
+      // Agent B logs out first.
+      const logoutB = await agentB.post("/api/auth/logout");
+      expect(logoutB.status, "agent B logout must return 204").toBe(204);
+
+      // Agent A's session must be completely unaffected.
+      const afterBLogout = await userA.agent.get("/api/auth/me");
+      expect(
+        afterBLogout.status,
+        "agent A session must remain valid (200) after agent B logs out",
+      ).toBe(200);
+
+      // Now agent A logs out too.
+      const logoutA = await userA.agent.post("/api/auth/logout");
+      expect(logoutA.status, "agent A logout must return 204").toBe(204);
+
+      // Both sessions are now dead.
+      const afterALogout = await userA.agent.get("/api/auth/me");
+      expect(
+        afterALogout.status,
+        "agent A session must be invalidated (401) after its own logout",
+      ).toBe(401);
+
+      // Agent B's session was already invalidated by its own earlier logout;
+      // confirm it is still rejected.
+      const afterBFinal = await agentB.get("/api/auth/me");
+      expect(
+        afterBFinal.status,
+        "agent B session must remain invalidated (401) after its own earlier logout",
+      ).toBe(401);
+    },
+  );
+});
