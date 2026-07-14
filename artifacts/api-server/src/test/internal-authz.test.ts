@@ -244,6 +244,40 @@ describe("internal-messages — access control", () => {
     expect(res.status).toBe(200);
     expect(res.body.id).toBe(messageId);
   });
+
+  it("an outsider cannot read a delivered message even after the recipient's KYC is revoked", async () => {
+    const sender = await createMemberUser("msg-kyc-revoke-read-sender");
+    const recipient = await createMemberUser("msg-kyc-revoke-read-recip");
+    const outsider = await createMemberUser("msg-kyc-revoke-read-outsider");
+
+    // Deliver the message while recipient's KYC is still approved.
+    const sendRes = await sender.agent
+      .post("/api/internal-messages")
+      .send({ recipientId: recipient.id, subject: "Delivered", body: "Before revoke" });
+    expect(sendRes.status).toBe(201);
+    const messageId: number = sendRes.body.id;
+
+    // Simulate post-delivery KYC revocation for the recipient.
+    await db
+      .update(membershipsTable)
+      .set({ kycStatus: "rejected" })
+      .where(eq(membershipsTable.userId, recipient.id));
+
+    // An outsider (approved member, not party to the message) must still get
+    // 404 — the party-scoping check is independent of recipient KYC state.
+    const outsiderRes = await outsider.agent.get(`/api/internal-messages/${messageId}`);
+    expect(outsiderRes.status).toBe(404);
+
+    // The original sender retains access to their own sent message.
+    const senderRes = await sender.agent.get(`/api/internal-messages/${messageId}`);
+    expect(senderRes.status).toBe(200);
+    expect(senderRes.body.id).toBe(messageId);
+
+    // The recipient with revoked KYC is blocked at the membership gate (403),
+    // not via some looser path that would expose the message to outsiders.
+    const recipientRes = await recipient.agent.get(`/api/internal-messages/${messageId}`);
+    expect(recipientRes.status).toBe(403);
+  });
 });
 
 // ---------------------------------------------------------------------------
