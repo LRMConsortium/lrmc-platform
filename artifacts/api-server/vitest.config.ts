@@ -9,6 +9,7 @@ export default defineConfig({
     include: ["src/**/*.test.ts"],
     // Runs before every test file; stubs out live Stripe API calls so the
     // suite never hits the network and doesn't need real credentials in CI.
+    globalSetup: ["src/test/global-setup.ts"],
     setupFiles: ["src/test/setup.ts"],
     hookTimeout: 30000,
     testTimeout: 30000,

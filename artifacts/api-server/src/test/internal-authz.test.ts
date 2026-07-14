@@ -175,9 +175,10 @@ describe("internal-messages — access control", () => {
     expect(sendRes.status).toBe(201);
     const messageId: number = sendRes.body.id;
 
-    // Outsider attempts to mark it read — must be rejected.
+    // Outsider attempts to mark it read — must receive 404 (not 403) so the
+    // endpoint cannot be used to confirm whether a message ID exists.
     const res = await outsider.agent.patch(`/api/internal-messages/${messageId}/read`);
-    expect(res.status).toBe(403);
+    expect(res.status).toBe(404);
   });
 
   it("a sender can mark their own sent message as read", async () => {

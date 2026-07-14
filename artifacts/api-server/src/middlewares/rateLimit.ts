@@ -20,6 +20,10 @@ export const loginRateLimiter = rateLimit({
   legacyHeaders: false,
   keyGenerator: ipAndEmailKey,
   message: { error: "Too many login attempts. Please try again later." },
+  // The authz test suite logs in hundreds of times per run from a single IP
+  // (every createAdminUser call registers then logs in). A real attacker doesn't
+  // have NODE_ENV=test, so skipping the cap there is safe.
+  skip: () => process.env.NODE_ENV === "test",
 });
 
 // Register: unauthenticated and otherwise unlimited, so without a limiter a

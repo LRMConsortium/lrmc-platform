@@ -91,9 +91,10 @@ const expectedColumns: Array<[table: string, column: string]> = [
 
   // assets — new module from Asset Manager merge
   ["assets", "owner_id"],
-  ["assets", "kind"],
+  ["assets", "category"],
+  ["assets", "type"],
   ["assets", "status"],
-  ["assets", "price_cents"],
+  ["assets", "metadata"],
 
   // ads — moderation workflow columns (rejection_note and parent_ad_id are easy to miss)
   ["ads", "advertiser_id"],

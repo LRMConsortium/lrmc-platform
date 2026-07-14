@@ -162,14 +162,16 @@ describe("runSetupTestSchema – stale-DB guard (mocked pool)", () => {
      * Simulate the sequence of pg_database queries.  The implementation
      * path when the DB already exists:
      *
-     *  call 1 — initial existence check          → exists: true
-     *  call 2 — ALTER DATABASE … LIMIT 0         → (DDL, no rows)
-     *  call 3 — SELECT pg_terminate_backend       → [] (no connections)
-     *  call 4 — waitUntilDrained: SELECT count(*) → count: "0" (drained)
-     *  call 5 — DROP DATABASE IF EXISTS           → (DDL, no rows)
-     *  call 6 — post-DROP existence check         → exists: true  ← bug!
+     *  lockClient.query — pg_advisory_lock          → (no rows)
+     *  pool call 1 — initial existence check        → exists: true
+     *  pool call 2 — ALTER DATABASE … LIMIT 0       → (DDL, no rows)
+     *  pool call 3 — SELECT pg_terminate_backend    → [] (no connections)
+     *  pool call 4 — waitUntilDrained: SELECT count → count: "0" (drained)
+     *  pool call 5 — DROP DATABASE IF EXISTS        → (DDL, no rows)
+     *  pool call 6 — post-DROP existence check      → exists: true  ← bug!
+     *  lockClient.query — pg_advisory_unlock        → (no rows, in finally)
      *
-     * The function must throw on call 6 instead of proceeding to CREATE.
+     * The function must throw on pool call 6 instead of proceeding to CREATE.
      */
     const queryResponses = [
       { rows: [{ exists: true }] },        // 1. initial check: DB exists
@@ -192,20 +194,37 @@ describe("runSetupTestSchema – stale-DB guard (mocked pool)", () => {
       return response;
     }) as MockedFunction<(sql: string) => Promise<{ rows: unknown[] }>>;
 
-    const mockPool = { query: mockQuery } as unknown as InstanceType<
-      typeof Pool
-    >;
+    // The advisory-lock path calls adminPool.connect() to obtain a dedicated
+    // client for lock/unlock.  Provide a mock client that accepts those two
+    // queries and can be released.
+    const mockLockClientQuery = vi.fn(async () => ({ rows: [] }));
+    const mockLockClientRelease = vi.fn();
+    const mockLockClient = {
+      query: mockLockClientQuery,
+      release: mockLockClientRelease,
+    };
+
+    const mockPool = {
+      query: mockQuery,
+      connect: vi.fn(async () => mockLockClient),
+    } as unknown as InstanceType<typeof Pool>;
 
     await expect(runSetupTestSchema(mockPool)).rejects.toThrow(
       "DROP DATABASE heliumdb_test appeared to succeed but the database still exists"
     );
 
-    // All 6 calls must have been made (drain poll reached).
+    // All 6 pool-level calls must have been made (drain poll reached).
     expect(mockQuery).toHaveBeenCalledTimes(6);
 
     // CREATE DATABASE must NOT have been called after the failed guard.
     const calls = mockQuery.mock.calls.map((c) => String(c[0]).trim());
     expect(calls.some((sql) => sql.startsWith("CREATE DATABASE"))).toBe(false);
+
+    // The advisory lock must have been acquired and released (even on error).
+    const lockCalls = mockLockClientQuery.mock.calls.map((c) => String(c[0]).trim());
+    expect(lockCalls.some((sql) => sql.includes("pg_advisory_lock"))).toBe(true);
+    expect(lockCalls.some((sql) => sql.includes("pg_advisory_unlock"))).toBe(true);
+    expect(mockLockClientRelease).toHaveBeenCalledTimes(1);
   });
 });
 

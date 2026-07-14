@@ -19,6 +19,16 @@ const DRAIN_MAX_WAIT_MS = 5_000;
 const DROP_MAX_RETRIES = 5;
 
 /**
+ * Arbitrary advisory lock key used to serialise concurrent setup-test-schema
+ * runs.  Two processes trying to drop-and-recreate heliumdb_test at the same
+ * time would corrupt each other's test run; the lock makes them queue instead.
+ *
+ * pg_advisory_lock is session-scoped: it's automatically released when the
+ * connection is closed, so it's safe even if the process crashes mid-run.
+ */
+export const ADVISORY_LOCK_KEY = 7_463_218_412; // arbitrary stable int64
+
+/**
  * Waits until no connections to heliumdb_test remain (other than our own
  * admin connection), polling every DRAIN_POLL_INTERVAL_MS ms.
  *
@@ -50,7 +60,7 @@ async function waitUntilDrained(adminPool: Pool): Promise<number> {
   }
 }
 
-export async function runSetupTestSchema(adminPool: Pool): Promise<void> {
+async function dropAndRecreate(adminPool: Pool): Promise<void> {
   // Check if heliumdb_test already exists.
   const existsResult = await adminPool.query<{ exists: boolean }>(`
     SELECT EXISTS(
@@ -146,4 +156,23 @@ export async function runSetupTestSchema(adminPool: Pool): Promise<void> {
 
   await adminPool.query("CREATE DATABASE heliumdb_test");
   console.log("Test database recreated successfully.");
+}
+
+export async function runSetupTestSchema(adminPool: Pool): Promise<void> {
+  // Acquire an exclusive session-level advisory lock so that concurrent
+  // validation runs queue rather than racing to drop/recreate heliumdb_test.
+  // pg_advisory_lock blocks until the lock is available, so callers serialise
+  // automatically.  The lock is released when the client is returned to the
+  // pool (session ends), ensuring it's freed even on crash.
+  const lockClient = await adminPool.connect();
+  try {
+    await lockClient.query("SELECT pg_advisory_lock($1)", [ADVISORY_LOCK_KEY]);
+    try {
+      await dropAndRecreate(adminPool);
+    } finally {
+      await lockClient.query("SELECT pg_advisory_unlock($1)", [ADVISORY_LOCK_KEY]);
+    }
+  } finally {
+    lockClient.release();
+  }
 }
