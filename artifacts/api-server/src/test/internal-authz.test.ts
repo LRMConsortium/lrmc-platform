@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { eq } from "drizzle-orm";
-import { db, membershipsTable } from "@workspace/db";
+import { db, membershipsTable, usersTable, authTokensTable } from "@workspace/db";
 import { createMemberUser, createAdminUser, createMemberUserWithMembership, anonymousAgent } from "./helpers";
 
 // ---------------------------------------------------------------------------
@@ -416,4 +416,51 @@ describe("internal-tickets — access control", () => {
       .send({ status: "closed" });
     expect(res.status).toBe(200);
   });
+});
+
+// ---------------------------------------------------------------------------
+// Internal tickets — deleted-user session guard
+//
+// isSessionStillValid() queries the DB for the user row on every request.
+// If the row no longer exists the query returns nothing, the function returns
+// false, and requireAdmin must respond with 401 — not 500 or a stale 200.
+// ---------------------------------------------------------------------------
+
+describe("internal-tickets routes — deleted-user session guard", () => {
+  it(
+    "returns 401 on PATCH /internal-tickets/:id when the admin's user row has been deleted",
+    async () => {
+      const member = await createMemberUser("ticket-del-admin-member");
+      const admin = await createAdminUser("ticket-del-admin");
+
+      // Member creates a ticket so there is a real ID for the admin to patch.
+      const createRes = await member.agent
+        .post("/api/internal-tickets")
+        .send({ department: "support", subject: "Delete guard test", description: "Details", priority: "normal" });
+      expect(createRes.status).toBe(201);
+      const ticketId: number = createRes.body.id;
+
+      // Confirm the admin can reach the route handler (200) while the user row
+      // still exists.
+      const before = await admin.agent
+        .patch(`/api/internal-tickets/${ticketId}`)
+        .send({ status: "closed" });
+      expect(before.status, "admin should have access before deletion").toBe(200);
+
+      // Hard-delete the admin's user row (simulates account deletion or a
+      // security response action). Auth tokens are removed first to satisfy the
+      // FK constraint; the session cookie itself is unaffected.
+      await db.delete(authTokensTable).where(eq(authTokensTable.userId, admin.id));
+      await db.delete(usersTable).where(eq(usersTable.id, admin.id));
+
+      // Same session cookie — isSessionStillValid must return false → 401.
+      const after = await admin.agent
+        .patch(`/api/internal-tickets/${ticketId}`)
+        .send({ status: "in_progress" });
+      expect(
+        after.status,
+        "deleted admin's session must be rejected with 401 on PATCH /internal-tickets/:id",
+      ).toBe(401);
+    },
+  );
 });
