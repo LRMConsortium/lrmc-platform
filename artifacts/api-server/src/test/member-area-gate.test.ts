@@ -397,6 +397,59 @@ describe("member-area gate — mid-session membership status change", () => {
 // out on their very next request, without requiring a fresh login.
 // ---------------------------------------------------------------------------
 
+describe("membership row deletion", () => {
+  it(
+    "hard-deleting the membership row immediately blocks access on the same session (no re-login needed)",
+    async () => {
+      const member = await createMemberUser("row-deletion-lockout");
+
+      // Confirm access before deletion.
+      const before = await member.agent.get("/api/land-transactions");
+      expect(before.status, "approved member must have access before row deletion").toBe(200);
+
+      // Simulate an admin hard-purge of the membership row.
+      await db.delete(membershipsTable).where(eq(membershipsTable.userId, member.id));
+
+      // Same session cookie — the middleware re-reads the row on every request,
+      // so the missing row must lock the user out immediately.
+      const after = await member.agent.get("/api/land-transactions");
+      expect(
+        after.status,
+        "member's existing session must be blocked immediately after membership row deletion",
+      ).toBe(403);
+    },
+  );
+
+  it(
+    "re-inserting a paid + approved membership row immediately restores access on the same session (no re-login needed)",
+    async () => {
+      const member = await createMemberUser("row-deletion-restore");
+
+      // Delete the membership row and confirm lockout.
+      await db.delete(membershipsTable).where(eq(membershipsTable.userId, member.id));
+      const locked = await member.agent.get("/api/land-transactions");
+      expect(locked.status, "must be blocked after row deletion").toBe(403);
+
+      // Re-insert a valid paid + approved membership row for the same userId.
+      await db.insert(membershipsTable).values({
+        userId: member.id,
+        type: "renter",
+        status: "active",
+        paymentStatus: "paid",
+        kycStatus: "approved",
+      });
+
+      // The middleware queries the DB fresh on every request — no caching means
+      // the new row must restore access immediately without a fresh login.
+      const restored = await member.agent.get("/api/land-transactions");
+      expect(
+        restored.status,
+        "access must be restored immediately after re-inserting a valid membership row, without a fresh login",
+      ).toBe(200);
+    },
+  );
+});
+
 // ---------------------------------------------------------------------------
 // Dashboard stats reflect membership status changes mid-session
 //
