@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { eq } from "drizzle-orm";
-import { db, membershipsTable } from "@workspace/db";
+import { db, membershipsTable, internalMessagesTable, internalTicketsTable } from "@workspace/db";
 import {
   createMemberUser,
   createMemberUserWithMembership,
@@ -699,6 +699,175 @@ describe("admin-purge membership row — membership-detail endpoint behaviour", 
         res.status,
         "member-role GET to a purged admin-only endpoint must return 403, not 404",
       ).toBe(403);
+    },
+  );
+});
+
+// ---------------------------------------------------------------------------
+// Live counter freshness — unreadMessages and openTickets
+//
+// /api/dashboard/member queries both counters directly from the DB on every
+// request (no in-memory cache). This suite confirms that inserting a new
+// unread message or an open ticket into the DB is immediately visible on the
+// very next dashboard call within the same session — no re-login required.
+// A caching regression would cause the baseline count to be returned instead
+// of the incremented one.
+// ---------------------------------------------------------------------------
+
+describe("member dashboard — unread message and open ticket counts update live", () => {
+  it(
+    "unreadMessages increments immediately after a new unread message is inserted for the member (same session, no re-login)",
+    async () => {
+      const member = await createMemberUser("live-unread-msg");
+      // Use a second member as the sender so the FK constraint is satisfied.
+      const sender = await createMemberUser("live-unread-msg-sender");
+
+      // Baseline: read the current unreadMessages count.
+      const before = await member.agent.get("/api/dashboard/member");
+      expect(before.status, "member must be able to reach the dashboard").toBe(200);
+      const baselineUnread: number = before.body.unreadMessages;
+
+      // Insert a new unread internal message directly into the DB,
+      // bypassing the API so we isolate the counter-freshness concern.
+      await db.insert(internalMessagesTable).values({
+        senderId: sender.id,
+        recipientId: member.id,
+        subject: "Test subject",
+        body: "Test body",
+        // readAt intentionally omitted (null) so the message counts as unread.
+      });
+
+      // Re-read the dashboard on the same session — no logout/login between calls.
+      const after = await member.agent.get("/api/dashboard/member");
+      expect(after.status, "dashboard must still be reachable after message insert").toBe(200);
+      expect(
+        after.body.unreadMessages,
+        "unreadMessages must reflect the newly inserted message without a re-login",
+      ).toBe(baselineUnread + 1);
+    },
+  );
+
+  it(
+    "openTickets increments immediately after a new open ticket is inserted for the member (same session, no re-login)",
+    async () => {
+      const member = await createMemberUser("live-open-ticket");
+
+      // Baseline: read the current openTickets count.
+      const before = await member.agent.get("/api/dashboard/member");
+      expect(before.status, "member must be able to reach the dashboard").toBe(200);
+      const baselineTickets: number = before.body.openTickets;
+
+      // Insert a new open ticket directly into the DB for this member.
+      await db.insert(internalTicketsTable).values({
+        createdById: member.id,
+        department: "support",
+        subject: "Live count test ticket",
+        description: "Inserted directly to verify live counter freshness.",
+        // status defaults to "open"
+      });
+
+      // Re-read the dashboard on the same session.
+      const after = await member.agent.get("/api/dashboard/member");
+      expect(after.status, "dashboard must still be reachable after ticket insert").toBe(200);
+      expect(
+        after.body.openTickets,
+        "openTickets must reflect the newly inserted ticket without a re-login",
+      ).toBe(baselineTickets + 1);
+    },
+  );
+
+  it(
+    "unreadMessages does NOT increment when the inserted message is already marked read",
+    async () => {
+      const member = await createMemberUser("live-read-msg");
+      const sender = await createMemberUser("live-read-msg-sender");
+
+      const before = await member.agent.get("/api/dashboard/member");
+      expect(before.status).toBe(200);
+      const baselineUnread: number = before.body.unreadMessages;
+
+      // Insert a message that is already read (readAt set).
+      await db.insert(internalMessagesTable).values({
+        senderId: sender.id,
+        recipientId: member.id,
+        subject: "Already read",
+        body: "This was already read.",
+        readAt: new Date(),
+      });
+
+      const after = await member.agent.get("/api/dashboard/member");
+      expect(after.status).toBe(200);
+      expect(
+        after.body.unreadMessages,
+        "an already-read message must not inflate the unreadMessages counter",
+      ).toBe(baselineUnread);
+    },
+  );
+
+  it(
+    "openTickets does NOT increment when the inserted ticket is already closed",
+    async () => {
+      const member = await createMemberUser("live-closed-ticket");
+
+      const before = await member.agent.get("/api/dashboard/member");
+      expect(before.status).toBe(200);
+      const baselineTickets: number = before.body.openTickets;
+
+      // Insert a ticket with status = 'closed'.
+      await db.insert(internalTicketsTable).values({
+        createdById: member.id,
+        department: "billing",
+        subject: "Already closed ticket",
+        description: "This ticket is already closed and must not count.",
+        status: "closed",
+      });
+
+      const after = await member.agent.get("/api/dashboard/member");
+      expect(after.status).toBe(200);
+      expect(
+        after.body.openTickets,
+        "a closed ticket must not inflate the openTickets counter",
+      ).toBe(baselineTickets);
+    },
+  );
+
+  it(
+    "both counters increment together when one message and one ticket are inserted simultaneously",
+    async () => {
+      const member = await createMemberUser("live-both-counters");
+      const sender = await createMemberUser("live-both-counters-sender");
+
+      const before = await member.agent.get("/api/dashboard/member");
+      expect(before.status).toBe(200);
+      const baselineUnread: number = before.body.unreadMessages;
+      const baselineTickets: number = before.body.openTickets;
+
+      // Insert both a message and a ticket in parallel.
+      await Promise.all([
+        db.insert(internalMessagesTable).values({
+          senderId: sender.id,
+          recipientId: member.id,
+          subject: "Combined test message",
+          body: "Test body for combined counter check.",
+        }),
+        db.insert(internalTicketsTable).values({
+          createdById: member.id,
+          department: "general",
+          subject: "Combined test ticket",
+          description: "Test description for combined counter check.",
+        }),
+      ]);
+
+      const after = await member.agent.get("/api/dashboard/member");
+      expect(after.status).toBe(200);
+      expect(
+        after.body.unreadMessages,
+        "unreadMessages must reflect the new message without a re-login",
+      ).toBe(baselineUnread + 1);
+      expect(
+        after.body.openTickets,
+        "openTickets must reflect the new ticket without a re-login",
+      ).toBe(baselineTickets + 1);
     },
   );
 });
