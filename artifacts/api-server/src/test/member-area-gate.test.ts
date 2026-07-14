@@ -629,3 +629,76 @@ describe("member-area gate — membership row deletion", () => {
     },
   );
 });
+
+// ---------------------------------------------------------------------------
+// Admin-visible membership detail after a hard purge
+//
+// GET /api/memberships/:id is admin-only. When a membership row is
+// hard-deleted (admin purge or cascade), the detail endpoint must return 404
+// rather than serving stale data or crashing.  A member-role session must
+// still hit the 403 gate before reaching the handler — the gate fires first
+// because /memberships/:id is NOT on the requireApprovedMembership exemption
+// list.
+// ---------------------------------------------------------------------------
+
+describe("admin-purge membership row — membership-detail endpoint behaviour", () => {
+  it(
+    "admin GET to a purged membership returns 404, not 200 or 500",
+    async () => {
+      const member = await createMemberUser("purge-admin-404");
+      const admin = await createAdminUser("purge-admin-404-admin");
+
+      // Look up the membership row created by createMemberUser so we have the
+      // numeric membership id to query.
+      const [row] = await db
+        .select({ id: membershipsTable.id })
+        .from(membershipsTable)
+        .where(eq(membershipsTable.userId, member.id));
+
+      expect(row, "test precondition: membership row must exist before purge").toBeTruthy();
+      const membershipId = row.id;
+
+      // Confirm the admin can read the row before it is deleted.
+      const before = await admin.agent.get(`/api/memberships/${membershipId}`);
+      expect(before.status, "admin must be able to read membership before purge").toBe(200);
+
+      // Hard-delete the membership row (simulates an admin purge).
+      await db.delete(membershipsTable).where(eq(membershipsTable.id, membershipId));
+
+      // The handler must return 404 — not 200 with stale data, and not a 500.
+      const after = await admin.agent.get(`/api/memberships/${membershipId}`);
+      expect(
+        after.status,
+        "admin GET to a purged membership must return 404",
+      ).toBe(404);
+    },
+  );
+
+  it(
+    "member-role GET to a purged membership returns 403, not 404 (gate fires before the handler)",
+    async () => {
+      const member = await createMemberUser("purge-member-403");
+      const admin = await createAdminUser("purge-member-403-admin");
+
+      const [row] = await db
+        .select({ id: membershipsTable.id })
+        .from(membershipsTable)
+        .where(eq(membershipsTable.userId, member.id));
+
+      expect(row, "test precondition: membership row must exist before purge").toBeTruthy();
+      const membershipId = row.id;
+
+      // Hard-delete the membership row.
+      await db.delete(membershipsTable).where(eq(membershipsTable.id, membershipId));
+
+      // A member-role session must be blocked at the requireApprovedMembership
+      // gate (403) because the endpoint is admin-only and the member no longer
+      // has a valid membership row. The gate fires before the 404 handler.
+      const res = await member.agent.get(`/api/memberships/${membershipId}`);
+      expect(
+        res.status,
+        "member-role GET to a purged admin-only endpoint must return 403, not 404",
+      ).toBe(403);
+    },
+  );
+});

@@ -126,6 +126,26 @@ router.get("/memberships/me", requireAuth, async (req, res): Promise<void> => {
   res.json(GetMyMembershipResponse.parse(membership));
 });
 
+router.get("/memberships/:id", requireAdmin, async (req, res): Promise<void> => {
+  const params = UpdateMembershipParams.safeParse(req.params);
+  if (!params.success) {
+    res.status(400).json({ error: params.error.message });
+    return;
+  }
+
+  const [membership] = await db
+    .select()
+    .from(membershipsTable)
+    .where(eq(membershipsTable.id, params.data.id));
+
+  if (!membership) {
+    res.status(404).json({ error: "Membership not found" });
+    return;
+  }
+
+  res.json(UpdateMembershipResponse.parse(membership));
+});
+
 router.patch("/memberships/:id", requireAdmin, async (req, res): Promise<void> => {
   const params = UpdateMembershipParams.safeParse(req.params);
   if (!params.success) {
