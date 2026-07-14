@@ -10,7 +10,7 @@
  *      so a mis-formatted DATABASE_URL is caught at startup rather than
  *      silently running migrations against the dev database.
  */
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { testDatabaseUrl } from "@workspace/db";
 
 describe("test database URL isolation", () => {
@@ -221,6 +221,71 @@ describe("test database URL isolation", () => {
     expect(() => configGuardFn(malformedUrl)).toThrow(
       "identical to the dev DATABASE_URL"
     );
+  });
+
+  /**
+   * Missing / empty DATABASE_URL coverage
+   *
+   * When DATABASE_URL is absent the env var is `undefined`; callers that
+   * coerce it to a string get `"undefined"`.  When it is explicitly set to
+   * an empty string they get `""`.  Both are unparseable by `new URL()`, so
+   * `testDatabaseUrl` returns them unchanged — and the guard must fire before
+   * any DB operation can run.
+   */
+  describe("guard fires when DATABASE_URL is missing or empty", () => {
+    /** Inline reproduction of the guard used in both setup-test-schema.ts and
+     *  drizzle.test.config.ts so the test is hermetic (no real DB needed). */
+    function runGuard(baseUrl: string): void {
+      const derived = testDatabaseUrl(baseUrl);
+      if (derived === baseUrl) {
+        throw new Error(
+          `guard: the derived test database URL is identical to the source ` +
+            `("${baseUrl}"). Aborting to protect the dev database.`
+        );
+      }
+    }
+
+    it("throws when DATABASE_URL is an empty string", () => {
+      expect(() => runGuard("")).toThrow("identical to the source");
+    });
+
+    it('throws when DATABASE_URL is the string "undefined" (env var absent, coerced)', () => {
+      // This is what happens when callers write `process.env.DATABASE_URL!`
+      // or `String(process.env.DATABASE_URL)` and the var is not set.
+      expect(() => runGuard(String(undefined))).toThrow(
+        "identical to the source"
+      );
+    });
+  });
+
+  /**
+   * Real module-level guard in drizzle.test.config.ts
+   *
+   * The config file throws at module evaluation time when DATABASE_URL is
+   * absent (`if (!process.env.DATABASE_URL) throw ...`).  This test exercises
+   * that exact line by importing the real file with the env var removed, using
+   * vi.resetModules() so each import is a fresh evaluation rather than a
+   * cached result.
+   */
+  describe("drizzle.test.config.ts real module guard", () => {
+    it("throws when DATABASE_URL is absent from the environment", async () => {
+      const saved = process.env.DATABASE_URL;
+      delete process.env.DATABASE_URL;
+      vi.resetModules();
+
+      try {
+        await expect(
+          import("../../../../lib/db/drizzle.test.config.ts")
+        ).rejects.toThrow("DATABASE_URL");
+      } finally {
+        // Restore env and clear the module cache so subsequent tests are
+        // not affected by the stale import state.
+        if (saved !== undefined) {
+          process.env.DATABASE_URL = saved;
+        }
+        vi.resetModules();
+      }
+    });
   });
 
   it("live DATABASE_URL (when present) passes both guards without throwing", () => {
