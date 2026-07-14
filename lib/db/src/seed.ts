@@ -204,7 +204,7 @@ async function main() {
         title: "Riverside Plot near Brikama",
         location: "Brikama, West Coast Region",
         priceCents: 6000000,
-        sizeAcres: 2,
+        sizeMeters: 2,
         status: "available",
       },
       {
@@ -212,7 +212,7 @@ async function main() {
         title: "Commercial Plot in Latrikunda",
         location: "Latrikunda, Kanifing",
         priceCents: 9500000,
-        sizeAcres: 1,
+        sizeMeters: 1,
         status: "available",
       },
     ])

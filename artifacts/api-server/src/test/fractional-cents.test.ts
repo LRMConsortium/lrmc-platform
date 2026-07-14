@@ -51,7 +51,7 @@ async function createLandListing(agent: Agent) {
     title: "Frac Test Land",
     location: "Brikama",
     priceCents: 500,
-    sizeAcres: 1,
+    sizeMeters: 1,
   });
   expect(res.status).toBe(201);
   return res.body as { id: number };
@@ -156,7 +156,7 @@ describe("land-listings fractional priceCents validation", () => {
       title: "Frac Land",
       location: "Brikama",
       priceCents: 9.5,
-      sizeAcres: 1,
+      sizeMeters: 1,
     });
     expect(res.status).toBe(400);
   });
@@ -171,24 +171,24 @@ describe("land-listings fractional priceCents validation", () => {
   });
 });
 
-describe("land-listings fractional sizeAcres validation", () => {
-  it("rejects sizeAcres: 0.5 on POST /api/land-listings with 400", async () => {
+describe("land-listings fractional sizeMeters validation", () => {
+  it("rejects sizeMeters: 0.5 on POST /api/land-listings with 400", async () => {
     const seller = await createMemberUser("frac-ll-acres-create");
     const res = await seller.agent.post("/api/land-listings").send({
       title: "Frac Land Acres",
       location: "Brikama",
       priceCents: 500,
-      sizeAcres: 0.5,
+      sizeMeters: 0.5,
     });
     expect(res.status).toBe(400);
   });
 
-  it("rejects sizeAcres: 0.5 on PATCH /api/land-listings/:id with 400", async () => {
+  it("rejects sizeMeters: 0.5 on PATCH /api/land-listings/:id with 400", async () => {
     const seller = await createMemberUser("frac-ll-acres-update");
     const listing = await createLandListing(seller.agent);
     const res = await seller.agent
       .patch(`/api/land-listings/${listing.id}`)
-      .send({ sizeAcres: 0.5 });
+      .send({ sizeMeters: 0.5 });
     expect(res.status).toBe(400);
   });
 });

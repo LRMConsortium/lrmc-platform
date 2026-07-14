@@ -11,7 +11,7 @@ export const landListingsTable = pgTable("land_listings", {
   title: text("title").notNull(),
   location: text("location").notNull(),
   priceCents: integer("price_cents").notNull(),
-  sizeAcres: integer("size_acres").notNull(),
+  sizeMeters: integer("size_meters").notNull(),
   status: text("status").notNull().default("available"), // available | under_contract | sold
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()

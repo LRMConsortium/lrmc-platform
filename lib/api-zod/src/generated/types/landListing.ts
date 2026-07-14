@@ -12,7 +12,7 @@ export interface LandListing {
   title: string;
   location: string;
   priceCents: number;
-  sizeAcres: number;
+  sizeMeters: number;
   status: string;
   createdAt: Date;
 }

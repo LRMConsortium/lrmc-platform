@@ -51,7 +51,7 @@ async function createLandListing(agent: Agent) {
     title: "Neg Test Land",
     location: "Brikama",
     priceCents: 500,
-    sizeAcres: 1,
+    sizeMeters: 1,
   });
   expect(res.status).toBe(201);
   return res.body as { id: number };
@@ -156,7 +156,7 @@ describe("land-listings negative priceCents validation", () => {
       title: "Neg Land",
       location: "Brikama",
       priceCents: -1,
-      sizeAcres: 1,
+      sizeMeters: 1,
     });
     expect(res.status).toBe(400);
   });

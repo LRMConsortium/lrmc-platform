@@ -207,7 +207,7 @@ export interface LandListing {
   title: string;
   location: string;
   priceCents: number;
-  sizeAcres: number;
+  sizeMeters: number;
   status: string;
   createdAt: string;
 }
@@ -220,7 +220,7 @@ export interface LandListingInput {
   /** @minimum 1 */
   priceCents: number;
   /** @minimum 0 */
-  sizeAcres: number;
+  sizeMeters: number;
 }
 
 export type LandListingUpdateStatus = typeof LandListingUpdateStatus[keyof typeof LandListingUpdateStatus];
@@ -240,7 +240,7 @@ export interface LandListingUpdate {
   /** @minimum 1 */
   priceCents?: number;
   /** @minimum 0 */
-  sizeAcres?: number;
+  sizeMeters?: number;
   status?: LandListingUpdateStatus;
 }
 

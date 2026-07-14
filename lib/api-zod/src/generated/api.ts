@@ -392,7 +392,7 @@ export const ListLandListingsResponseItem = zod.object({
   "title": zod.string(),
   "location": zod.string(),
   "priceCents": zod.number().int(),
-  "sizeAcres": zod.number().int(),
+  "sizeMeters": zod.number().int(),
   "status": zod.string(),
   "createdAt": zod.coerce.date()
 })
@@ -402,7 +402,7 @@ export const ListLandListingsResponse = zod.array(ListLandListingsResponseItem)
 
 
 
-export const createLandListingBodySizeAcresMin = 0;
+export const createLandListingBodySizeMetersMin = 0;
 
 
 
@@ -410,7 +410,7 @@ export const CreateLandListingBody = zod.object({
   "title": zod.string().min(1),
   "location": zod.string().min(1),
   "priceCents": zod.number().int().min(1),
-  "sizeAcres": zod.number().int().min(createLandListingBodySizeAcresMin)
+  "sizeMeters": zod.number().int().min(createLandListingBodySizeMetersMin)
 })
 
 export const CreateLandListingResponse = zod.object({
@@ -419,7 +419,7 @@ export const CreateLandListingResponse = zod.object({
   "title": zod.string(),
   "location": zod.string(),
   "priceCents": zod.number().int(),
-  "sizeAcres": zod.number().int(),
+  "sizeMeters": zod.number().int(),
   "status": zod.string(),
   "createdAt": zod.coerce.date()
 })
@@ -432,7 +432,7 @@ export const UpdateLandListingParams = zod.object({
 
 
 
-export const updateLandListingBodySizeAcresMin = 0;
+export const updateLandListingBodySizeMetersMin = 0;
 
 
 
@@ -440,7 +440,7 @@ export const UpdateLandListingBody = zod.object({
   "title": zod.string().min(1).optional(),
   "location": zod.string().min(1).optional(),
   "priceCents": zod.number().int().min(1).optional(),
-  "sizeAcres": zod.number().int().min(updateLandListingBodySizeAcresMin).optional(),
+  "sizeMeters": zod.number().int().min(updateLandListingBodySizeMetersMin).optional(),
   "status": zod.enum(['available', 'under_contract', 'sold']).optional()
 })
 
@@ -450,7 +450,7 @@ export const UpdateLandListingResponse = zod.object({
   "title": zod.string(),
   "location": zod.string(),
   "priceCents": zod.number().int(),
-  "sizeAcres": zod.number().int(),
+  "sizeMeters": zod.number().int(),
   "status": zod.string(),
   "createdAt": zod.coerce.date()
 })

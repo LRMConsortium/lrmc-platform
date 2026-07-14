@@ -15,6 +15,6 @@ export interface LandListingUpdate {
   /** @minimum 1 */
   priceCents?: number;
   /** @minimum 0 */
-  sizeAcres?: number;
+  sizeMeters?: number;
   status?: LandListingUpdateStatus;
 }

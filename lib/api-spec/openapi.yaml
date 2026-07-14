@@ -1674,31 +1674,31 @@ components:
     # ---------- LAND ----------
     LandListing:
       type: object
-      required: [id, sellerId, title, location, priceCents, sizeAcres, status, createdAt]
+      required: [id, sellerId, title, location, priceCents, sizeMeters, status, createdAt]
       properties:
         id: { type: integer }
         sellerId: { type: integer }
         title: { type: string }
         location: { type: string }
         priceCents: { type: integer }
-        sizeAcres: { type: integer }
+        sizeMeters: { type: integer }
         status: { type: string }
         createdAt: { type: string, format: date-time }
     LandListingInput:
       type: object
-      required: [title, location, priceCents, sizeAcres]
+      required: [title, location, priceCents, sizeMeters]
       properties:
         title: { type: string, minLength: 1 }
         location: { type: string, minLength: 1 }
         priceCents: { type: integer, minimum: 1 }
-        sizeAcres: { type: integer, minimum: 0 }
+        sizeMeters: { type: integer, minimum: 0 }
     LandListingUpdate:
       type: object
       properties:
         title: { type: string, minLength: 1 }
         location: { type: string, minLength: 1 }
         priceCents: { type: integer, minimum: 1 }
-        sizeAcres: { type: integer, minimum: 0 }
+        sizeMeters: { type: integer, minimum: 0 }
         status: { type: string, enum: [available, under_contract, sold] }
     LandTransaction:
       type: object

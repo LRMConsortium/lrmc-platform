@@ -6,7 +6,7 @@ async function createLandListing(agent: Awaited<ReturnType<typeof createMemberUs
     title: "Authz Test Plot",
     location: "Brikama",
     priceCents: 200000,
-    sizeAcres: 1,
+    sizeMeters: 1,
   });
   expect(res.status).toBe(201);
   return res.body.id as number;
@@ -82,7 +82,7 @@ describe("land-listings zero-price validation", () => {
       title: "Zero Price Plot",
       location: "Brikama",
       priceCents: 0,
-      sizeAcres: 1,
+      sizeMeters: 1,
     });
     expect(res.status).toBe(400);
   });
@@ -93,7 +93,7 @@ describe("land-listings zero-price validation", () => {
       title: "One Cent Plot",
       location: "Brikama",
       priceCents: 1,
-      sizeAcres: 1,
+      sizeMeters: 1,
     });
     expect(res.status).toBe(201);
   });

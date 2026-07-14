@@ -76,7 +76,7 @@ function LandListingsGrid() {
                 <div className="text-2xl font-serif font-bold text-foreground">
                   {formatMoney(plot.priceCents)}
                 </div>
-                <p className="text-sm font-medium text-emerald-600 mt-1">{plot.sizeAcres} Acres</p>
+                <p className="text-sm font-medium text-emerald-600 mt-1">{plot.sizeMeters} m²</p>
               </div>
               <Map className="h-8 w-8 text-muted-foreground/20" />
             </div>
@@ -180,7 +180,7 @@ function LandTransactionsTable() {
 const formSchema = z.object({
   title: z.string().min(1, "Title is required"),
   location: z.string().min(1, "Location is required"),
-  sizeAcres: z.string().refine(v => !isNaN(Number(v)) && Number(v) > 0, "Valid size required"),
+  sizeMeters: z.string().refine(v => !isNaN(Number(v)) && Number(v) > 0, "Valid measurement required"),
   priceAmount: z.string().refine(v => !isNaN(Number(v)) && Number(v) >= 0, "Valid price required"),
 })
 
@@ -192,7 +192,7 @@ function AddLandDialog() {
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: { title: "", location: "", sizeAcres: "", priceAmount: "" }
+    defaultValues: { title: "", location: "", sizeMeters: "", priceAmount: "" }
   })
 
   function onSubmit(values: z.infer<typeof formSchema>) {
@@ -200,7 +200,7 @@ function AddLandDialog() {
       data: {
         title: values.title,
         location: values.location,
-        sizeAcres: Number(values.sizeAcres),
+        sizeMeters: Number(values.sizeMeters),
         priceCents: Math.floor(Number(values.priceAmount) * 100)
       }
     }, {
@@ -231,8 +231,8 @@ function AddLandDialog() {
               <FormItem><FormLabel>Location</FormLabel><FormControl><Input placeholder="Sanyang" {...field} /></FormControl><FormMessage/></FormItem>
             )}/>
             <div className="grid grid-cols-2 gap-4">
-              <FormField control={form.control} name="sizeAcres" render={({ field }) => (
-                <FormItem><FormLabel>Size (Acres)</FormLabel><FormControl><Input type="number" step="0.1" placeholder="0.5" {...field} /></FormControl><FormMessage/></FormItem>
+              <FormField control={form.control} name="sizeMeters" render={({ field }) => (
+                <FormItem><FormLabel>Measurement (m²)</FormLabel><FormControl><Input type="number" step="1" placeholder="500" {...field} /></FormControl><FormMessage/></FormItem>
               )}/>
               <FormField control={form.control} name="priceAmount" render={({ field }) => (
                 <FormItem><FormLabel>Price (GMD)</FormLabel><FormControl><Input type="number" placeholder="150000" {...field} /></FormControl><FormMessage/></FormItem>
