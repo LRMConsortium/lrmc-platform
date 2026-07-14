@@ -1,7 +1,7 @@
-import { Router, type IRouter } from "express";
+import { Router, type IRouter, type Request, type Response } from "express";
 import bcrypt from "bcryptjs";
 import { and, eq, sql, isNull, gt } from "drizzle-orm";
-import { db, usersTable, authTokensTable } from "@workspace/db";
+import { db, usersTable, authTokensTable, digitalProductPurchasesTable } from "@workspace/db";
 import {
   RegisterBody,
   RegisterResponse,
@@ -17,7 +17,7 @@ import {
   ResetPasswordBody,
   ResetPasswordResponse,
 } from "@workspace/api-zod";
-import { requireAuth } from "../middlewares/auth";
+import { requireAuth, requireAdmin } from "../middlewares/auth";
 import {
   loginRateLimiter,
   registerRateLimiter,
@@ -32,6 +32,7 @@ import {
 } from "../lib/email";
 import { getWebBaseUrl } from "../lib/urls";
 import { logger } from "../lib/logger";
+import { getUncachableStripeClient } from "../lib/stripeClient";
 
 const router: IRouter = Router();
 
@@ -326,6 +327,118 @@ router.post("/auth/reset-password", tokenActionRateLimiter, async (req, res): Pr
       message: "Password updated. You can now sign in with your new password.",
     }),
   );
+});
+
+// ---------------------------------------------------------------------------
+// Account deletion helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Best-effort: expire every pending Stripe Checkout session owned by `userId`
+ * so buyers can't complete a checkout for an account that is about to be
+ * deleted.  Errors are logged but do NOT abort the deletion — an orphaned
+ * Stripe session will simply expire on its own after 24 hours, and our DB row
+ * will have buyer_id set to NULL (ON DELETE SET NULL).
+ */
+async function cancelPendingStripeCheckouts(userId: number): Promise<void> {
+  const pendingSessions = await db
+    .select({ sessionId: digitalProductPurchasesTable.stripeCheckoutSessionId })
+    .from(digitalProductPurchasesTable)
+    .where(
+      and(
+        eq(digitalProductPurchasesTable.buyerId, userId),
+        eq(digitalProductPurchasesTable.status, "pending"),
+      ),
+    );
+
+  if (pendingSessions.length === 0) return;
+
+  let stripe;
+  try {
+    stripe = await getUncachableStripeClient();
+  } catch (err) {
+    logger.warn(
+      { err, userId },
+      "Could not obtain Stripe client during account deletion; skipping checkout session cancellation",
+    );
+    return;
+  }
+
+  await Promise.all(
+    pendingSessions.map(({ sessionId }) =>
+      stripe.checkout.sessions.expire(sessionId).catch((err: unknown) => {
+        logger.warn(
+          { err, sessionId },
+          "Failed to expire Stripe checkout session during account deletion",
+        );
+      }),
+    ),
+  );
+}
+
+/**
+ * Shared account-deletion logic used by both the self-service and admin
+ * endpoints.
+ *
+ * 1. Cancel any open Stripe Checkout sessions (best-effort, does not abort on
+ *    failure — orphaned sessions expire naturally after 24 h).
+ * 2. Delete the user row inside a DB transaction.  All related rows are
+ *    removed automatically via ON DELETE CASCADE / SET NULL constraints, so
+ *    the entire cleanup is atomic at the DB layer.
+ * 3. Destroy the current session if it belonged to the deleted user so the
+ *    caller cannot make further authenticated requests.
+ */
+async function deleteUserById(
+  targetUserId: number,
+  req: Request,
+  res: Response,
+): Promise<void> {
+  // Step 1 — cancel pending Stripe sessions (external; best-effort)
+  await cancelPendingStripeCheckouts(targetUserId);
+
+  // Step 2 — delete user in a transaction (cascades all related rows atomically)
+  await db.transaction(async (tx) => {
+    await tx.delete(usersTable).where(eq(usersTable.id, targetUserId));
+  });
+
+  // Step 3 — invalidate the session if it belongs to the user we just deleted
+  if (req.session.userId === targetUserId) {
+    req.session.destroy(() => {});
+    res.clearCookie("lrmc.sid");
+  }
+
+  res.sendStatus(204);
+}
+
+// ---------------------------------------------------------------------------
+// DELETE /account  — authenticated user deletes their own account
+// ---------------------------------------------------------------------------
+router.delete("/account", requireAuth, async (req, res): Promise<void> => {
+  await deleteUserById(req.session.userId!, req, res);
+});
+
+// ---------------------------------------------------------------------------
+// DELETE /users/:id  — admin-only: delete any user's account
+// ---------------------------------------------------------------------------
+router.delete("/users/:id", requireAdmin, async (req, res): Promise<void> => {
+  const raw = req.params.id;
+  const targetId = parseInt(raw, 10);
+  if (!Number.isInteger(targetId) || targetId <= 0 || String(targetId) !== raw) {
+    res.status(400).json({ error: "Invalid user ID" });
+    return;
+  }
+
+  const [targetUser] = await db
+    .select({ id: usersTable.id })
+    .from(usersTable)
+    .where(eq(usersTable.id, targetId));
+
+  if (!targetUser) {
+    res.status(404).json({ error: "User not found" });
+    return;
+  }
+
+  await deleteUserById(targetId, req, res);
 });
 
 export default router;
