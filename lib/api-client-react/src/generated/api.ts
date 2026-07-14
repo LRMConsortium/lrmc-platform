@@ -26,7 +26,10 @@ import type {
   AdInput,
   AdminDashboard,
   Asset,
+  AssetAssignBody,
   AssetInput,
+  AssetLinkRevenueBody,
+  AssetRejectBody,
   AssetUpdate,
   ConstructionContractor,
   ConstructionContractorInput,
@@ -3730,6 +3733,77 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
       return useMutation(getCreateAssetMutationOptions(options));
     }
 
+export const getGetAssetUrl = (id: number,) => {
+
+
+
+
+  return `/api/assets/${id}`
+}
+
+export const getAsset = async (id: number, options?: RequestInit): Promise<Asset> => {
+
+  return customFetch<Asset>(getGetAssetUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetAssetQueryKey = (id: number,) => {
+    return [
+    `/api/assets/${id}`
+    ] as const;
+    }
+
+
+export const getGetAssetQueryOptions = <TData = Awaited<ReturnType<typeof getAsset>>, TError = ErrorType<void>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAsset>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAssetQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAsset>>> = ({ signal }) => getAsset(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAsset>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetAssetQueryResult = NonNullable<Awaited<ReturnType<typeof getAsset>>>
+export type GetAssetQueryError = ErrorType<void>
+
+
+
+export function useGetAsset<TData = Awaited<ReturnType<typeof getAsset>>, TError = ErrorType<void>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAsset>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetAssetQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
 export const getUpdateAssetUrl = (id: number,) => {
 
 
@@ -3859,6 +3933,269 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
         TContext
       > => {
       return useMutation(getDeleteAssetMutationOptions(options));
+    }
+
+export const getApproveAssetUrl = (id: number,) => {
+
+
+
+
+  return `/api/assets/${id}/approve`
+}
+
+export const approveAsset = async (id: number, options?: RequestInit): Promise<Asset> => {
+
+  return customFetch<Asset>(getApproveAssetUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getApproveAssetMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof approveAsset>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof approveAsset>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['approveAsset'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof approveAsset>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  approveAsset(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ApproveAssetMutationResult = NonNullable<Awaited<ReturnType<typeof approveAsset>>>
+
+    export type ApproveAssetMutationError = ErrorType<void>
+
+    export const useApproveAsset = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof approveAsset>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof approveAsset>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getApproveAssetMutationOptions(options));
+    }
+
+export const getRejectAssetUrl = (id: number,) => {
+
+
+
+
+  return `/api/assets/${id}/reject`
+}
+
+export const rejectAsset = async (id: number,
+    assetRejectBody?: AssetRejectBody, options?: RequestInit): Promise<Asset> => {
+
+  return customFetch<Asset>(getRejectAssetUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(assetRejectBody)
+  }
+);}
+
+
+
+
+
+export const getRejectAssetMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof rejectAsset>>, TError,{id: number;data?: BodyType<AssetRejectBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof rejectAsset>>, TError,{id: number;data?: BodyType<AssetRejectBody>}, TContext> => {
+
+const mutationKey = ['rejectAsset'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof rejectAsset>>, {id: number;data?: BodyType<AssetRejectBody>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  rejectAsset(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RejectAssetMutationResult = NonNullable<Awaited<ReturnType<typeof rejectAsset>>>
+    export type RejectAssetMutationBody = BodyType<AssetRejectBody> | undefined
+    export type RejectAssetMutationError = ErrorType<void>
+
+    export const useRejectAsset = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof rejectAsset>>, TError,{id: number;data?: BodyType<AssetRejectBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof rejectAsset>>,
+        TError,
+        {id: number;data?: BodyType<AssetRejectBody>},
+        TContext
+      > => {
+      return useMutation(getRejectAssetMutationOptions(options));
+    }
+
+export const getAssignAssetUrl = (id: number,) => {
+
+
+
+
+  return `/api/assets/${id}/assign`
+}
+
+export const assignAsset = async (id: number,
+    assetAssignBody: AssetAssignBody, options?: RequestInit): Promise<Asset> => {
+
+  return customFetch<Asset>(getAssignAssetUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(assetAssignBody)
+  }
+);}
+
+
+
+
+
+export const getAssignAssetMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof assignAsset>>, TError,{id: number;data: BodyType<AssetAssignBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof assignAsset>>, TError,{id: number;data: BodyType<AssetAssignBody>}, TContext> => {
+
+const mutationKey = ['assignAsset'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof assignAsset>>, {id: number;data: BodyType<AssetAssignBody>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  assignAsset(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AssignAssetMutationResult = NonNullable<Awaited<ReturnType<typeof assignAsset>>>
+    export type AssignAssetMutationBody = BodyType<AssetAssignBody>
+    export type AssignAssetMutationError = ErrorType<void>
+
+    export const useAssignAsset = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof assignAsset>>, TError,{id: number;data: BodyType<AssetAssignBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof assignAsset>>,
+        TError,
+        {id: number;data: BodyType<AssetAssignBody>},
+        TContext
+      > => {
+      return useMutation(getAssignAssetMutationOptions(options));
+    }
+
+export const getLinkAssetRevenueUrl = (id: number,) => {
+
+
+
+
+  return `/api/assets/${id}/link-revenue`
+}
+
+export const linkAssetRevenue = async (id: number,
+    assetLinkRevenueBody: AssetLinkRevenueBody, options?: RequestInit): Promise<Asset> => {
+
+  return customFetch<Asset>(getLinkAssetRevenueUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(assetLinkRevenueBody)
+  }
+);}
+
+
+
+
+
+export const getLinkAssetRevenueMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof linkAssetRevenue>>, TError,{id: number;data: BodyType<AssetLinkRevenueBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof linkAssetRevenue>>, TError,{id: number;data: BodyType<AssetLinkRevenueBody>}, TContext> => {
+
+const mutationKey = ['linkAssetRevenue'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof linkAssetRevenue>>, {id: number;data: BodyType<AssetLinkRevenueBody>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  linkAssetRevenue(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type LinkAssetRevenueMutationResult = NonNullable<Awaited<ReturnType<typeof linkAssetRevenue>>>
+    export type LinkAssetRevenueMutationBody = BodyType<AssetLinkRevenueBody>
+    export type LinkAssetRevenueMutationError = ErrorType<void>
+
+    export const useLinkAssetRevenue = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof linkAssetRevenue>>, TError,{id: number;data: BodyType<AssetLinkRevenueBody>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof linkAssetRevenue>>,
+        TError,
+        {id: number;data: BodyType<AssetLinkRevenueBody>},
+        TContext
+      > => {
+      return useMutation(getLinkAssetRevenueMutationOptions(options));
     }
 
 export const getListYouthEmploymentRecordsUrl = () => {

@@ -565,40 +565,58 @@ export interface AdContentUpdate {
   rejectionNote?: string | null;
 }
 
+export type AssetMetadata = { [key: string]: unknown };
+
 export interface Asset {
   id: number;
   ownerId: number;
-  kind: string;
+  category: string;
+  type: string;
   title: string;
   description: string;
-  location: string;
-  priceCents: number;
-  imageUrl?: string | null;
   status: string;
+  metadata: AssetMetadata;
   createdAt: string;
+  updatedAt?: string;
 }
+
+export type AssetInputMetadata = { [key: string]: unknown };
 
 export interface AssetInput {
   /** @minLength 1 */
-  kind: string;
+  category: string;
+  /** @minLength 1 */
+  type: string;
   /** @minLength 1 */
   title: string;
   description?: string;
-  location?: string;
-  /** @minimum 0 */
-  priceCents?: number;
-  imageUrl?: string;
+  metadata?: AssetInputMetadata;
 }
+
+export type AssetUpdateMetadata = { [key: string]: unknown };
 
 export interface AssetUpdate {
   /** @minLength 1 */
   title?: string;
   description?: string;
-  location?: string;
-  /** @minimum 0 */
-  priceCents?: number;
-  imageUrl?: string | null;
+  metadata?: AssetUpdateMetadata;
   status?: string;
+}
+
+export interface AssetRejectBody {
+  reason?: string;
+}
+
+export interface AssetAssignBody {
+  /** @minLength 1 */
+  module: string;
+  notes?: string;
+}
+
+export interface AssetLinkRevenueBody {
+  /** @minLength 1 */
+  revenueType: string;
+  notes?: string;
 }
 
 export interface YouthEmploymentRecord {
@@ -878,7 +896,9 @@ export const ListDigitalProductsStatus = {
 } as const;
 
 export type ListAssetsParams = {
-kind?: string;
+category?: string;
+type?: string;
+status?: string;
 ownerId?: number;
 };
 

@@ -966,51 +966,69 @@ export const DeleteAdResponse = zod.void()
 
 
 export const ListAssetsQueryParams = zod.object({
-  "kind": zod.coerce.string().optional(),
+  "category": zod.coerce.string().optional(),
+  "type": zod.coerce.string().optional(),
+  "status": zod.coerce.string().optional(),
   "ownerId": zod.coerce.number().int().optional()
 })
 
 export const ListAssetsResponseItem = zod.object({
   "id": zod.number().int(),
   "ownerId": zod.number().int(),
-  "kind": zod.string(),
+  "category": zod.string(),
+  "type": zod.string(),
   "title": zod.string(),
   "description": zod.string(),
-  "location": zod.string(),
-  "priceCents": zod.number().int(),
-  "imageUrl": zod.string().nullish(),
   "status": zod.string(),
-  "createdAt": zod.coerce.date()
+  "metadata": zod.record(zod.string(), zod.unknown()),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date().optional()
 })
 export const ListAssetsResponse = zod.array(ListAssetsResponseItem)
 
 
 
 
-export const createAssetBodyPriceCentsMin = 0;
 
 
 
 export const CreateAssetBody = zod.object({
-  "kind": zod.string().min(1),
+  "category": zod.string().min(1),
+  "type": zod.string().min(1),
   "title": zod.string().min(1),
   "description": zod.string().optional(),
-  "location": zod.string().optional(),
-  "priceCents": zod.number().int().min(createAssetBodyPriceCentsMin).optional(),
-  "imageUrl": zod.string().optional()
+  "metadata": zod.record(zod.string(), zod.unknown()).optional()
 })
 
 export const CreateAssetResponse = zod.object({
   "id": zod.number().int(),
   "ownerId": zod.number().int(),
-  "kind": zod.string(),
+  "category": zod.string(),
+  "type": zod.string(),
   "title": zod.string(),
   "description": zod.string(),
-  "location": zod.string(),
-  "priceCents": zod.number().int(),
-  "imageUrl": zod.string().nullish(),
   "status": zod.string(),
-  "createdAt": zod.coerce.date()
+  "metadata": zod.record(zod.string(), zod.unknown()),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date().optional()
+})
+
+
+export const GetAssetParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const GetAssetResponse = zod.object({
+  "id": zod.number().int(),
+  "ownerId": zod.number().int(),
+  "category": zod.string(),
+  "type": zod.string(),
+  "title": zod.string(),
+  "description": zod.string(),
+  "status": zod.string(),
+  "metadata": zod.record(zod.string(), zod.unknown()),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date().optional()
 })
 
 
@@ -1019,30 +1037,26 @@ export const UpdateAssetParams = zod.object({
 })
 
 
-export const updateAssetBodyPriceCentsMin = 0;
-
 
 
 export const UpdateAssetBody = zod.object({
   "title": zod.string().min(1).optional(),
   "description": zod.string().optional(),
-  "location": zod.string().optional(),
-  "priceCents": zod.number().int().min(updateAssetBodyPriceCentsMin).optional(),
-  "imageUrl": zod.string().nullish(),
+  "metadata": zod.record(zod.string(), zod.unknown()).optional(),
   "status": zod.string().optional()
 })
 
 export const UpdateAssetResponse = zod.object({
   "id": zod.number().int(),
   "ownerId": zod.number().int(),
-  "kind": zod.string(),
+  "category": zod.string(),
+  "type": zod.string(),
   "title": zod.string(),
   "description": zod.string(),
-  "location": zod.string(),
-  "priceCents": zod.number().int(),
-  "imageUrl": zod.string().nullish(),
   "status": zod.string(),
-  "createdAt": zod.coerce.date()
+  "metadata": zod.record(zod.string(), zod.unknown()),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date().optional()
 })
 
 
@@ -1051,6 +1065,98 @@ export const DeleteAssetParams = zod.object({
 })
 
 export const DeleteAssetResponse = zod.void()
+
+
+export const ApproveAssetParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const ApproveAssetResponse = zod.object({
+  "id": zod.number().int(),
+  "ownerId": zod.number().int(),
+  "category": zod.string(),
+  "type": zod.string(),
+  "title": zod.string(),
+  "description": zod.string(),
+  "status": zod.string(),
+  "metadata": zod.record(zod.string(), zod.unknown()),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date().optional()
+})
+
+
+export const RejectAssetParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const RejectAssetBody = zod.object({
+  "reason": zod.string().optional()
+})
+
+export const RejectAssetResponse = zod.object({
+  "id": zod.number().int(),
+  "ownerId": zod.number().int(),
+  "category": zod.string(),
+  "type": zod.string(),
+  "title": zod.string(),
+  "description": zod.string(),
+  "status": zod.string(),
+  "metadata": zod.record(zod.string(), zod.unknown()),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date().optional()
+})
+
+
+export const AssignAssetParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+
+
+
+export const AssignAssetBody = zod.object({
+  "module": zod.string().min(1),
+  "notes": zod.string().optional()
+})
+
+export const AssignAssetResponse = zod.object({
+  "id": zod.number().int(),
+  "ownerId": zod.number().int(),
+  "category": zod.string(),
+  "type": zod.string(),
+  "title": zod.string(),
+  "description": zod.string(),
+  "status": zod.string(),
+  "metadata": zod.record(zod.string(), zod.unknown()),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date().optional()
+})
+
+
+export const LinkAssetRevenueParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+
+
+
+export const LinkAssetRevenueBody = zod.object({
+  "revenueType": zod.string().min(1),
+  "notes": zod.string().optional()
+})
+
+export const LinkAssetRevenueResponse = zod.object({
+  "id": zod.number().int(),
+  "ownerId": zod.number().int(),
+  "category": zod.string(),
+  "type": zod.string(),
+  "title": zod.string(),
+  "description": zod.string(),
+  "status": zod.string(),
+  "metadata": zod.record(zod.string(), zod.unknown()),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date().optional()
+})
 
 
 export const ListYouthEmploymentRecordsResponseItem = zod.object({

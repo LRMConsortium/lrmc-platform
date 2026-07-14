@@ -1,0 +1,276 @@
+Implement the following LRMC Asset Schema end‑to‑end:
+DB schema, OpenAPI spec, API routes, web pages, admin workflows,
+module integration, and metadata support. This schema is the
+institutional model for LRMC.
+
+============================================================
+LRMC ASSET SCHEMA — INSTITUTIONAL VERSION
+============================================================
+
+1. ASSET CATEGORIES (Top-Level)
+--------------------------------
+RealEstate
+Land
+Construction
+Mobility
+Digital
+Marketplace
+Membership
+Revenue
+Employment
+Travel
+Event
+Treasury
+PartnerBusiness
+
+2. ASSET TYPES (Per Category)
+--------------------------------
+RealEstate:
+  - ResidentialProperty
+  - CommercialProperty
+  - AirbnbUnit
+  - ResortUnit
+  - MultiUnitBuilding
+  - Warehouse
+  - OfficeSpace
+
+Land:
+  - LandParcel
+  - AgriculturalLand
+  - DevelopmentPlot
+  - CommunityLand
+
+Construction:
+  - ConstructionProject
+  - RenovationProject
+  - InfrastructureProject
+  - ContractorAssignment
+
+Mobility (Ususu):
+  - UsusuRoute
+  - UsusuVehicle
+  - UsusuDriverProfile
+  - UsusuStation
+
+Digital:
+  - DigitalProduct
+  - DigitalService
+  - SubscriptionPackage
+  - OnlineCourse
+  - DigitalDocument
+
+Marketplace:
+  - MarketplaceListing
+  - VendorProduct
+  - VendorService
+  - ClassifiedAd
+
+Membership:
+  - MembershipTier
+  - MembershipBenefit
+  - MembershipAddon
+
+Revenue:
+  - RevenueStream
+  - PaymentPlan
+  - Invoice
+  - Subscription
+  - CommissionModel
+
+Employment:
+  - EmploymentPlacement
+  - EmployerProfile
+  - JobListing
+  - TrainingProgram
+
+Travel:
+  - TravelerRoute
+  - TravelPackage
+  - TravelService
+
+Event:
+  - EventTicket
+  - EventListing
+  - EventVenue
+
+Treasury:
+  - TreasuryAccount
+  - TreasuryInstrument
+  - TreasuryAllocation
+
+PartnerBusiness:
+  - PartnerBusinessProfile
+  - PartnerService
+  - PartnerContract
+
+3. UNIVERSAL ASSET FIELDS
+--------------------------------
+id                integer PK
+owner_id          integer FK → users.id
+category          text
+type              text
+title             text
+description       text
+status            text
+metadata          jsonb
+created_at        timestamp
+updated_at        timestamp
+
+Status values:
+  - pending_review
+  - approved
+  - rejected
+  - archived
+  - active
+  - inactive
+
+4. METADATA (jsonb)
+--------------------------------
+Each asset type stores its specific fields inside metadata, e.g.:
+
+RealEstate:
+  - property_address
+  - bedrooms
+  - bathrooms
+  - square_feet
+
+Land:
+  - land_coordinates
+  - acreage
+  - zoning_type
+
+Construction:
+  - contractor_id
+  - project_budget
+  - project_deadline
+
+Mobility:
+  - route_start
+  - route_end
+  - vehicle_plate
+
+Digital:
+  - product_url
+  - file_id
+  - license_type
+
+Marketplace:
+  - price
+  - vendor_id
+  - stock_count
+
+Membership:
+  - level
+  - benefits
+  - renewal_date
+
+Revenue:
+  - plan_id
+  - invoice_id
+  - commission_rate
+
+Employment:
+  - company_name
+  - job_title
+  - salary_range
+
+Travel:
+  - destination
+  - departure_date
+  - return_date
+
+Event:
+  - event_date
+  - venue
+  - ticket_price
+
+Treasury:
+  - balance
+  - instrument_type
+  - allocation_percent
+
+PartnerBusiness:
+  - business_name
+  - contract_terms
+  - service_categories
+
+5. ASSET RELATIONSHIPS
+--------------------------------
+Assets link to:
+  - Members (owner, manager, admin reviewer)
+  - Attachments (photos, documents, proofs, contracts)
+  - Modules (Property, Ususu, Marketplace, Digital, Employment, Travel, Events)
+  - Revenue (payment plans, subscriptions, commissions)
+  - Workflows (approval, review, assignment, payment)
+
+6. ASSET LIFECYCLE
+--------------------------------
+1. Created
+2. Pending Review
+3. Reviewed
+4. Approved or Rejected
+5. Activated
+6. Assigned to Module
+7. Linked to Revenue
+8. Updated
+9. Archived
+
+7. ASSET APPROVAL MODEL
+--------------------------------
+Member actions:
+  - Create asset
+  - Upload attachments
+  - Edit pending assets
+  - Delete pending assets
+
+Admin actions:
+  - Approve
+  - Reject
+  - Delete
+  - Assign to module
+  - Link to revenue
+  - Link to workflows
+
+8. ASSET API CONTRACT (OpenAPI)
+--------------------------------
+GET    /assets
+POST   /assets
+GET    /assets/{id}
+PATCH  /assets/{id}
+DELETE /assets/{id}
+
+POST   /assets/{id}/approve
+POST   /assets/{id}/reject
+POST   /assets/{id}/assign
+POST   /assets/{id}/link-revenue
+
+9. ASSET WEB PAGES
+--------------------------------
+/assets:
+  - Card grid
+  - Filters (category, type, status)
+  - "My Assets" toggle
+  - Create dialog
+  - Admin approval actions
+
+/assets/{id}:
+  - Full asset detail
+  - Metadata viewer
+  - Attachments viewer
+  - Workflow history
+  - Revenue links
+  - Module links
+
+10. MODULE INTEGRATION
+--------------------------------
+Modules must be able to:
+  - Read assets
+  - Filter assets
+  - Assign assets
+  - Link assets
+  - Display assets
+  - Use assets in workflows
+
+============================================================
+END OF LRMC ASSET SCHEMA
+============================================================

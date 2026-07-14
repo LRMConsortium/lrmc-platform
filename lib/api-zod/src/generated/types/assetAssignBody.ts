@@ -6,9 +6,8 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type ListAssetsParams = {
-category?: string;
-type?: string;
-status?: string;
-ownerId?: number;
-};
+export interface AssetAssignBody {
+  /** @minLength 1 */
+  module: string;
+  notes?: string;
+}

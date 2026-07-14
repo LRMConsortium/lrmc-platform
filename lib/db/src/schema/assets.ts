@@ -1,28 +1,27 @@
 import {
   integer,
+  jsonb,
   pgTable,
   serial,
   text,
   timestamp,
 } from "drizzle-orm/pg-core";
-import { createInsertSchema } from "drizzle-zod";
-import { z } from "zod/v4";
 import { usersTable } from "./users";
 
-// kind: property | vehicle | airbnb | resort
-// status: active | pending_review | inactive
+// category: RealEstate | Land | Construction | Mobility | Digital | Marketplace |
+//           Membership | Revenue | Employment | Travel | Event | Treasury | PartnerBusiness
+// status: pending_review | approved | rejected | archived | active | inactive
 export const assetsTable = pgTable("assets", {
   id: serial("id").primaryKey(),
   ownerId: integer("owner_id")
     .notNull()
     .references(() => usersTable.id, { onDelete: "cascade" }),
-  kind: text("kind").notNull(), // property | vehicle | airbnb | resort
+  category: text("category").notNull(),
+  type: text("type").notNull(),
   title: text("title").notNull(),
   description: text("description").notNull().default(""),
-  location: text("location").notNull().default(""),
-  priceCents: integer("price_cents").notNull().default(0),
-  imageUrl: text("image_url"),
-  status: text("status").notNull().default("pending_review"), // active | pending_review | inactive
+  status: text("status").notNull().default("pending_review"),
+  metadata: jsonb("metadata").notNull().default({}),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),
@@ -32,10 +31,5 @@ export const assetsTable = pgTable("assets", {
     .$onUpdate(() => new Date()),
 });
 
-export const insertAssetSchema = createInsertSchema(assetsTable).omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
-export type InsertAsset = z.infer<typeof insertAssetSchema>;
 export type Asset = typeof assetsTable.$inferSelect;
+export type InsertAsset = typeof assetsTable.$inferInsert;

@@ -5,15 +5,15 @@
  * LRMC / Ususu institution API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { AssetInputMetadata } from './assetInputMetadata';
 
 export interface AssetInput {
   /** @minLength 1 */
-  kind: string;
+  category: string;
+  /** @minLength 1 */
+  type: string;
   /** @minLength 1 */
   title: string;
   description?: string;
-  location?: string;
-  /** @minimum 0 */
-  priceCents?: number;
-  imageUrl?: string;
+  metadata?: AssetInputMetadata;
 }
