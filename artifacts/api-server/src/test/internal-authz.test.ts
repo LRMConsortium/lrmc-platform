@@ -64,6 +64,20 @@ describe("internal-messages — access control", () => {
     expect(res.status).toBe(404);
   });
 
+  it("a member with no membership row at all is blocked by requireApprovedMembership (403)", async () => {
+    // Simulate a bare account: role="member", valid session, but zero rows in
+    // memberships (e.g. registered but never started checkout).
+    const sender = await createMemberUserWithMembership("msg-no-membership-sender", {
+      withMembership: false,
+    });
+    const recipient = await createMemberUser("msg-no-membership-recipient");
+
+    const res = await sender.agent
+      .post("/api/internal-messages")
+      .send({ recipientId: recipient.id, subject: "Bare account", body: "Should be blocked" });
+    expect(res.status).toBe(403);
+  });
+
   it("a sender whose KYC is revoked mid-session is blocked by requireApprovedMembership (403)", async () => {
     const sender = await createMemberUser("msg-sender-kyc-revoked");
     const recipient = await createMemberUser("msg-sender-kyc-revoked-recip");
