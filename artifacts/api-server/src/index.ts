@@ -37,12 +37,9 @@ async function initStripe(): Promise<void> {
   });
 }
 
-try {
-  await initStripe();
-} catch (err) {
-  logger.error({ err }, "Failed to initialize Stripe integration; continuing without it");
-}
-
+// Start listening immediately so health-check probes pass during startup.
+// Stripe initialization runs in the background — it can take several seconds
+// in production and must not block the startup probe.
 app.listen(port, (err) => {
   if (err) {
     logger.error({ err }, "Error listening on port");
@@ -52,4 +49,9 @@ app.listen(port, (err) => {
   logger.info({ port }, "Server listening");
 
   startAuthTokenCleanupJob();
+
+  // Non-blocking: initialize Stripe after the server is already accepting requests.
+  initStripe().catch((err) => {
+    logger.error({ err }, "Failed to initialize Stripe integration; continuing without it");
+  });
 });
